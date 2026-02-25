@@ -21,13 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+
 public class SwaggerServerRewriteFilter implements WebFilter {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SwaggerServerRewriteFilter.class);
 
     @Value("${app.openapi.dev-url:http://localhost:8090}")
-    private String gatewayUrl;
+    private String devUrl;
 
+    @Value("${app.openapi.prod-url:Coming_soon}")
+    private String prodUrl;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -70,12 +73,15 @@ public class SwaggerServerRewriteFilter implements WebFilter {
                             log.info(">>> Raw response preview: {}", new String(bytes, 0, Math.min(200, bytes.length)));
 
                             JsonNode node = objectMapper.readTree(bytes);
-                            ((ObjectNode) node).set("servers", objectMapper.valueToTree(
-                                    List.of(Map.of("url", gatewayUrl, "description", "API Gateway"))
-                            ));
+                            List<Map<String, String>> servers = new java.util.ArrayList<>();
+                            servers.add(Map.of("url", devUrl, "description", "Local Development"));
+                            if (prodUrl != null && !prodUrl.isBlank()) {
+                                servers.add(Map.of("url", prodUrl, "description", "Production"));
+                            }
+                            ((ObjectNode) node).set("servers", objectMapper.valueToTree(servers));
                             bytes = objectMapper.writeValueAsBytes(node);
                             exchange.getResponse().getHeaders().setContentLength(bytes.length);
-                            log.info(">>> Successfully rewrote servers to: {}", gatewayUrl);
+                            log.info(">>> Successfully rewrote servers to: {}",  servers);
                         } catch (Exception e) {
                             log.error(">>> FAILED to rewrite JSON: {}", e.getMessage(), e);
                         }
