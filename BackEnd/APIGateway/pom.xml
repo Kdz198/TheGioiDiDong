@@ -45,6 +45,18 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- springdoc-openapi để tùy chỉnh OpenAPI spec -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-common</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
