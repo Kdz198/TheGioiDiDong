@@ -1,13 +1,15 @@
 package tgdd.org.userservice;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/v1/users")
 public class HealthCheckController {
 
 
-    @GetMapping("/api/v1/users/health")
+    @GetMapping("health-check")
     public String healthCheckV1() {
         return "User Service is healthy! (v1)";
     }
