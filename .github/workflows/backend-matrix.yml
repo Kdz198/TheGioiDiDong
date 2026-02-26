@@ -32,7 +32,7 @@ jobs:
             APIGateway:
               - 'BackEnd/APIGateway/**'
             UserService:
-              - 'BackEnd/USER-SERVICE/**'
+              - 'BackEnd/UserService/**'
 
   # ==========================================
   # JOB 2: NHÀ MÁY BUILD (MATRIX BUILDER)
