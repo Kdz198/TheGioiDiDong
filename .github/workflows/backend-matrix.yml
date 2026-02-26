@@ -27,8 +27,8 @@ jobs:
         id: filter
         with:
           filters: |
-            EUREKA-SERVICE:
-              - 'BackEnd/EUREKA-SERVICE/**'
+            EurekaService:
+              - 'BackEnd/EurekaService/**'
             APIGateway:
               - 'BackEnd/APIGateway/**'
             USER-SERVICE:
