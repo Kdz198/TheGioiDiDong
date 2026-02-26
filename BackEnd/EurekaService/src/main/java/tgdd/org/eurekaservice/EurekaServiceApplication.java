@@ -11,7 +11,7 @@ public class EurekaServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(EurekaServiceApplication.class, args);
         System.out.println(" Eureka Server is running...");
-        System.out.println("Access Eureka Dashboard at: http://localhost:8761");
+
     }
 
 }
