@@ -29,7 +29,7 @@ public class SwaggerServerRewriteFilter implements WebFilter {
     @Value("${app.openapi.dev-url:http://localhost:8090}")
     private String devUrl;
 
-    @Value("${app.openapi.prod-url:http://comingsoon.com}")
+    @Value("${APP_OPENAPI_PROD_URL:http://comingsoon.com}")
     private String prodUrl;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
