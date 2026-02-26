@@ -33,6 +33,8 @@ jobs:
               - 'BackEnd/APIGateway/**'
             UserService:
               - 'BackEnd/UserService/**'
+            ProductService:
+              - 'BackEnd/ProductService/**'
 
   # ==========================================
   # JOB 2: NHÀ MÁY BUILD (MATRIX BUILDER)
