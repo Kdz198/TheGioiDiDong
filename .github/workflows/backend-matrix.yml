@@ -35,6 +35,8 @@ jobs:
               - 'BackEnd/UserService/**'
             ProductService:
               - 'BackEnd/ProductService/**'
+            OrderService:
+              - 'BackEnd/OrderService/**'
 
   # ==========================================
   # JOB 2: NHÀ MÁY BUILD (MATRIX BUILDER)
