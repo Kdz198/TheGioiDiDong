@@ -19,7 +19,7 @@ RUN ./mvnw dependency:go-offline -B
 
 # Copy toàn bộ source code vào và tiến hành build (bỏ qua Test)
 COPY src ./src
-RUN ./mvnw clean package
+RUN ./mvnw clean package  -DskipTests -B
 
 # ==========================================
 # STAGE 2: RUNTIME (Tối ưu RAM/CPU cho Spring WebFlux & Netty)
