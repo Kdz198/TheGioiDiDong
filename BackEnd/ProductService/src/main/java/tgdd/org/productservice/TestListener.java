@@ -21,5 +21,6 @@ public class TestListener {
         log.info("🏫 Trường học: {}", student.school());
         log.info("📦 Toàn bộ Object: {}", student);
         log.info("==================================================");
+
     }
 }
