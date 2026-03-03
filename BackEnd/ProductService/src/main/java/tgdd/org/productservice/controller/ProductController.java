@@ -10,7 +10,7 @@ import tgdd.org.productservice.service.ProductService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api/products/product")
 public class ProductController {
 
     @Autowired

@@ -10,7 +10,7 @@ import tgdd.org.productservice.service.ProductVersionService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/product-versions")
+@RequestMapping("api/products/product-versions")
 public class ProductVersionController {
 
     @Autowired

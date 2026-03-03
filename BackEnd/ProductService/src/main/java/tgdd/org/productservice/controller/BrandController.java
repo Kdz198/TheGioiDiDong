@@ -2,15 +2,18 @@ package tgdd.org.productservice.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tgdd.org.productservice.model.Brand;
+import tgdd.org.productservice.model.dto.BrandRequest;
 import tgdd.org.productservice.service.BrandService;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/brands")
+@RequestMapping("/api/products/brands")
 public class BrandController {
 
     @Autowired
@@ -27,10 +30,9 @@ public class BrandController {
         return ResponseEntity.ok(brand);
     }
 
-    @PostMapping
-    public ResponseEntity<Brand> createBrand(@RequestBody Brand brand) {
-        Brand savedBrand = brandService.save(brand);
-        return ResponseEntity.ok(savedBrand);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Brand> createBrand(@ModelAttribute BrandRequest brand) throws IOException {
+        return ResponseEntity.ok(brandService.save(brand));
     }
 
     @PutMapping

@@ -10,7 +10,7 @@ import tgdd.org.productservice.service.CategoryService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/api/products/categories")
 public class CategoryController {
 
     @Autowired
