@@ -1,14 +1,11 @@
 package fpt.com.orderservice.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import fpt.com.orderservice.model.enums.PromotionType;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.sql.Date;
 
@@ -23,7 +20,13 @@ public class Promotion {
     int id;
     String code;
     String description;
-    double discount;
+    @Enumerated(EnumType.STRING)
+    PromotionType type;
+
+    //dùng cho money hoặc percentage( nếu là percentage thì discount là số phần trăm, nếu money thì discount là số tiền giảm)
+    int discountValue;
+    int maxDiscountValue; // giá trị giảm tối đa (chỉ áp dụng cho percentage)
+    int minOrderAmount;// giá trị đơn hàng tối thiểu để áp dụng khuyến mãi
     Date startDate;
     Date endDate;
     boolean active;

@@ -23,4 +23,5 @@ public class OrderDetail {
     int subtotal;
     String type;
     //type: buy, gift
+
 }

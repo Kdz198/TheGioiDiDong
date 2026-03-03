@@ -1,14 +1,12 @@
 package fpt.com.orderservice.model;
 
 import fpt.com.orderservice.model.enums.OrderStatus;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.sql.Timestamp;
 
@@ -22,7 +20,10 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
     int userId;
-    int promotionId;
+    @JoinColumn(name = "promotionId")
+    @ManyToOne
+    Promotion promotion;
+    @CreationTimestamp
     Timestamp orderDate;
     OrderStatus status;
     int totalPrice;
