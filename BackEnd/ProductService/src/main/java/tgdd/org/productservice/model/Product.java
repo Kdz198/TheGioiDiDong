@@ -22,7 +22,7 @@ public class Product {
     String description;
     int price;
     int quantity;
-    int stockQuantity;
+    int reserve;
     String imgUrl;
     boolean isActive;
     @JoinColumn

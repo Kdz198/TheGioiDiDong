@@ -17,4 +17,5 @@ public interface ProductService {
     List<Product> findActiveProducts();
     List<Product> findInactiveProducts();
     Product deductStock(int productId, int quantity);
+    //void saveInventoryOrder();
 }

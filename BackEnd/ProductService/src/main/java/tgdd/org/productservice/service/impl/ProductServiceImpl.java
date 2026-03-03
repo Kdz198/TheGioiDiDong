@@ -108,7 +108,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product deductStock(int productId, int quantity) {
         Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-        product.setStockQuantity(product.getStockQuantity() - quantity);
+        if (product.getQuantity()-product.getReserve() < quantity) {
+            throw new RuntimeException("Insufficient stock for product id: " + productId);
+        }
+        product.setReserve(product.getReserve() + quantity);
         return productRepo.save(product);
     }
 }
