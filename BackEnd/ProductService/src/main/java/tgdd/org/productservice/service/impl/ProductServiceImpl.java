@@ -1,19 +1,43 @@
 package tgdd.org.productservice.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tgdd.org.productservice.mapper.ProductMapper;
+import tgdd.org.productservice.model.Brand;
+import tgdd.org.productservice.model.Category;
 import tgdd.org.productservice.model.Product;
+import tgdd.org.productservice.model.ProductVersion;
+import tgdd.org.productservice.model.dto.ProductRequest;
+import tgdd.org.productservice.repo.BrandRepo;
+import tgdd.org.productservice.repo.CategoryRepo;
 import tgdd.org.productservice.repo.ProductRepo;
+import tgdd.org.productservice.repo.ProductVersionRepo;
 import tgdd.org.productservice.service.ProductService;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductRepo productRepo;
+
+    @Autowired
+    private BrandRepo brandRepo;
+
+    @Autowired
+    private CategoryRepo categoryRepo;
+
+    @Autowired
+    private ProductVersionRepo productVersionRepo;
+
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
+    @Autowired
+    private ProductMapper productMapper;
 
     @Override
     public List<Product> findAll() {
@@ -27,7 +51,24 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product save(Product product) {
+    public Product save(ProductRequest productRequest) throws IOException {
+        String imgUrl = null;
+        if (productRequest.getImg() != null && !productRequest.getImg().isEmpty()) {
+            if (!cloudinaryService.validate(productRequest.getImg())) {
+                throw new RuntimeException("Invalid image format");
+            }
+            Map<String, String> uploadResult = cloudinaryService.uploadImg(productRequest.getImg());
+            imgUrl = uploadResult.get("secure_url");
+        }
+        Brand brand = brandRepo.findById(productRequest.getBrandId())
+                .orElseThrow(() -> new RuntimeException("Brand not found with id: " + productRequest.getBrandId()));
+        Category category = categoryRepo.findById(productRequest.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + productRequest.getCategoryId()));
+        ProductVersion version = productVersionRepo.findById(productRequest.getVersionId())
+                .orElseThrow(() -> new RuntimeException("ProductVersion not found with id: " + productRequest.getVersionId()));
+        Product product = productMapper.toProduct(productRequest, version, brand, category, imgUrl);
+        product.setQuantity(productRequest.getStockQuantity());
+
         return productRepo.save(product);
     }
 
@@ -62,5 +103,12 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<Product> findInactiveProducts() {
         return productRepo.findByIsActiveFalse();
+    }
+
+    @Override
+    public Product deductStock(int productId, int quantity) {
+        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
+        product.setStockQuantity(product.getStockQuantity() - quantity);
+        return productRepo.save(product);
     }
 }

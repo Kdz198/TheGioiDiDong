@@ -2,11 +2,14 @@ package tgdd.org.productservice.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tgdd.org.productservice.model.Product;
+import tgdd.org.productservice.model.dto.ProductRequest;
 import tgdd.org.productservice.service.ProductService;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -27,10 +30,8 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    @PostMapping
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
-        Product savedProduct = productService.save(product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)    public ResponseEntity<Product> createProduct(@ModelAttribute ProductRequest product) throws IOException {
+       return ResponseEntity.ok(productService.save(product));
     }
 
     @PutMapping
