@@ -24,7 +24,7 @@ public class Product {
     int quantity;
     int reserve;
     String imgUrl;
-    boolean isActive;
+    boolean active;
     @JoinColumn
     @ManyToOne
     ProductVersion version;

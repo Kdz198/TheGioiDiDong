@@ -12,7 +12,7 @@ public class ProductRequest {
     int price;
     int stockQuantity;
     MultipartFile img;
-    boolean isActive;
+    boolean active;
     int versionId;
     int brandId;
     int categoryId;

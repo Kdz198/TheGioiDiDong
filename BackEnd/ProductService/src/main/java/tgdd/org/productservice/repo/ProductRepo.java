@@ -8,6 +8,6 @@ import java.util.List;
 public interface ProductRepo extends JpaRepository<Product, Integer> {
     List<Product> findByBrandId(int brandId);
     List<Product> findByCategoryId(int categoryId);
-    List<Product> findByIsActiveTrue();
-    List<Product> findByIsActiveFalse();
+    List<Product> findByActiveTrue();
+    List<Product> findByActiveFalse();
 }
