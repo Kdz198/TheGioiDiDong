@@ -8,6 +8,8 @@ import tgdd.org.productservice.model.Category;
 import tgdd.org.productservice.model.Product;
 import tgdd.org.productservice.model.ProductVersion;
 import tgdd.org.productservice.model.dto.ProductRequest;
+import tgdd.org.productservice.model.dto.ProductResponse;
+import tgdd.org.productservice.model.dto.ProductUpdateRequest;
 import tgdd.org.productservice.repo.BrandRepo;
 import tgdd.org.productservice.repo.CategoryRepo;
 import tgdd.org.productservice.repo.ProductRepo;
@@ -40,44 +42,71 @@ public class ProductServiceImpl implements ProductService {
     private ProductMapper productMapper;
 
     @Override
-    public List<Product> findAll() {
-        return productRepo.findAll();
+    public List<ProductResponse> findAll() {
+        return productMapper.toProductResponseList(productRepo.findAll());
     }
 
     @Override
-    public Product findById(int id) {
-        return productRepo.findById(id)
+    public ProductResponse findById(int id) {
+        Product product = productRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+        return productMapper.toProductResponse(product);
     }
 
     @Override
-    public Product save(ProductRequest productRequest) throws IOException {
+    public ProductResponse save(ProductRequest productRequest) throws IOException {
         String imgUrl = null;
-        if (productRequest.getImg() != null && !productRequest.getImg().isEmpty()) {
-            if (!cloudinaryService.validate(productRequest.getImg())) {
-                throw new RuntimeException("Invalid image format");
-            }
-            Map<String, String> uploadResult = cloudinaryService.uploadImg(productRequest.getImg());
-            imgUrl = uploadResult.get("secure_url");
-        }
+        Map<String, String> uploadResult = cloudinaryService.uploadImg(productRequest.getImg());
+        imgUrl = uploadResult.get("secure_url");
+
         Brand brand = brandRepo.findById(productRequest.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found with id: " + productRequest.getBrandId()));
         Category category = categoryRepo.findById(productRequest.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + productRequest.getCategoryId()));
         ProductVersion version = productVersionRepo.findById(productRequest.getVersionId())
                 .orElseThrow(() -> new RuntimeException("ProductVersion not found with id: " + productRequest.getVersionId()));
-        Product product = productMapper.toProduct(productRequest, version, brand, category, imgUrl);
+        Product product = productMapper.toProduct(productRequest);
+        product.setVersion(version);
+        product.setBrand(brand);
+        product.setCategory(category);
+        product.setImgUrl(imgUrl);
         product.setQuantity(productRequest.getStockQuantity());
 
-        return productRepo.save(product);
+        Product saved = productRepo.save(product);
+        return productMapper.toProductResponse(saved);
     }
 
+
     @Override
-    public Product update( Product product) {
-        if(!productRepo.existsById(product.getId())) {
-            throw new RuntimeException("Product not found with id: " + product.getId());
+    public ProductResponse update(ProductUpdateRequest request) throws IOException {
+        System.out.println("Updating product with id: " + request.getId());
+        Product existingProduct = productRepo.findById(request.getId())
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getId()));
+        String imgUrl = existingProduct.getImgUrl();
+        if (request.getImg() != null && !request.getImg().isEmpty()) {
+            Map<String, String> uploadResult = cloudinaryService.uploadImg(request.getImg());
+            imgUrl = uploadResult.get("secure_url");
         }
-        return productRepo.save(product);
+        Brand brand = brandRepo.findById(request.getBrandId())
+                .orElseThrow(() -> new RuntimeException("Brand not found with id: " + request.getBrandId()));
+
+        Category category = categoryRepo.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
+
+        ProductVersion version = productVersionRepo.findById(request.getVersionId())
+                .orElseThrow(() -> new RuntimeException("ProductVersion not found with id: " + request.getVersionId()));
+
+
+        productMapper.updateProductFromRequest(request, existingProduct);
+        existingProduct.setVersion(version);
+        existingProduct.setBrand(brand);
+        existingProduct.setCategory(category);
+        existingProduct.setImgUrl(imgUrl);
+        existingProduct.setActive(request.getActive());
+        existingProduct.setQuantity(request.getStockQuantity());
+        System.out.println(existingProduct.isActive());
+        Product updated = productRepo.save(existingProduct);
+        return productMapper.toProductResponse(updated);
     }
 
     @Override
@@ -86,32 +115,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> findByBrandId(int brandId) {
-        return productRepo.findByBrandId(brandId);
+    public List<ProductResponse> findByBrandId(int brandId) {
+        return productMapper.toProductResponseList(productRepo.findByBrandId(brandId));
     }
 
     @Override
-    public List<Product> findByCategoryId(int categoryId) {
-        return productRepo.findByCategoryId(categoryId);
+    public List<ProductResponse> findByCategoryId(int categoryId) {
+        return productMapper.toProductResponseList(productRepo.findByCategoryId(categoryId));
     }
 
     @Override
-    public List<Product> findActiveProducts() {
-        return productRepo.findByIsActiveTrue();
+    public List<ProductResponse> findActiveProducts() {
+        return productMapper.toProductResponseList(productRepo.findByActiveTrue());
     }
 
     @Override
-    public List<Product> findInactiveProducts() {
-        return productRepo.findByIsActiveFalse();
+    public List<ProductResponse> findInactiveProducts() {
+        return productMapper.toProductResponseList(productRepo.findByActiveFalse());
     }
 
     @Override
-    public Product deductStock(int productId, int quantity) {
-        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-        if (product.getQuantity()-product.getReserve() < quantity) {
+    public ProductResponse deductStock(int productId, int quantity) {
+        Product product = productRepo.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
+        if (product.getQuantity() - product.getReserve() < quantity) {
             throw new RuntimeException("Insufficient stock for product id: " + productId);
         }
         product.setReserve(product.getReserve() + quantity);
-        return productRepo.save(product);
+        Product saved = productRepo.save(product);
+        return productMapper.toProductResponse(saved);
     }
 }
