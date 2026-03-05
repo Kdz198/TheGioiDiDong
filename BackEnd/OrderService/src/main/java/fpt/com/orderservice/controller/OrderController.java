@@ -1,7 +1,7 @@
 package fpt.com.orderservice.controller;
 
-import fpt.com.orderservice.model.Order;
 import fpt.com.orderservice.model.dto.OrderRequest;
+import fpt.com.orderservice.model.dto.OrderResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
 import fpt.com.orderservice.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,23 +18,23 @@ public class OrderController {
     private OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return ResponseEntity.ok(orderService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable int id) {
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable int id) {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody OrderRequest order) {
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest order) {
         return ResponseEntity.ok(orderService.save(order));
     }
 
     @PutMapping
-    public ResponseEntity<Order> updateOrder(@RequestBody Order order) {
-        return ResponseEntity.ok(orderService.update(order));
+    public ResponseEntity<OrderResponse> updateOrderint (@RequestParam int orderId, @RequestParam OrderStatus status) {
+        return ResponseEntity.ok(orderService.update(orderId, status));
     }
 
     @DeleteMapping("/{id}")
@@ -44,12 +44,12 @@ public class OrderController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Order>> getOrdersByUserId(@PathVariable int userId) {
+    public ResponseEntity<List<OrderResponse>> getOrdersByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(orderService.findByUserId(userId));
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable OrderStatus status) {
+    public ResponseEntity<List<OrderResponse>> getOrdersByStatus(@PathVariable OrderStatus status) {
         return ResponseEntity.ok(orderService.findByStatus(status));
     }
 }

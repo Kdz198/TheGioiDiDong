@@ -15,9 +15,6 @@ public class OrderDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-    @JoinColumn
-    @ManyToOne
-    Order order;
     int productId;
     int quantity;
     int subtotal;

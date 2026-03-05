@@ -9,6 +9,8 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -29,4 +31,7 @@ public class Order {
     int totalPrice;
     int basePrice;
     int discount;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "orderId", referencedColumnName = "id")
+    List<OrderDetail> orderDetails ;
 }
