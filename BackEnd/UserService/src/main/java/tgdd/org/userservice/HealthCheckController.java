@@ -14,10 +14,6 @@ public class HealthCheckController {
         return "User Service is healthy! (v1)";
     }
 
-    @GetMapping
-    public String welcome() {
-        return "Welcome to User Service!";
-    }
 
     @GetMapping("health")
     public String healthCheck() {
