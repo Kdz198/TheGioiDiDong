@@ -34,5 +34,6 @@ public class ProductServiceApplication implements CommandLineRunner {
             log.error("❌ KẾT NỐI RABBITMQ THẤT BẠI. Vui lòng kiểm tra lại URL/Password!");
             log.error("Chi tiết lỗi: {}", e.getMessage());
         }
+        System.out.println("Product Service is running...");
     }
 }
