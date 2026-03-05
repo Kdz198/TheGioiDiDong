@@ -1,4 +1,4 @@
-name: Monorepo Dynamic CI/CD
+name: Monorepo Dynamic CI/CD v2
 
 on:
   push:
