@@ -25,6 +25,11 @@ public class RoleController {
         return roleService.getAllRoles();
     }
 
+    @GetMapping("/permissions")
+    public List<String> getAllPermissions() {
+        return roleService.getAllPermission().stream().map(Enum::name).toList();
+    }
+
     @PutMapping("/{roleId}")
     public void updateRole(@PathVariable Long roleId, @RequestBody CreateRoleRequest request) {
         roleService.updateRole(roleId, request);
