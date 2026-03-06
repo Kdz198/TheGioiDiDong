@@ -1,0 +1,27 @@
+import type { PaymentMethod } from "./order.types";
+
+export interface PaymentInitiateRequest {
+  orderId: number;
+  method: PaymentMethod;
+  returnUrl: string;
+}
+
+export interface PaymentInitiateResponse {
+  paymentUrl?: string;
+  qrCode?: string;
+  transactionId: string;
+}
+
+export type ApiPaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+
+export interface ApiPayment {
+  id: number;
+  order: {
+    id: number;
+    status: string;
+  };
+  paymentMethod: string;
+  amount: number;
+  date: string;
+  status: ApiPaymentStatus;
+}
