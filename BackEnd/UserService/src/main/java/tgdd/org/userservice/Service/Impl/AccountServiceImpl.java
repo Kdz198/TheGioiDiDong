@@ -75,7 +75,7 @@ public class AccountServiceImpl implements AccountService {
         Set<Permission> permissions = account.getCustomPermissions();
 
         permissions.addAll(account.getRole().getPermissions());
-
+        response.setActive( account.isActive());
         response.setAllPermissions(permissions);
         return response;
     }

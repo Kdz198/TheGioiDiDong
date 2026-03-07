@@ -7,6 +7,9 @@ public enum Permission {
     VIEW_OWN_ORDER,
     CREATE_REVIEW,
 
+    //Quyền của User VIP
+    ACCESS_VIP_DISCOUNTS,
+
     // Quyền thêm của STAFF
     CREATE_PRODUCT,
     UPDATE_PRODUCT,

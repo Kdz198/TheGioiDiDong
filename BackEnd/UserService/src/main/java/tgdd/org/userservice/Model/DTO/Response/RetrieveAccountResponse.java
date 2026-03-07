@@ -18,5 +18,7 @@ public class RetrieveAccountResponse {
 
     String roleName;
 
+    boolean isActive;
+
     private Set<Permission> allPermissions = new HashSet<>();
 }
