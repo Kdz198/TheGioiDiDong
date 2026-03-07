@@ -79,9 +79,29 @@ public class SwaggerServerRewriteFilter implements WebFilter {
                                 servers.add(Map.of("url", prodUrl, "description", "Production"));
                             }
                             ((ObjectNode) node).set("servers", objectMapper.valueToTree(servers));
+                            ObjectNode securitySchemes = objectMapper.createObjectNode();
+                            ObjectNode bearerScheme = objectMapper.createObjectNode();
+                            bearerScheme.put("type", "http");
+                            bearerScheme.put("scheme", "bearer");
+                            bearerScheme.put("bearerFormat", "JWT");
+                            securitySchemes.set("bearerAuth", bearerScheme);
+
+                            ObjectNode components = (ObjectNode) node.get("components");
+                            if (components == null) {
+                                components = objectMapper.createObjectNode();
+                                ((ObjectNode) node).set("components", components);
+                            }
+                            components.set("securitySchemes", securitySchemes);
+
+                            ((ObjectNode) node).set("security",
+                                    objectMapper.createArrayNode().add(
+                                            objectMapper.createObjectNode().set("bearerAuth",
+                                                    objectMapper.createArrayNode())
+                                    )
+                            );
                             bytes = objectMapper.writeValueAsBytes(node);
                             exchange.getResponse().getHeaders().setContentLength(bytes.length);
-                            log.info(">>> Successfully rewrote servers to: {}",  servers);
+                            log.info(">>> Successfully rewrote servers to: {}", servers);
                         } catch (Exception e) {
                             log.error(">>> FAILED to rewrite JSON: {}", e.getMessage(), e);
                         }
