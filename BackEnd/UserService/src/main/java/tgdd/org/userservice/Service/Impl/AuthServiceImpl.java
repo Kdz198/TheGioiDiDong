@@ -30,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final AccountRepository accountRepository;
 
     @Value("${jwt.secret:this_is_fake}")
-    private static String SECRET;
+    private String SECRET;
     private final long EXPIRATION_TIME = 86400000; // 1 ngày
 
     private SecretKey getSigningKey() {
