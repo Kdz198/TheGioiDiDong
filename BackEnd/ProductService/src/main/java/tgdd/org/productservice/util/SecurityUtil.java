@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import tgdd.org.productservice.exception.CustomException;
 
 import javax.crypto.SecretKey;
@@ -13,16 +14,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 public class SecurityUtil {
 
-    @Value("${jwt.secret:this_is_fake}")
-    private static String SECRET;
+    @Value("${JWT_SECRECT:this_is_fake}")
+    private String SECRET;
 
-    private static SecretKey getSigningKey() {
+    private  SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void verifyTokenAndAuth(String authHeader, String[] requiredRoles, String requiredPermission) {
+    public void verifyTokenAndAuth(String authHeader, String[] requiredRoles, String requiredPermission) {
         // 1. Kiểm tra Header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new RuntimeException("UNAUTHORIZED - Vui lòng gửi kèm Token hợp lệ!");

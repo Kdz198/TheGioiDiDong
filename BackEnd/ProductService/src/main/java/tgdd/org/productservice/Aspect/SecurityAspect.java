@@ -16,6 +16,7 @@ import tgdd.org.productservice.util.SecurityUtil;
 @RequiredArgsConstructor
 public class SecurityAspect {
 
+    private final SecurityUtil securityUtil;
 
 
     @Before("@annotation(requireAuth)")
@@ -25,6 +26,6 @@ public class SecurityAspect {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         String authHeader = request.getHeader("Authorization");
 
-        SecurityUtil.verifyTokenAndAuth(authHeader, requireAuth.roles(), requireAuth.permission());
+        securityUtil.verifyTokenAndAuth(authHeader, requireAuth.roles(), requireAuth.permission());
     }
 }
