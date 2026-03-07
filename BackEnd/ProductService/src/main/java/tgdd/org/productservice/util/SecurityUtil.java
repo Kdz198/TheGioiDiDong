@@ -17,7 +17,6 @@ public class SecurityUtil {
 
     @Value("${jwt.secret:this_is_fake}")
     private static String SECRET;
-    private final long EXPIRATION_TIME = 86400000; // 1 ngày
 
     private static SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
