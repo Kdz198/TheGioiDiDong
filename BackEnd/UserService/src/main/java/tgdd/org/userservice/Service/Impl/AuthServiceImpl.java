@@ -1,9 +1,12 @@
 package tgdd.org.userservice.Service.Impl;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import tgdd.org.userservice.Enum.Permission;
@@ -26,7 +29,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final AccountRepository accountRepository;
 
-    private final String SECRET = "DayLaMotSecretKeyRatDaiVaBaoMatChoShopPhuKienCuaBan123!!!";
+    @Value("${jwt.secret:this_is_fake}")
+    private static String SECRET;
     private final long EXPIRATION_TIME = 86400000; // 1 ngày
 
     private SecretKey getSigningKey() {
@@ -37,10 +41,10 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse authenticate(LoginRequest request) {
 
         Account account = accountRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException( "Không tìm thấy tài khoản", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new CustomException("Không tìm thấy tài khoản", HttpStatus.NOT_FOUND));
 
         if (!account.isActive()) {
-            throw new  CustomException("Tài khoản đã bị vô hiệu hóa", HttpStatus.FORBIDDEN);
+            throw new CustomException("Tài khoản đã bị vô hiệu hóa", HttpStatus.FORBIDDEN);
         }
 
         if (!account.getPassword().equals(request.getPassword())) {
@@ -99,9 +103,8 @@ public class AuthServiceImpl implements AuthService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        }
-        catch (JwtException e) {
-            throw new CustomException( "UNAUTHORIZED - Token không hợp lệ hoặc đã hết hạn!", HttpStatus.UNAUTHORIZED);
+        } catch (JwtException e) {
+            throw new CustomException("UNAUTHORIZED - Token không hợp lệ hoặc đã hết hạn!", HttpStatus.UNAUTHORIZED);
         }
 
         // 3. Lấy thông tin từ Payload
@@ -113,14 +116,14 @@ public class AuthServiceImpl implements AuthService {
         if (requiredRoles.length > 0) {
             // Nếu role của user KHÔNG nằm trong mảng requiredRoles -> Chặn
             if (!Arrays.asList(requiredRoles).contains(tokenRole)) {
-                throw new CustomException( "UNAUTHORIZED - Bạn không có quyền truy cập!", HttpStatus.UNAUTHORIZED);
+                throw new CustomException("UNAUTHORIZED - Bạn không có quyền truy cập!", HttpStatus.UNAUTHORIZED);
             }
         }
 
         // 5. Kiểm tra Permission (Nếu Annotation có yêu cầu)
         if (!requiredPermission.isEmpty()) {
             if (tokenPermissions == null || !tokenPermissions.contains(requiredPermission)) {
-                throw new  CustomException( "UNAUTHORIZED - Bạn không có quyền truy cập!", HttpStatus.UNAUTHORIZED);
+                throw new CustomException("UNAUTHORIZED - Bạn không có quyền truy cập!", HttpStatus.UNAUTHORIZED);
             }
         }
     }
