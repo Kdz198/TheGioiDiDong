@@ -17,8 +17,6 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
-
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

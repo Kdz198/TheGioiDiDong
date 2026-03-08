@@ -1,8 +1,6 @@
 package tgdd.org.productservice.service;
 
-import tgdd.org.productservice.model.dto.ProductRequest;
-import tgdd.org.productservice.model.dto.ProductResponse;
-import tgdd.org.productservice.model.dto.ProductUpdateRequest;
+import tgdd.org.productservice.model.dto.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,4 +16,5 @@ public interface ProductService {
     List<ProductResponse> findActiveProducts();
     List<ProductResponse> findInactiveProducts();
     ProductResponse deductStock(int productId, int quantity);
+    OrderRequest isStockAvailable(OrderRequest request);
 }

@@ -22,15 +22,12 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
     int userId;
-    @JoinColumn(name = "promotionId")
-    @ManyToOne
-    Promotion promotion;
     @CreationTimestamp
     Timestamp orderDate;
     OrderStatus status;
     int totalPrice;
     int basePrice;
-    int discount;
+    String orderCode;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "orderId", referencedColumnName = "id")
     List<OrderDetail> orderDetails ;

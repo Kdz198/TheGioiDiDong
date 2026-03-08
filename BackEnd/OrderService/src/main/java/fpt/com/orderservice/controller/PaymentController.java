@@ -26,9 +26,9 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.findById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-        return ResponseEntity.ok(paymentService.save(payment));
+    @PostMapping("/make-payment")
+    public ResponseEntity<String> createPayment(@RequestParam String orderCode,@RequestParam String promotionCode) {
+        return ResponseEntity.ok(paymentService.save(orderCode,promotionCode));
     }
 
     @PutMapping

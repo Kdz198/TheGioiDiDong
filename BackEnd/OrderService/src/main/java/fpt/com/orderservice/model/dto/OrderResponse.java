@@ -17,23 +17,10 @@ import java.util.List;
 public class OrderResponse {
     int id;
     int userId;
-    PromotionInfo promotion;
     Timestamp orderDate;
     OrderStatus status;
     int totalPrice;
     int basePrice;
-    int discount;
     List<OrderDetail> orderDetails;
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class PromotionInfo {
-        int id;
-        String code;
-        String description;
-    }
-
 }
 

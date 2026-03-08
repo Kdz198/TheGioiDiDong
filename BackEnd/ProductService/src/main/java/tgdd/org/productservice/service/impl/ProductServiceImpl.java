@@ -1,15 +1,16 @@
 package tgdd.org.productservice.service.impl;
 
+import fpt.com.orderservice.exception.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import tgdd.org.productservice.config.Producer;
 import tgdd.org.productservice.mapper.ProductMapper;
 import tgdd.org.productservice.model.Brand;
 import tgdd.org.productservice.model.Category;
 import tgdd.org.productservice.model.Product;
 import tgdd.org.productservice.model.ProductVersion;
-import tgdd.org.productservice.model.dto.ProductRequest;
-import tgdd.org.productservice.model.dto.ProductResponse;
-import tgdd.org.productservice.model.dto.ProductUpdateRequest;
+import tgdd.org.productservice.model.dto.*;
 import tgdd.org.productservice.repo.BrandRepo;
 import tgdd.org.productservice.repo.CategoryRepo;
 import tgdd.org.productservice.repo.ProductRepo;
@@ -17,8 +18,10 @@ import tgdd.org.productservice.repo.ProductVersionRepo;
 import tgdd.org.productservice.service.ProductService;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -40,6 +43,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductMapper productMapper;
+
+    @Autowired
+    private Producer producer;
 
     @Override
     public List<ProductResponse> findAll() {
@@ -145,4 +151,31 @@ public class ProductServiceImpl implements ProductService {
         Product saved = productRepo.save(product);
         return productMapper.toProductResponse(saved);
     }
+
+    @Override
+    public OrderRequest isStockAvailable(OrderRequest request) {
+        Map<Integer,Integer> productQuantities = new HashMap<>();
+        for(OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
+            productQuantities.put(item.getProductId(), productQuantities.getOrDefault(item.getProductId(), 0) + item.getQuantity());
+        }
+        List<Product> products = productRepo.findAllById(productQuantities.keySet());
+        if (products.size() != productQuantities.keySet().size()) {
+            throw new CustomException("Out of stock", HttpStatus.CONFLICT);
+        }
+        for (Product product : products) {
+            int requiredQuantity = productQuantities.get(product.getId());
+            int availableStock = product.getQuantity() - product.getReserve();
+
+            if (!product.isActive() || availableStock < requiredQuantity) {
+                throw new CustomException("Out of stock", HttpStatus.CONFLICT);
+            }
+            product.setReserve(product.getReserve() + requiredQuantity);
+        }
+        request.setOrderCode(UUID.randomUUID().toString());
+        productRepo.saveAll(products);
+        producer.publishOrderAvailable(request);
+        return request;
+    }
+
+
 }

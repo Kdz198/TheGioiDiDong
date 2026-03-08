@@ -17,6 +17,7 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_NAME = "tgdd.exchange";
     public static final String ROUTING_KEY = "tgdd.routing.key";
 
+    public static final String ORDER_QUEUE_NAME = "tgdd.order.queue";
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -28,6 +29,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue orderQueue() {
+        return new Queue(ORDER_QUEUE_NAME, true);
+    }
+
+    @Bean
     public DirectExchange exchange() {
         return new DirectExchange(EXCHANGE_NAME);
     }
@@ -36,6 +42,18 @@ public class RabbitMQConfig {
     public Binding binding(Queue queue, DirectExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
     }
+
+    @Bean
+    public Binding bindingOrderAvailable(Queue orderQueue, DirectExchange exchange) {
+        return BindingBuilder.bind(orderQueue).to(exchange).with("product.available");
+    }
+
+    @Bean
+    public Binding bindingOrderOutOfStock(Queue orderQueue, DirectExchange exchange) {
+        return BindingBuilder.bind(orderQueue).to(exchange).with("product.outOfStock");
+    }
+
+
 
 
 }

@@ -23,5 +23,9 @@ public class Payment {
     //COD,PayOS
     int amount;
     Date date;
+    @JoinColumn(name = "promotionId")
+    @ManyToOne
+    Promotion promotion;
     PaymentStatus status;
+    String transactionCode;
 }

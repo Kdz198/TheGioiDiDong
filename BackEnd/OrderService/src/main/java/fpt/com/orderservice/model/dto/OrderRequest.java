@@ -10,10 +10,10 @@ import java.util.List;
 @Data
 public class OrderRequest {
     int userId;
-    String promotionCode;
     OrderStatus status;
     int totalPrice;
     int basePrice;
+    String orderCode;
     //order detail
     List<OrderDetailRequest> orderDetails;
 

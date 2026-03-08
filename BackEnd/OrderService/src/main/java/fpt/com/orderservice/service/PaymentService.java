@@ -8,7 +8,7 @@ import java.util.List;
 public interface PaymentService {
     List<Payment> findAll();
     Payment findById(int id);
-    Payment save(Payment payment);
+    String save(String orderCode,String promotionCode);
     Payment update(Payment payment);
     void deleteById(int id);
     List<Payment> findByOrderId(int orderId);

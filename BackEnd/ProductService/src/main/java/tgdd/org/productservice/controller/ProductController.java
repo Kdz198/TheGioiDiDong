@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tgdd.org.productservice.model.dto.OrderRequest;
 import tgdd.org.productservice.model.dto.ProductRequest;
 import tgdd.org.productservice.model.dto.ProductResponse;
 import tgdd.org.productservice.model.dto.ProductUpdateRequest;
@@ -64,5 +65,10 @@ public class ProductController {
     @GetMapping("/inactive")
     public ResponseEntity<List<ProductResponse>> getInactiveProducts() {
         return ResponseEntity.ok(productService.findInactiveProducts());
+    }
+
+    @PostMapping("/check-available")
+    public ResponseEntity<OrderRequest> checkStockAvailable(@RequestBody OrderRequest request) {
+        return ResponseEntity.ok(productService.isStockAvailable(request));
     }
 }

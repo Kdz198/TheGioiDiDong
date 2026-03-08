@@ -42,29 +42,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse save(OrderRequest orderRequest) {
-        Promotion promotion = promotionRepo.findByCode(orderRequest.getPromotionCode());
-        if (promotion == null) {
-            throw new RuntimeException("Promotion not found with code: " + orderRequest.getPromotionCode());
-        }
-        if(!promotion.isActive() || promotion.getStartDate().after(new Date()) || promotion.getEndDate().before(new Date()) || promotion.getMinOrderAmount() > orderRequest.getBasePrice()){
-            throw new RuntimeException("Voucher không sử dụng được");
-        }
-        int discountValue = 0;
-        if (promotion.getType() == PromotionType.MONEY) {
-            discountValue = promotion.getDiscountValue();
-        } else if (promotion.getType() == PromotionType.PERCENTAGE) {
-            discountValue = orderRequest.getBasePrice() * promotion.getDiscountValue() / 100;
-            if (discountValue > promotion.getMaxDiscountValue()) {
-                discountValue = promotion.getMaxDiscountValue();
-            }
-        }
         Order newOrder = new Order();
         newOrder.setUserId(orderRequest.getUserId());
-        newOrder.setPromotion(promotion);
         newOrder.setStatus(OrderStatus.PENDING);
         newOrder.setTotalPrice(orderRequest.getTotalPrice());
         newOrder.setBasePrice(orderRequest.getBasePrice());
-        newOrder.setDiscount(discountValue);
+        newOrder.setOrderCode(orderRequest.getOrderCode());
 
         List<OrderDetail> details = new ArrayList<>();
         for (OrderRequest.OrderDetailRequest detailRequest : orderRequest.getOrderDetails()) {
@@ -77,7 +60,6 @@ public class OrderServiceImpl implements OrderService {
         }
         newOrder.setOrderDetails(details);
         return toOrderResponse(orderRepo.save(newOrder));
-
     }
 
     @Override
@@ -104,23 +86,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderResponse toOrderResponse(Order order) {
-        OrderResponse.PromotionInfo promotionInfo = null;
-        if (order.getPromotion() != null) {
-            promotionInfo = OrderResponse.PromotionInfo.builder()
-                    .id(order.getPromotion().getId())
-                    .code(order.getPromotion().getCode())
-                    .description(order.getPromotion().getDescription())
-                    .build();
-        }
         return OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUserId())
-                .promotion(promotionInfo)
                 .orderDate(order.getOrderDate())
                 .status(order.getStatus())
                 .totalPrice(order.getTotalPrice())
                 .basePrice(order.getBasePrice())
-                .discount(order.getDiscount())
                 .orderDetails(order.getOrderDetails())
                 .build();
     }
