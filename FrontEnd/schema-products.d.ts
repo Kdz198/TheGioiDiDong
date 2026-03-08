@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/products/product/check-available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkStockAvailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/products/product/{id}": {
         parameters: {
             query?: never;
@@ -302,6 +318,27 @@ export interface components {
             brandId?: number;
             /** Format: int32 */
             categoryId?: number;
+        };
+        OrderDetailRequest: {
+            /** Format: int32 */
+            productId?: number;
+            /** Format: int32 */
+            quantity?: number;
+            /** Format: int32 */
+            subtotal?: number;
+            type?: string;
+        };
+        OrderRequest: {
+            /** Format: int32 */
+            userId?: number;
+            /** @enum {string} */
+            status?: "PENDING" | "PAID" | "CANCELED";
+            /** Format: int32 */
+            totalPrice?: number;
+            /** Format: int32 */
+            basePrice?: number;
+            orderCode?: string;
+            orderDetails?: components["schemas"]["OrderDetailRequest"][];
         };
         BrandRequest: {
             name?: string;
@@ -586,6 +623,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Brand"];
+                };
+            };
+        };
+    };
+    checkStockAvailable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OrderRequest"];
                 };
             };
         };
