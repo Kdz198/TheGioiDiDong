@@ -1,73 +1,57 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
-import { USE_MOCK_API } from "@/constants/app.const";
 import type { CartItem } from "@/interfaces/cart.types";
-import type { Voucher } from "@/interfaces/promotion.types";
+import type { ApiPromotion, ApiPromotionType, Voucher } from "@/interfaces/promotion.types";
 import { apiClient } from "@/lib/api";
-import { mockCartItems } from "@/mocks/cart.mock";
-import { mockVouchers } from "@/mocks/promotions.mock";
 
+/** Map backend ApiPromotion to the frontend Voucher shape */
+function mapPromotionToVoucher(promo: ApiPromotion): Voucher {
+  const typeMap: Record<ApiPromotionType, Voucher["type"]> = {
+    PERCENTAGE: "percentage",
+    MONEY: "fixed_amount",
+    BOGO: "fixed_amount",
+  };
+  return {
+    id: promo.id,
+    code: promo.code,
+    type: typeMap[promo.type] ?? "fixed_amount",
+    discountValue: promo.discountValue,
+    minOrderValue: promo.minOrderAmount ?? 0,
+    maxDiscountAmount: promo.maxDiscountValue,
+    usageLimit: promo.quantity,
+    usedCount: 0,
+    expiresAt: promo.endDate,
+    isActive: promo.active,
+  };
+}
+
+// Cart state is managed entirely by cartStore (localStorage via Zustand persist).
+// There is no cart service on the backend — these methods are no-ops that keep the
+// cartStore as the single source of truth.
 export const cartService = {
   getCart: async (): Promise<CartItem[]> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return mockCartItems;
-    }
-    const response = await apiClient.get(API_ENDPOINTS.CART.GET);
-    return response.data.data;
+    return [];
   },
 
-  addToCart: async (variantId: number, quantity: number): Promise<CartItem> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      const existing = mockCartItems.find((i) => i.variantId === variantId);
-      if (existing) {
-        return {
-          ...existing,
-          quantity: existing.quantity + quantity,
-          subtotal: existing.variant.price * (existing.quantity + quantity),
-        };
-      }
-      return mockCartItems[0];
-    }
-    const response = await apiClient.post(API_ENDPOINTS.CART.ADD, { variantId, quantity });
-    return response.data.data;
+  addToCart: async (_variantId: number, _quantity: number): Promise<CartItem> => {
+    return {} as CartItem;
   },
 
-  updateCartItem: async (itemId: number, quantity: number): Promise<CartItem> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      const item = mockCartItems.find((i) => i.id === itemId);
-      if (!item) throw new Error("Item not found");
-      return { ...item, quantity, subtotal: item.variant.price * quantity };
-    }
-    const response = await apiClient.put(API_ENDPOINTS.CART.UPDATE(itemId), { quantity });
-    return response.data.data;
+  updateCartItem: async (_itemId: number, _quantity: number): Promise<CartItem> => {
+    return {} as CartItem;
   },
 
-  removeCartItem: async (itemId: number): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      return;
-    }
-    await apiClient.delete(API_ENDPOINTS.CART.REMOVE(itemId));
+  removeCartItem: async (_itemId: number): Promise<void> => {
+    // no-op — cartStore handles removal
   },
 
   clearCart: async (): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      return;
-    }
-    await apiClient.post(API_ENDPOINTS.CART.CLEAR);
+    // no-op — cartStore handles clearing
   },
 
   applyVoucher: async (code: string): Promise<Voucher> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 500));
-      const voucher = mockVouchers.find((v) => v.code === code && v.isActive);
-      if (!voucher) throw new Error("Mã giảm giá không hợp lệ hoặc đã hết hạn");
-      return voucher;
-    }
-    const response = await apiClient.post(API_ENDPOINTS.CART.APPLY_VOUCHER, { code });
-    return response.data.data;
+    const response = await apiClient.get<ApiPromotion>(API_ENDPOINTS.PROMOTIONS.BY_CODE(code));
+    const promo = response.data;
+    if (!promo.active) throw new Error("Mã giảm giá đã hết hạn hoặc không hoạt động");
+    return mapPromotionToVoucher(promo);
   },
 };

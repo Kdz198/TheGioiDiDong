@@ -26,19 +26,22 @@ export function StaffUserManagerPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
+  // Map frontend filter value to backend role name(s) for server-side filtering
+  const backendRoles =
+    roleFilter === "customer" ? ["USER"] : roleFilter === "staff" ? ["STAFF"] : undefined;
+
   const { data: users, isLoading } = useQuery({
-    queryKey: ["staff", "users"],
-    queryFn: userService.getUsers,
+    queryKey: ["staff", "users", roleFilter, backendRoles],
+    queryFn: () => userService.getUsers(0, 100, backendRoles),
   });
 
-  const filtered = users?.filter((user) => {
-    const matchesSearch =
+  // Server already filters by role — only search filter needed client-side
+  const filtered = (users?.content ?? []).filter(
+    (user) =>
       !search ||
       user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+      user.email.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -88,7 +91,7 @@ export function StaffUserManagerPage() {
                         </td>
                       </tr>
                     ))
-                  : filtered?.map((user) => (
+                  : filtered.map((user) => (
                       <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium text-zinc-900">{user.fullName}</td>
                         <td className="px-4 py-3 text-gray-600">{user.email}</td>
@@ -108,7 +111,7 @@ export function StaffUserManagerPage() {
                         <td className="px-4 py-3 text-gray-400">{formatDate(user.createdAt)}</td>
                       </tr>
                     ))}
-                {!isLoading && (!filtered || filtered.length === 0) && (
+                {!isLoading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
                       Không tìm thấy người dùng nào

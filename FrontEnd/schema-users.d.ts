@@ -43,7 +43,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getAllAccounts"];
+        get: operations["getAllAccountsByRole"];
         put?: never;
         post: operations["createAccount"];
         delete?: never;
@@ -68,14 +68,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/health": {
+    "/api/users/auth/login": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["healthCheck"];
+        get?: never;
+        put?: never;
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/user-vip-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Yêu cầu USER và có quyền ACCESS_VIP_DISCOUNTS
+         * @description Test trường hợp User thường được cấp thêm quyền đặc biệt ở cột JSONB.
+         */
+        get: operations["userVipReview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -84,14 +104,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/health-check": {
+    "/api/users/user-only": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["healthCheckV1"];
+        /**
+         * Dành riêng cho USER
+         * @description Yêu cầu Token phải có Role là USER.
+         */
+        get: operations["userOnly"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/staff-update-product": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Yêu cầu STAFF và có quyền DELETE_PRODUCT
+         * @description Test trường hợp Staff được cấp quyền nâng cao.
+         */
+        get: operations["staffWithPermission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/staff-only": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dành riêng cho STAFF
+         * @description Yêu cầu Token phải có Role là STAFF.
+         */
+        get: operations["staffOnly"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/roles/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/revenue-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Yêu cầu quyền VIEW_REVENUE_REPORT
+         * @description Bất chấp bạn là Role gì, miễn trong Token có quyền này là qua ải.
+         */
+        get: operations["permissionOnly"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * API Public (Mở hoàn toàn)
+         * @description Ai cũng có thể vào đây, không cần gửi kèm Token.
+         */
+        get: operations["publicEndpoint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/management-team-admin-staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dành cho Team Quản lý (ADMIN hoặc STAFF)
+         * @description Khách hàng (USER) gọi vào đây sẽ bị chặn.
+         */
+        get: operations["managementTeam"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/admin-only": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dành riêng cho ADMIN
+         * @description Yêu cầu Token phải có Role là ADMIN.
+         */
+        get: operations["adminOnly"];
         put?: never;
         post?: never;
         delete?: never;
@@ -110,26 +270,77 @@ export interface components {
             fullName?: string;
             /** Format: int64 */
             roleId?: number;
-            customPermissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+            customPermissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "ACCESS_VIP_DISCOUNTS" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
         };
         CreateRoleRequest: {
             name?: string;
             description?: string;
-            permissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+            permissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "ACCESS_VIP_DISCOUNTS" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+        };
+        LoginRequest: {
+            email?: string;
+            password?: string;
+        };
+        LoginResponse: {
+            token?: string;
+            type?: string;
+            message?: string;
+            role?: string;
+            /** Format: int64 */
+            ttl?: number;
+            /** Format: int64 */
+            expiresIn?: number;
+        };
+        PageRetrieveAccountResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["RetrieveAccountResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        PageableObject: {
+            unpaged?: boolean;
+            paged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"];
         };
         RetrieveAccountResponse: {
+            /** Format: int64 */
+            id?: number;
             email?: string;
             password?: string;
             fullName?: string;
             roleName?: string;
-            allPermissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+            allPermissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "ACCESS_VIP_DISCOUNTS" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+            active?: boolean;
+        };
+        SortObject: {
+            unsorted?: boolean;
+            sorted?: boolean;
+            empty?: boolean;
         };
         Role: {
             /** Format: int64 */
             id?: number;
             name?: string;
             description?: string;
-            permissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
+            permissions?: ("CREATE_ORDER" | "VIEW_OWN_ORDER" | "CREATE_REVIEW" | "ACCESS_VIP_DISCOUNTS" | "CREATE_PRODUCT" | "UPDATE_PRODUCT" | "VIEW_ALL_ORDERS" | "UPDATE_ORDER_STATUS" | "DELETE_PRODUCT" | "MANAGE_STAFF" | "VIEW_REVENUE_REPORT")[];
         };
     };
     responses: never;
@@ -250,9 +461,13 @@ export interface operations {
             };
         };
     };
-    getAllAccounts: {
+    getAllAccountsByRole: {
         parameters: {
-            query?: never;
+            query?: {
+                roles?: string[];
+                page?: number;
+                size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -265,7 +480,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["RetrieveAccountResponse"][];
+                    "*/*": components["schemas"]["PageRetrieveAccountResponse"];
                 };
             };
         };
@@ -334,7 +549,31 @@ export interface operations {
             };
         };
     };
-    healthCheck: {
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
+    userVipReview: {
         parameters: {
             query?: never;
             header?: never;
@@ -354,7 +593,147 @@ export interface operations {
             };
         };
     };
-    healthCheckV1: {
+    userOnly: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    staffWithPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    staffOnly: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    getAllPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string[];
+                };
+            };
+        };
+    };
+    permissionOnly: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    publicEndpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    managementTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    adminOnly: {
         parameters: {
             query?: never;
             header?: never;

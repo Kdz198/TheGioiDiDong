@@ -45,7 +45,7 @@ export interface paths {
         };
         get: operations["getAllPayments"];
         put: operations["updatePayment"];
-        post: operations["createPayment"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -62,6 +62,22 @@ export interface paths {
         get: operations["getAllFeedbacks"];
         put: operations["updateFeedback"];
         post: operations["createFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/payments/make-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -312,7 +328,6 @@ export interface components {
             id?: number;
             /** Format: int32 */
             userId?: number;
-            promotion?: components["schemas"]["PromotionInfo"];
             /** Format: date-time */
             orderDate?: string;
             /** @enum {string} */
@@ -321,15 +336,7 @@ export interface components {
             totalPrice?: number;
             /** Format: int32 */
             basePrice?: number;
-            /** Format: int32 */
-            discount?: number;
             orderDetails?: components["schemas"]["OrderDetail"][];
-        };
-        PromotionInfo: {
-            /** Format: int32 */
-            id?: number;
-            code?: string;
-            description?: string;
         };
         Promotion: {
             /** Format: int32 */
@@ -351,13 +358,13 @@ export interface components {
             active?: boolean;
             /** Format: int32 */
             quantity?: number;
+            applicableProductIds?: number[];
         };
         Order: {
             /** Format: int32 */
             id?: number;
             /** Format: int32 */
             userId?: number;
-            promotion?: components["schemas"]["Promotion"];
             /** Format: date-time */
             orderDate?: string;
             /** @enum {string} */
@@ -366,8 +373,7 @@ export interface components {
             totalPrice?: number;
             /** Format: int32 */
             basePrice?: number;
-            /** Format: int32 */
-            discount?: number;
+            orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetail"][];
         };
         Payment: {
@@ -379,8 +385,10 @@ export interface components {
             amount?: number;
             /** Format: date-time */
             date?: string;
+            promotion?: components["schemas"]["Promotion"];
             /** @enum {string} */
-            status?: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+            status?: "PENDING" | "COMPLETED" | "FAILED";
+            transactionCode?: string;
         };
         Feedback: {
             /** Format: int32 */
@@ -408,13 +416,13 @@ export interface components {
         OrderRequest: {
             /** Format: int32 */
             userId?: number;
-            promotionCode?: string;
             /** @enum {string} */
             status?: "PENDING" | "PAID" | "CANCELED";
             /** Format: int32 */
             totalPrice?: number;
             /** Format: int32 */
             basePrice?: number;
+            orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
         };
     };
@@ -605,30 +613,6 @@ export interface operations {
             };
         };
     };
-    createPayment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Payment"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["Payment"];
-                };
-            };
-        };
-    };
     getAllFeedbacks: {
         parameters: {
             query?: never;
@@ -693,6 +677,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Feedback"];
+                };
+            };
+        };
+    };
+    createPayment: {
+        parameters: {
+            query: {
+                orderCode: string;
+                promotionCode: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };
@@ -914,7 +921,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+                status: "PENDING" | "COMPLETED" | "FAILED";
             };
             cookie?: never;
         };

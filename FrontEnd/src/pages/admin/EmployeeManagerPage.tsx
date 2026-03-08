@@ -43,6 +43,7 @@ interface EmployeeFormState {
 }
 
 const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "" };
+const PAGE_SIZE = 10;
 
 export function EmployeeManagerPage() {
   const queryClient = useQueryClient();
@@ -50,13 +51,15 @@ export function EmployeeManagerPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
+  const [page, setPage] = useState(0);
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ["admin", "employees"],
-    queryFn: userService.getUsers,
+    queryKey: ["admin", "employees", page],
+    queryFn: () => userService.getUsers(page, PAGE_SIZE, ["STAFF"]),
   });
 
-  const employees = users?.filter((u) => u.role === "staff") ?? [];
+  // Server already filters to STAFF role — no client-side role filter needed
+  const employees = users?.content ?? [];
 
   const filtered = employees.filter((emp) => {
     const matchesSearch =
@@ -88,6 +91,15 @@ export function EmployeeManagerPage() {
       setForm(emptyForm);
     },
     onError: () => toast.error("Thêm nhân viên thất bại"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => userService.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "employees"] });
+      toast.success("Xóa nhân viên thành công");
+    },
+    onError: () => toast.error("Xóa nhân viên thất bại"),
   });
 
   const handleCreate = (e: React.FormEvent) => {
@@ -255,7 +267,9 @@ export function EmployeeManagerPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-red-500 hover:bg-red-600">
+                                  <AlertDialogAction
+                                    className="bg-red-500 hover:bg-red-600"
+                                    onClick={() => deleteMutation.mutate(emp.id)}>
                                     Xóa
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -277,6 +291,29 @@ export function EmployeeManagerPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {(users?.totalPages ?? 1) > 1 && (
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 0}
+            onClick={() => setPage((p) => p - 1)}>
+            Trước
+          </Button>
+          <span className="text-sm text-gray-600">
+            Trang {page + 1}/{users?.totalPages ?? 1}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= (users?.totalPages ?? 1) - 1}
+            onClick={() => setPage((p) => p + 1)}>
+            Sau
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
