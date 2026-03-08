@@ -60,7 +60,7 @@ export const authService = {
     let isActive = true;
 
     try {
-      const profileRes = await apiClient.get(API_ENDPOINTS.AUTH.PROFILE(payload.accountId), {
+      const profileRes = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(payload.accountId), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const profile = profileRes.data as {

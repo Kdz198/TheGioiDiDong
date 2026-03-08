@@ -43,23 +43,7 @@ export const feedbackService = {
         },
       ];
     }
-    const response = await apiClient.get(API_ENDPOINTS.FEEDBACK.LIST);
-    return response.data.data;
-  },
-
-  replyFeedback: async (id: number, message: string): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 500));
-      return;
-    }
-    await apiClient.post(API_ENDPOINTS.FEEDBACK.REPLY(id), { message });
-  },
-
-  resolveFeedback: async (id: number): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return;
-    }
-    await apiClient.post(API_ENDPOINTS.FEEDBACK.RESOLVE(id));
+    const response = await apiClient.get(API_ENDPOINTS.FEEDBACKS.LIST);
+    return response.data;
   },
 };

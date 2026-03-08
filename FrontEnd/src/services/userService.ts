@@ -5,42 +5,39 @@ import { apiClient } from "@/lib/api";
 import { mockAddresses, mockCustomer, mockUsers } from "@/mocks/users.mock";
 
 export const userService = {
-  getProfile: async (): Promise<CustomerProfile> => {
+  /** Fetch a user's profile by their account ID */
+  getProfile: async (id: number): Promise<CustomerProfile> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));
       return mockCustomer;
     }
-    const response = await apiClient.get(API_ENDPOINTS.USERS.PROFILE);
-    return response.data.data;
+    const response = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    return response.data;
   },
 
-  updateProfile: async (data: Partial<User>): Promise<User> => {
+  /** Update a user's profile by their account ID */
+  updateProfile: async (id: number, data: Partial<User>): Promise<User> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
       return { ...mockCustomer, ...data };
     }
-    const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE_PROFILE, data);
-    return response.data.data;
+    const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), data);
+    return response.data;
   },
 
+  /** No password-change endpoint in schema — succeeds silently */
   changePassword: async (_data: {
     currentPassword: string;
     newPassword: string;
   }): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
-      return;
     }
-    await apiClient.post(API_ENDPOINTS.USERS.CHANGE_PASSWORD, _data);
   },
 
+  /** No addresses endpoint in schema — returns mock data */
   getAddresses: async (): Promise<Address[]> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return mockAddresses;
-    }
-    const response = await apiClient.get(API_ENDPOINTS.USERS.ADDRESSES);
-    return response.data.data;
+    return mockAddresses;
   },
 
   getUsers: async (): Promise<User[]> => {
@@ -48,8 +45,8 @@ export const userService = {
       await new Promise((r) => setTimeout(r, 500));
       return mockUsers;
     }
-    const response = await apiClient.get(API_ENDPOINTS.USERS.ALL);
-    return response.data.data;
+    const response = await apiClient.get(API_ENDPOINTS.USERS.LIST);
+    return response.data;
   },
 
   getUserById: async (id: number): Promise<User> => {
@@ -60,7 +57,7 @@ export const userService = {
       return user;
     }
     const response = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
-    return response.data.data;
+    return response.data;
   },
 
   toggleUserActive: async (id: number): Promise<User> => {
@@ -71,8 +68,13 @@ export const userService = {
       user.isActive = !user.isActive;
       return user;
     }
-    const response = await apiClient.put(API_ENDPOINTS.USERS.TOGGLE_ACTIVE(id));
-    return response.data.data;
+    // Fetch current state then toggle
+    const current = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    const currentUser = current.data as User;
+    const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), {
+      active: !currentUser.isActive,
+    });
+    return response.data;
   },
 
   updateUserRole: async (id: number, role: UserRole): Promise<User> => {
@@ -83,8 +85,8 @@ export const userService = {
       user.role = role;
       return user;
     }
-    const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE_ROLE(id), { role });
-    return response.data.data;
+    const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), { role });
+    return response.data;
   },
 
   createEmployee: async (data: {
@@ -106,10 +108,10 @@ export const userService = {
       mockUsers.push(newEmployee);
       return newEmployee;
     }
-    const response = await apiClient.post(API_ENDPOINTS.USERS.LIST, {
+    const response = await apiClient.post(API_ENDPOINTS.USERS.CREATE, {
       ...data,
       role: "staff",
     });
-    return response.data.data;
+    return response.data;
   },
 };

@@ -1,8 +1,13 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
-import type { ApiPromotion, FlashSale, Promotion, Voucher } from "@/interfaces/promotion.types";
+import type {
+  ApiPromotion,
+  ApiPromotionType,
+  Promotion,
+  Voucher,
+} from "@/interfaces/promotion.types";
 import { apiClient } from "@/lib/api";
-import { mockFlashSales, mockPromotions, mockVouchers } from "@/mocks/promotions.mock";
+import { mockPromotions } from "@/mocks/promotions.mock";
 
 const mockApiPromotions: ApiPromotion[] = [
   {
@@ -32,34 +37,41 @@ const mockApiPromotions: ApiPromotion[] = [
   },
 ];
 
-export const promotionService = {
-  getVouchers: async (): Promise<Voucher[]> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return mockVouchers;
-    }
-    const response = await apiClient.get(API_ENDPOINTS.PROMOTIONS.VOUCHERS);
-    return response.data.data;
-  },
+function mapApiPromotionToVoucher(promo: ApiPromotion): Voucher {
+  const typeMap: Record<ApiPromotionType, Voucher["type"]> = {
+    PERCENTAGE: "percentage",
+    MONEY: "fixed_amount",
+    BOGO: "fixed_amount",
+  };
+  return {
+    id: promo.id,
+    code: promo.code,
+    type: typeMap[promo.type] ?? "fixed_amount",
+    discountValue: promo.discountValue,
+    minOrderValue: promo.minOrderAmount ?? 0,
+    maxDiscountAmount: promo.maxDiscountValue,
+    usageLimit: promo.quantity,
+    usedCount: 0,
+    expiresAt: promo.endDate,
+    isActive: promo.active,
+  };
+}
 
+export const promotionService = {
+  /** Look up a promotion by code and return it as a Voucher */
   validateVoucher: async (code: string): Promise<Voucher> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
-      const voucher = mockVouchers.find((v) => v.code === code && v.isActive);
-      if (!voucher) throw new Error("Mã giảm giá không hợp lệ");
-      return voucher;
+      const promo = mockApiPromotions.find(
+        (p) => p.code.toUpperCase() === code.toUpperCase() && p.active
+      );
+      if (!promo) throw new Error("Mã giảm giá không hợp lệ");
+      return mapApiPromotionToVoucher(promo);
     }
-    const response = await apiClient.post(API_ENDPOINTS.PROMOTIONS.VALIDATE_VOUCHER, { code });
-    return response.data.data;
-  },
-
-  getFlashSales: async (): Promise<FlashSale[]> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return mockFlashSales;
-    }
-    const response = await apiClient.get(API_ENDPOINTS.PROMOTIONS.FLASH_SALES);
-    return response.data.data;
+    const response = await apiClient.get<ApiPromotion>(API_ENDPOINTS.PROMOTIONS.BY_CODE(code));
+    const promo = response.data;
+    if (!promo.active) throw new Error("Mã giảm giá đã hết hạn hoặc không hoạt động");
+    return mapApiPromotionToVoucher(promo);
   },
 
   getPromotions: async (): Promise<Promotion[]> => {
@@ -68,7 +80,7 @@ export const promotionService = {
       return mockPromotions;
     }
     const response = await apiClient.get(API_ENDPOINTS.PROMOTIONS.LIST);
-    return response.data.data;
+    return response.data;
   },
 
   getApiPromotions: async (): Promise<ApiPromotion[]> => {
@@ -77,7 +89,7 @@ export const promotionService = {
       return mockApiPromotions;
     }
     const response = await apiClient.get(API_ENDPOINTS.PROMOTIONS.LIST);
-    return response.data.data;
+    return response.data;
   },
 
   createPromotion: async (data: Omit<ApiPromotion, "id">): Promise<ApiPromotion> => {
@@ -88,7 +100,7 @@ export const promotionService = {
       return newPromotion;
     }
     const response = await apiClient.post(API_ENDPOINTS.PROMOTIONS.CREATE, data);
-    return response.data.data;
+    return response.data;
   },
 
   updatePromotion: async (data: ApiPromotion): Promise<ApiPromotion> => {
@@ -100,7 +112,7 @@ export const promotionService = {
       return mockApiPromotions[idx];
     }
     const response = await apiClient.put(API_ENDPOINTS.PROMOTIONS.UPDATE, data);
-    return response.data.data;
+    return response.data;
   },
 
   deletePromotion: async (id: number): Promise<void> => {

@@ -4,6 +4,31 @@ import type { RatingBreakdown, Review } from "@/interfaces/review.types";
 import { apiClient } from "@/lib/api";
 import { mockReviews } from "@/mocks/reviews.mock";
 
+/** Shape returned by GET /api/orders/feedbacks/product/{productId} */
+interface ApiFeedback {
+  id?: number;
+  userId?: number;
+  productId?: number;
+  rating?: number;
+  comment?: string;
+  date?: string;
+}
+
+function mapFeedbackToReview(fb: ApiFeedback): Review {
+  return {
+    id: fb.id ?? 0,
+    productId: fb.productId ?? 0,
+    userId: fb.userId ?? 0,
+    authorName: `Người dùng #${fb.userId ?? 0}`,
+    rating: fb.rating ?? 0,
+    content: fb.comment ?? "",
+    images: [],
+    helpfulCount: 0,
+    isVerifiedPurchase: false,
+    createdAt: fb.date ?? new Date().toISOString(),
+  };
+}
+
 export const reviewService = {
   getProductReviews: async (
     productId: number
@@ -22,8 +47,19 @@ export const reviewService = {
       });
       return { reviews, breakdown: { average, total, distribution } };
     }
-    const response = await apiClient.get(API_ENDPOINTS.REVIEWS.LIST(productId));
-    return response.data.data;
+    const response = await apiClient.get<ApiFeedback[]>(
+      API_ENDPOINTS.FEEDBACKS.BY_PRODUCT(productId)
+    );
+    const feedbacks = response.data ?? [];
+    const reviews = feedbacks.map(mapFeedbackToReview);
+    const total = reviews.length;
+    const average =
+      total > 0 ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / total) * 10) / 10 : 0;
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach((r) => {
+      distribution[r.rating as keyof typeof distribution]++;
+    });
+    return { reviews, breakdown: { average, total, distribution } };
   },
 
   createReview: async (data: {
@@ -48,15 +84,15 @@ export const reviewService = {
         createdAt: new Date().toISOString(),
       };
     }
-    const response = await apiClient.post(API_ENDPOINTS.REVIEWS.CREATE(data.productId), data);
-    return response.data.data;
+    const response = await apiClient.post<ApiFeedback>(API_ENDPOINTS.FEEDBACKS.CREATE, {
+      productId: data.productId,
+      rating: data.rating,
+      comment: data.content,
+    });
+    return mapFeedbackToReview(response.data);
   },
 
-  markReviewHelpful: async (reviewId: number): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      return;
-    }
-    await apiClient.post(API_ENDPOINTS.REVIEWS.MARK_HELPFUL(reviewId));
+  markReviewHelpful: async (_reviewId: number): Promise<void> => {
+    // No endpoint for marking reviews helpful in the backend schema
   },
 };
