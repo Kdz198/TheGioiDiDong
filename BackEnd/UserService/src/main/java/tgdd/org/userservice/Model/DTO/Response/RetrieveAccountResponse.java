@@ -10,6 +10,8 @@ import java.util.Set;
 @Data
 public class RetrieveAccountResponse {
 
+    private Long id;
+
     private String email;
 
     private String password;
