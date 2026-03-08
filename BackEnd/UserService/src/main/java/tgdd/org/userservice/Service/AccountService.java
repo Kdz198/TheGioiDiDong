@@ -1,5 +1,6 @@
 package tgdd.org.userservice.Service;
 
+import org.springframework.data.domain.Page;
 import tgdd.org.userservice.Model.DTO.Request.CreateAccountRequest;
 import tgdd.org.userservice.Model.DTO.Response.RetrieveAccountResponse;
 
@@ -15,5 +16,5 @@ public interface AccountService {
 
     RetrieveAccountResponse getAccountById(Long id);
 
-    List<RetrieveAccountResponse> getAllAccounts();
+    Page<RetrieveAccountResponse> getAllAccounts(  int page, int size);
 }

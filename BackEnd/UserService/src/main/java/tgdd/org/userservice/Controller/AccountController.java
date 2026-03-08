@@ -1,6 +1,7 @@
 package tgdd.org.userservice.Controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import tgdd.org.userservice.Model.DTO.Request.CreateAccountRequest;
 import tgdd.org.userservice.Model.DTO.Response.RetrieveAccountResponse;
@@ -21,8 +22,11 @@ public class AccountController {
     }
 
     @GetMapping
-    List<RetrieveAccountResponse> getAllAccounts() {
-        return accountService.getAllAccounts();
+    Page<RetrieveAccountResponse> getAllAccounts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return accountService.getAllAccounts(page, size);
     }
 
     @PostMapping
