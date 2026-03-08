@@ -2,13 +2,14 @@ export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: "/auth/login",
+    LOGIN: "/api/users/auth/login",
     REGISTER: "/auth/register",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
     GOOGLE: "/auth/google",
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
+    PROFILE: (id: number) => `/api/users/${id}`,
   },
   PRODUCTS: {
     LIST: "/api/products/product/active",

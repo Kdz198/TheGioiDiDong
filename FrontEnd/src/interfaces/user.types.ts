@@ -1,14 +1,50 @@
 export type UserRole = "guest" | "customer" | "staff" | "admin";
 
+/** Raw role name returned by the backend */
+export type BackendRoleName = "SUPER ADMIN" | "ADMIN" | "STAFF" | "USER";
+
+/** All permission keys issued by the backend */
+export type Permission =
+  | "CREATE_ORDER"
+  | "VIEW_OWN_ORDER"
+  | "CREATE_REVIEW"
+  | "ACCESS_VIP_DISCOUNTS"
+  | "CREATE_PRODUCT"
+  | "UPDATE_PRODUCT"
+  | "VIEW_ALL_ORDERS"
+  | "UPDATE_ORDER_STATUS"
+  | "DELETE_PRODUCT"
+  | "MANAGE_STAFF"
+  | "VIEW_REVENUE_REPORT";
+
+/** Maps backend roleName → frontend UserRole */
+export function mapRoleName(roleName: string): UserRole {
+  switch (roleName.toUpperCase()) {
+    case "SUPER ADMIN":
+    case "ADMIN":
+      return "admin";
+    case "STAFF":
+      return "staff";
+    case "USER":
+      return "customer";
+    default:
+      return "customer";
+  }
+}
+
 export interface User {
   id: number;
   email: string;
-  phone: string;
+  phone?: string;
   fullName: string;
   avatar?: string;
   role: UserRole;
+  /** Raw role name from backend (e.g. "SUPER ADMIN") */
+  roleName?: string;
+  /** All permissions granted (role defaults + custom) */
+  allPermissions?: Permission[];
   isActive: boolean;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface Address {
