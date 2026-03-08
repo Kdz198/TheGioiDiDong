@@ -43,7 +43,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["getAllAccounts"];
+        get: operations["getAllAccountsByRole"];
         put?: never;
         post: operations["createAccount"];
         delete?: never;
@@ -461,9 +461,10 @@ export interface operations {
             };
         };
     };
-    getAllAccounts: {
+    getAllAccountsByRole: {
         parameters: {
             query?: {
+                roles?: string[];
                 page?: number;
                 size?: number;
             };
