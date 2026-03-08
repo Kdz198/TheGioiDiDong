@@ -95,12 +95,12 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-sm font-medium text-teal-700">
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5 text-sm font-medium">{user?.name}</div>
+                <div className="px-2 py-1.5 text-sm font-medium">{user?.fullName}</div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to={ROUTES.PROFILE}>

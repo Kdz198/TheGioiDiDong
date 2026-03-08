@@ -83,6 +83,21 @@ export const promotionService = {
     return response.data;
   },
 
+  getVouchers: async (): Promise<Voucher[]> => {
+    if (USE_MOCK_API) {
+      await new Promise((r) => setTimeout(r, 300));
+      return mockApiPromotions.map(mapApiPromotionToVoucher);
+    }
+    const response = await apiClient.get(API_ENDPOINTS.PROMOTIONS.LIST);
+    const promos = response.data as ApiPromotion[];
+    return promos.map(mapApiPromotionToVoucher);
+  },
+
+  getFlashSales: async () => {
+    // No flash-sale endpoint in schema — return empty array
+    return [] as import("@/interfaces/promotion.types").FlashSale[];
+  },
+
   getApiPromotions: async (): Promise<ApiPromotion[]> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));

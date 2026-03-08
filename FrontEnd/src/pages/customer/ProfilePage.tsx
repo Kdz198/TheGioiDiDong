@@ -8,17 +8,12 @@ import { userService } from "@/services/userService";
 import { useAuthStore } from "@/stores/authStore";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export function ProfilePage() {
   const { user } = useAuthStore();
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: userService.getProfile,
-  });
 
   const { data: addresses } = useQuery({
     queryKey: ["addresses"],
@@ -26,18 +21,9 @@ export function ProfilePage() {
   });
 
   const [profileForm, setProfileForm] = useState({
-    fullName: user?.name || "",
-    phone: "",
+    fullName: user?.fullName || "",
+    phone: user?.phone || "",
   });
-
-  useEffect(() => {
-    if (profile) {
-      setProfileForm({
-        fullName: profile.fullName || user?.name || "",
-        phone: profile.phone || "",
-      });
-    }
-  }, [profile, user?.name]);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",

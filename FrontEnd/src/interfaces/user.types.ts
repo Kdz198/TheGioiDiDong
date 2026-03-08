@@ -47,6 +47,57 @@ export interface User {
   createdAt?: string;
 }
 
+/** Raw account shape returned by GET /api/users */
+export interface BackendUser {
+  id?: number;
+  email?: string;
+  fullName?: string;
+  roleName?: string;
+  allPermissions?: Permission[];
+  active?: boolean;
+  createdAt?: string;
+}
+
+/** Role shape returned by GET /api/users/roles */
+export interface BackendRole {
+  id?: number;
+  name?: string;
+  description?: string;
+  permissions?: string[];
+}
+
+/** Request body for POST /api/users and PUT /api/users/{id} */
+export interface CreateAccountRequest {
+  email?: string;
+  password?: string;
+  fullName?: string;
+  roleId?: number;
+  customPermissions?: string[];
+}
+
+/** Paginated response from GET /api/users */
+export interface PagedUsers {
+  content: User[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+/** Map a raw backend user to the frontend User shape */
+export function mapBackendUser(u: BackendUser): User {
+  return {
+    id: u.id ?? 0,
+    email: u.email ?? "",
+    fullName: u.fullName ?? u.email ?? "",
+    role: mapRoleName(u.roleName ?? ""),
+    roleName: u.roleName,
+    allPermissions: u.allPermissions,
+    isActive: u.active ?? true,
+    createdAt: u.createdAt,
+  };
+}
+
 export interface Address {
   id: number;
   userId: number;
