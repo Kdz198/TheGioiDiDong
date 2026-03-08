@@ -66,11 +66,19 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Page<RetrieveAccountResponse> getAllAccounts(int page, int size) {
+    public Page<RetrieveAccountResponse> getAllAccounts(List<String> roles, int page, int size) {
+
         Pageable pageable = PageRequest.of(page, size);
 
-        return accountRepository.findAll(pageable)
-                .map(this::convertToResponse);
+        Page<Account> accounts;
+
+        if (roles == null || roles.isEmpty()) {
+            accounts = accountRepository.findAll(pageable);
+        } else {
+            accounts = accountRepository.findByRole_NameIn(roles, pageable);
+        }
+
+        return accounts.map(this::convertToResponse);
     }
 
     RetrieveAccountResponse convertToResponse(Account account) {

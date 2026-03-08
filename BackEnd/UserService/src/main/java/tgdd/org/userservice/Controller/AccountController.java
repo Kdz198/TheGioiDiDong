@@ -22,11 +22,12 @@ public class AccountController {
     }
 
     @GetMapping
-    Page<RetrieveAccountResponse> getAllAccounts(
+    Page<RetrieveAccountResponse> getAllAccountsByRole(
+            @RequestParam(required = false) List<String> roles,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return accountService.getAllAccounts(page, size);
+        return accountService.getAllAccounts( roles,page, size);
     }
 
     @PostMapping
