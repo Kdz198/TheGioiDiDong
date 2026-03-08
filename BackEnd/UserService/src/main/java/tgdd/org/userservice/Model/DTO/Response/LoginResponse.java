@@ -14,6 +14,7 @@ public class LoginResponse {
     private String token;
     private String type;
     private String message;
+    private String role;
     private long ttl;
     private long expiresIn; // Mốc thời gian Token chết (Unix Timestamp)
 }
