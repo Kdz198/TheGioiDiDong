@@ -92,7 +92,9 @@ export function StaffDashboardPage() {
                         {order.orderCode}
                       </Link>
                     </td>
-                    <td className="py-3 text-gray-600">{order.shippingInfo.recipientName}</td>
+                    <td className="py-3 text-gray-600">
+                      {order.shippingInfo?.recipientName ?? "-"}
+                    </td>
                     <td className="py-3 text-right font-medium">{formatVND(order.total)}</td>
                     <td className="py-3">
                       <OrderStatusBadge status={order.status} />

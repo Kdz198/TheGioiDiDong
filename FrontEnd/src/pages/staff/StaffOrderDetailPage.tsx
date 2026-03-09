@@ -152,11 +152,13 @@ export function StaffOrderDetailPage() {
               <CardTitle className="text-base">Liên hệ khách hàng</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              <p className="font-medium">{order.shippingInfo.recipientName}</p>
-              <p className="text-gray-500">{order.shippingInfo.phone}</p>
+              <p className="font-medium">{order.shippingInfo?.recipientName ?? "-"}</p>
+              <p className="text-gray-500">{order.shippingInfo?.phone ?? "-"}</p>
               <p className="mt-2 text-gray-500">
-                {order.shippingInfo.streetAddress}, {order.shippingInfo.ward},{" "}
-                {order.shippingInfo.district}, {order.shippingInfo.province}
+                {order.shippingInfo?.streetAddress ?? ""}
+                {order.shippingInfo?.ward ? `, ${order.shippingInfo.ward}` : ""},{" "}
+                {order.shippingInfo?.district ?? ""}
+                {order.shippingInfo?.province ? `, ${order.shippingInfo.province}` : ""}
               </p>
             </CardContent>
           </Card>

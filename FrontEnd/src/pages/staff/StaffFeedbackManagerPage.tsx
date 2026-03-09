@@ -1,12 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { BackendFeedback } from "@/services/feedbackService";
 import { feedbackService } from "@/services/feedbackService";
 import { formatDate } from "@/utils/formatDate";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Loader2, MessageSquare } from "lucide-react";
+import { Eye, MessageSquare, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,35 +20,25 @@ export function StaffFeedbackManagerPage() {
     queryFn: feedbackService.getFeedbacks,
   });
 
-  const [replyingId, setReplyingId] = useState<number | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  const [detailFeedback, setDetailFeedback] = useState<BackendFeedback | null>(null);
 
-  const handleReply = async (id: number) => {
-    if (!replyText.trim()) return;
+  const handleDelete = async (id: number) => {
     try {
-      setIsSending(true);
-      await feedbackService.replyFeedback(id, replyText);
-      toast.success("Đã gửi phản hồi!");
-      setReplyingId(null);
-      setReplyText("");
+      await feedbackService.deleteFeedback(id);
+      toast.success("Đã xóa phản hồi");
       refetch();
     } catch {
-      toast.error("Gửi phản hồi thất bại");
-    } finally {
-      setIsSending(false);
+      toast.error("Xóa phản hồi thất bại");
     }
   };
 
-  const handleResolve = async (id: number) => {
-    try {
-      await feedbackService.resolveFeedback(id);
-      toast.success("Đã đánh dấu đã xử lý");
-      refetch();
-    } catch {
-      toast.error("Thao tác thất bại");
-    }
-  };
+  const renderStars = (rating: number) =>
+    Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+      />
+    ));
 
   return (
     <div className="space-y-6">
@@ -62,92 +52,106 @@ export function StaffFeedbackManagerPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {feedbacks?.map((fb) => (
+          {feedbacks?.map((fb: BackendFeedback) => (
             <Card key={fb.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <MessageSquare className="h-5 w-5 text-teal-500" />
                     <div>
-                      <CardTitle className="text-base">{fb.customerName}</CardTitle>
-                      <p className="text-xs text-gray-400">
-                        {fb.customerEmail} · {formatDate(fb.createdAt)}
-                      </p>
+                      <CardTitle className="text-base">
+                        Người dùng #{fb.userId} — Sản phẩm #{fb.productId}
+                      </CardTitle>
+                      <p className="text-xs text-gray-400">{formatDate(fb.date)}</p>
                     </div>
                   </div>
-                  <Badge
-                    className={
-                      fb.status === "open"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                    }>
-                    {fb.status === "open" ? "Đang mở" : "Đã xử lý"}
+                  <Badge className="bg-blue-100 text-blue-700">
+                    <div className="flex items-center gap-1">{renderStars(fb.rating)}</div>
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-700">{fb.message}</p>
+                <p className="text-sm text-gray-700">{fb.comment}</p>
 
-                {fb.replies.length > 0 && (
-                  <>
-                    <Separator />
-                    <div className="space-y-3">
-                      {fb.replies.map((reply, i) => (
-                        <div key={i} className="rounded-lg bg-teal-50 p-3">
-                          <p className="text-xs font-medium text-teal-700">
-                            {reply.staffName} · {formatDate(reply.createdAt)}
-                          </p>
-                          <p className="mt-1 text-sm text-teal-800">{reply.message}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {fb.status === "open" && (
-                  <div className="space-y-3">
-                    {replyingId === fb.id ? (
-                      <>
-                        <Textarea
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Nhập phản hồi..."
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            className="bg-teal-500 hover:bg-teal-600"
-                            onClick={() => handleReply(fb.id)}
-                            disabled={isSending}>
-                            {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Gửi
-                            phản hồi
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setReplyingId(null);
-                              setReplyText("");
-                            }}>
-                            Hủy
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setReplyingId(fb.id)}>
-                          <MessageSquare className="mr-1 h-3.5 w-3.5" /> Trả lời
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleResolve(fb.id)}>
-                          <CheckCircle className="mr-1 h-3.5 w-3.5" /> Đánh dấu đã xử lý
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-teal-500"
+                    onClick={() => setDetailFeedback(fb)}>
+                    <Eye className="mr-1 h-4 w-4" />
+                    Chi tiết
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500"
+                    onClick={() => handleDelete(fb.id)}>
+                    Xóa
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={!!detailFeedback} onOpenChange={(open) => !open && setDetailFeedback(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Chi tiết phản hồi</DialogTitle>
+          </DialogHeader>
+          {detailFeedback && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-gray-400">Người dùng</p>
+                <p className="font-medium text-zinc-900">#{detailFeedback.userId}</p>
+              </div>
+              <div>
+                <p className="text-gray-400">Sản phẩm</p>
+                <p className="font-medium text-zinc-900">#{detailFeedback.productId}</p>
+              </div>
+              <div>
+                <p className="text-gray-400">Đánh giá</p>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${i < detailFeedback.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                    />
+                  ))}
+                  <span className="ml-1 text-gray-600">({detailFeedback.rating}/5)</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-gray-400">Nội dung</p>
+                <p className="text-gray-700">{detailFeedback.comment}</p>
+              </div>
+              <div>
+                <p className="text-gray-400">Ngày đánh giá</p>
+                <p className="text-gray-700">{formatDate(detailFeedback.date)}</p>
+              </div>
+              {detailFeedback.orderDetail && (
+                <div>
+                  <p className="text-gray-400">Chi tiết đơn hàng</p>
+                  <div className="mt-1 space-y-1 rounded-lg bg-gray-50 p-3">
+                    <p>
+                      Số lượng:{" "}
+                      <span className="font-medium">{detailFeedback.orderDetail.quantity}</span>
+                    </p>
+                    <p>
+                      Thành tiền:{" "}
+                      <span className="font-medium">
+                        {detailFeedback.orderDetail.subtotal?.toLocaleString("vi-VN")}đ
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
