@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/payments/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["handleWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/payments/make-payment": {
         parameters: {
             query?: never;
@@ -78,6 +94,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/payments/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -425,6 +457,33 @@ export interface components {
             orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
         };
+        Webhook: {
+            code?: string;
+            desc?: string;
+            success?: boolean;
+            data?: components["schemas"]["WebhookData"];
+            signature?: string;
+        };
+        WebhookData: {
+            /** Format: int64 */
+            orderCode?: number;
+            /** Format: int64 */
+            amount?: number;
+            description?: string;
+            accountNumber?: string;
+            reference?: string;
+            transactionDateTime?: string;
+            currency?: string;
+            paymentLinkId?: string;
+            code?: string;
+            desc?: string;
+            counterAccountBankId?: string;
+            counterAccountBankName?: string;
+            counterAccountName?: string;
+            counterAccountNumber?: string;
+            virtualAccountName?: string;
+            virtualAccountNumber?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -681,11 +740,33 @@ export interface operations {
             };
         };
     };
+    handleWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Webhook"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     createPayment: {
         parameters: {
             query: {
                 orderCode: string;
-                promotionCode: string;
+                promotionCode?: string;
             };
             header?: never;
             path?: never;
@@ -700,6 +781,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    cancelPayment: {
+        parameters: {
+            query: {
+                paymentCode: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Payment"];
                 };
             };
         };
