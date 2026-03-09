@@ -77,7 +77,7 @@ export function SearchBar({ className, placeholder = "Tìm kiếm sản phẩm..
   const handleSuggestionClick = (product: Product) => {
     setIsOpen(false);
     setQuery("");
-    navigate(`/products/${product.slug}`);
+    navigate(`/products/${product.id}`);
   };
 
   const handleClear = () => {
@@ -121,13 +121,13 @@ export function SearchBar({ className, placeholder = "Tìm kiếm sản phẩm..
                     onClick={() => handleSuggestionClick(product)}
                     className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-gray-50">
                     <img
-                      src={product.thumbnailUrl}
+                      src={product.imgUrl}
                       alt={product.name}
                       className="h-10 w-10 rounded object-cover"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-zinc-900">{product.name}</p>
-                      <p className="text-xs text-red-400">{formatVND(product.defaultPrice)}</p>
+                      <p className="text-xs text-red-400">{formatVND(product.price)}</p>
                     </div>
                   </button>
                 </li>

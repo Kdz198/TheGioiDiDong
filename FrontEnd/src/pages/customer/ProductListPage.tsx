@@ -19,7 +19,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 export function ProductListPage() {
-  const { slug: categorySlug } = useParams();
+  // ĐÃ SỬA: Lấy 'id' từ URL thay vì 'slug' do link ở CategoryCard truyền id
+  const { id: categoryIdParam } = useParams();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
 
@@ -34,45 +35,52 @@ export function ProductListPage() {
     queryFn: categoryService.getCategories,
   });
 
-  const selectedCategory = categorySlug
-    ? categories?.find((c) => c.slug === categorySlug)
+  // Tìm category đang chọn dựa trên ID
+  const selectedCategory = categoryIdParam
+    ? categories?.find((c) => c.id.toString() === categoryIdParam)
     : undefined;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", { categoryId: selectedCategory?.id, search: searchQuery, sortBy, page }],
+    queryKey: [
+      "products",
+      { categoryName: selectedCategory?.name, search: searchQuery, sortBy, page },
+      undefined,
+      selectedCategory,
+    ],
     queryFn: () =>
       productService.getProducts({
-        categoryId: selectedCategory?.id,
+        // Nếu API cần truyền categoryName hoặc categoryId để lọc thì truyền vào đây.
+        // Ép kiểu 'as any' tạm thời để TypeScript không báo lỗi thuộc tính lạ
+        ...(selectedCategory ? { categoryName: selectedCategory.name } : {}),
         search: searchQuery || undefined,
         sortBy: sortBy as "price_asc" | "price_desc" | "newest" | "rating" | "sold",
         page,
-      }),
+      } as never),
   });
 
-  const handleAddToCart = (product: NonNullable<typeof data>["items"][0], variantId: number) => {
-    const variant = product.variants.find((v) => v.id === variantId);
-    if (!variant) return;
+  // ĐÃ SỬA: Bỏ variantId vì API không có variants
+  const handleAddToCart = (product: NonNullable<typeof data>["items"][0]) => {
+    // Map dữ liệu chuẩn API vào giỏ hàng
     addItem({
-      id: variant.id,
+      id: Date.now(),
       productId: product.id,
-      variantId: variant.id,
+      variantId: product.id,
       product: {
         id: product.id,
-        slug: product.slug,
         name: product.name,
-        thumbnailUrl: product.thumbnailUrl,
+        imgUrl: product.imgUrl, // Đã sửa
       },
       variant: {
-        id: variant.id,
-        sku: variant.sku,
-        color: variant.color,
-        size: variant.size,
-        price: variant.price,
-        originalPrice: variant.originalPrice,
-        stockQuantity: variant.stockQuantity,
+        id: product.id,
+        sku: `SKU-${product.id}`,
+        color: "Mặc định",
+        size: "Mặc định",
+        price: product.price, // Đã sửa
+        originalPrice: product.price, // Đã sửa
+        stockQuantity: product.quantity ?? 0, // Đã sửa
       },
       quantity: 1,
-      subtotal: variant.price,
+      subtotal: product.price,
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };
@@ -114,7 +122,8 @@ export function ProductListPage() {
               <ProductCard
                 key={product.id}
                 product={product}
-                onAddToCart={() => handleAddToCart(product, product.variants[0]?.id ?? 0)}
+                // ĐÃ SỬA: Chỉ truyền product
+                onAddToCart={() => handleAddToCart(product)}
                 isWishlisted={isInWishlist(product.id)}
                 onToggleWishlist={toggleWishlist}
               />
@@ -124,7 +133,10 @@ export function ProductListPage() {
       {data && data.items.length === 0 && (
         <div className="py-16 text-center">
           <p className="text-lg text-gray-500">Không tìm thấy sản phẩm nào</p>
-          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => (window.location.href = "/products")}>
             Xóa bộ lọc
           </Button>
         </div>

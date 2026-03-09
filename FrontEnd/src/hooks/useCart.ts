@@ -23,9 +23,8 @@ export function useCart() {
         variantId: variant.id,
         product: {
           id: product.id,
-          slug: product.slug,
           name: product.name,
-          thumbnailUrl: product.thumbnailUrl,
+          imgUrl: product.imgUrl,
         },
         variant: {
           id: variant.id,

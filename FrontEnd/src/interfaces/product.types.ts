@@ -5,7 +5,6 @@ export interface Category {
   icon: string;
   parentId?: number;
   productCount: number;
-  description?: string;
 }
 
 export interface Brand {
@@ -40,26 +39,16 @@ export interface ProductVariant {
 
 export interface Product {
   id: number;
-  slug: string;
   name: string;
   description: string;
-  categoryId: number;
-  category: Category;
-  brandId: number;
-  brand: Brand;
-  variants: ProductVariant[];
-  defaultPrice: number;
-  defaultOriginalPrice: number;
-  thumbnailUrl: string;
-  rating: number;
-  reviewCount: number;
-  soldCount: number;
-  flashSaleEndAt?: string;
-  isActive: boolean;
-  specifications: Record<string, string>;
-  createdAt: string;
-  stockQuantity?: number;
-  versionName?: string;
+  price: number;
+  quantity: number;
+  reserve: number;
+  imgUrl: string;
+  active: boolean;
+  versionName: string;
+  brandName: string;
+  categoryName: string;
 }
 
 export interface ProductListResponse {
