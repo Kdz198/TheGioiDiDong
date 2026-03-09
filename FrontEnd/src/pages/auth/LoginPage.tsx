@@ -61,12 +61,22 @@ export function LoginPage() {
     login(result.user, result.token, result.expiresIn);
     toast.success("Đăng nhập thành công!");
 
+    const role = result.user.role;
     const returnUrl = searchParams.get("returnUrl");
-    if (returnUrl) {
+
+    // Validate returnUrl against the user's actual role to avoid 403.
+    // Admin routes require "admin", staff routes require "admin" or "staff".
+    const canAccessReturnUrl =
+      !!returnUrl &&
+      ((!returnUrl.startsWith("/admin") && !returnUrl.startsWith("/staff")) ||
+        (returnUrl.startsWith("/admin") && role === "admin") ||
+        (returnUrl.startsWith("/staff") && (role === "admin" || role === "staff")));
+
+    if (canAccessReturnUrl) {
       navigate(returnUrl);
-    } else if (result.user.role === "admin") {
+    } else if (role === "admin") {
       navigate(ROUTES.ADMIN_DASHBOARD);
-    } else if (result.user.role === "staff") {
+    } else if (role === "staff") {
       navigate(ROUTES.STAFF_ORDERS);
     } else {
       navigate(ROUTES.HOME);
