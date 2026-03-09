@@ -127,14 +127,6 @@ export function OrderDetailPage() {
             <CardHeader>
               <CardTitle className="text-base">Giao hàng</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm">
-              <p className="font-medium text-zinc-900">{order.shippingInfo.recipientName}</p>
-              <p className="text-gray-500">{order.shippingInfo.phone}</p>
-              <p className="mt-1 text-gray-500">
-                {order.shippingInfo.streetAddress}, {order.shippingInfo.ward},{" "}
-                {order.shippingInfo.district}, {order.shippingInfo.province}
-              </p>
-            </CardContent>
           </Card>
 
           {/* Summary */}
