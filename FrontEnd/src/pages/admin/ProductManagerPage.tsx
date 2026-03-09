@@ -12,6 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ROUTES } from "@/router/routes.const";
 import { productService } from "@/services/productService";
 import { formatVND } from "@/utils/formatPrice";
@@ -23,12 +30,14 @@ import { toast } from "sonner";
 
 export function ProductManagerPage() {
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "products", search],
-    queryFn: () => productService.getProducts({ search: search || undefined, pageSize: 50 }),
+    queryKey: ["admin", "products", search, activeFilter],
+    queryFn: () =>
+      productService.getProducts({ search: search || undefined, pageSize: 100, activeFilter }),
   });
 
   const deleteMutation = useMutation({
@@ -52,14 +61,28 @@ export function ProductManagerPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <Input
-          placeholder="Tìm kiếm sản phẩm..."
-          className="pl-10"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-wrap gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="Tìm kiếm sản phẩm..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Select
+          value={activeFilter}
+          onValueChange={(v) => setActiveFilter(v as "all" | "active" | "inactive")}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả</SelectItem>
+            <SelectItem value="active">Đang bán</SelectItem>
+            <SelectItem value="inactive">Ẩn</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
