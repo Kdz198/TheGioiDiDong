@@ -9,5 +9,7 @@ import java.util.List;
 public interface PaymentRepo extends JpaRepository<Payment, Integer> {
     List<Payment> findByOrderId(int orderId);
     List<Payment> findByStatus(PaymentStatus status);
+
+    Payment findByTransactionCode(String transactionCode);
 }
 

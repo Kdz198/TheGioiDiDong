@@ -15,7 +15,7 @@ public class Listener {
         this.orderService = orderService;
     }
 
-    @RabbitListener(queues = RabbitMQConfig.ORDER_QUEUE_NAME)
+    @RabbitListener(queues = "${app.rabbitmq.prefix}.tgdd.order.queue")
     public void orderCreate(OrderRequest orderRequest) {
         log.info("Order created: {}", orderRequest);
         orderService.save(orderRequest);

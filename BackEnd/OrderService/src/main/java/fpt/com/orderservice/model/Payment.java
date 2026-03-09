@@ -4,6 +4,7 @@ import fpt.com.orderservice.model.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.sql.Date;
 
@@ -22,6 +23,7 @@ public class Payment {
     String paymentMethod;
     //COD,PayOS
     int amount;
+    @CreationTimestamp
     Date date;
     @JoinColumn(name = "promotionId")
     @ManyToOne

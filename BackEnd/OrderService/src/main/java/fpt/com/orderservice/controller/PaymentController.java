@@ -6,6 +6,7 @@ import fpt.com.orderservice.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.payos.model.webhooks.Webhook;
 
 import java.util.List;
 
@@ -21,13 +22,13 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.findAll());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Payment> getPaymentById(@PathVariable int id) {
         return ResponseEntity.ok(paymentService.findById(id));
     }
 
     @PostMapping("/make-payment")
-    public ResponseEntity<String> createPayment(@RequestParam String orderCode,@RequestParam String promotionCode) {
+    public ResponseEntity<String> createPayment(@RequestParam String orderCode,@RequestParam(required = false) String promotionCode) {
         return ResponseEntity.ok(paymentService.save(orderCode,promotionCode));
     }
 
@@ -51,5 +52,14 @@ public class PaymentController {
     public ResponseEntity<List<Payment>> getByStatus(@PathVariable PaymentStatus status) {
         return ResponseEntity.ok(paymentService.findByStatus(status));
     }
+
+    @PostMapping("/webhook")
+    public void handleWebhook(@RequestBody Webhook payload) {
+        paymentService.handlePaymentSuccess(payload);
+    }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<Payment> cancelPayment(@RequestParam String paymentCode) {
+        return ResponseEntity.ok(paymentService.cancelPayment(paymentCode));}
 }
 

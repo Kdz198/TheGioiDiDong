@@ -4,25 +4,17 @@ package tgdd.org.productservice.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tgdd.org.productservice.config.Producer;
 import tgdd.org.productservice.exception.CustomException;
 import tgdd.org.productservice.mapper.ProductMapper;
-import tgdd.org.productservice.model.Brand;
-import tgdd.org.productservice.model.Category;
-import tgdd.org.productservice.model.Product;
-import tgdd.org.productservice.model.ProductVersion;
+import tgdd.org.productservice.model.*;
 import tgdd.org.productservice.model.dto.*;
-import tgdd.org.productservice.repo.BrandRepo;
-import tgdd.org.productservice.repo.CategoryRepo;
-import tgdd.org.productservice.repo.ProductRepo;
-import tgdd.org.productservice.repo.ProductVersionRepo;
+import tgdd.org.productservice.repo.*;
 import tgdd.org.productservice.service.ProductService;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -47,6 +39,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private Producer producer;
+    @Autowired
+    private OrderReserveRepo orderReserveRepo;
 
     @Override
     public List<ProductResponse> findAll() {
@@ -55,8 +49,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse findById(int id) {
-        Product product = productRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+        Product product = productRepo.findById(id);
+        if (product == null) {
+            throw new CustomException("Product not found with id: " + id,HttpStatus.NOT_FOUND);
+        }
         return productMapper.toProductResponse(product);
     }
 
@@ -87,8 +83,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse update(ProductUpdateRequest request) throws IOException {
         System.out.println("Updating product with id: " + request.getId());
-        Product existingProduct = productRepo.findById(request.getId())
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getId()));
+        Product existingProduct = productRepo.findById(request.getId());
+        if (existingProduct == null) {
+            throw new CustomException("Product not found ",HttpStatus.NOT_FOUND);
+        }
         String imgUrl = existingProduct.getImgUrl();
         if (request.getImg() != null && !request.getImg().isEmpty()) {
             Map<String, String> uploadResult = cloudinaryService.uploadImg(request.getImg());
@@ -142,18 +140,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse deductStock(int productId, int quantity) {
-        Product product = productRepo.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-        if (product.getQuantity() - product.getReserve() < quantity) {
-            throw new RuntimeException("Insufficient stock for product id: " + productId);
-        }
-        product.setReserve(product.getReserve() + quantity);
-        Product saved = productRepo.save(product);
-        return productMapper.toProductResponse(saved);
-    }
-
-    @Override
     public OrderRequest isStockAvailable(OrderRequest request) {
         Map<Integer,Integer> productQuantities = new HashMap<>();
         for(OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
@@ -175,8 +161,65 @@ public class ProductServiceImpl implements ProductService {
         request.setOrderCode(UUID.randomUUID().toString());
         productRepo.saveAll(products);
         producer.publishOrderAvailable(request);
+        saveItem(request);
         return request;
     }
 
+    @Transactional
+    @Override
+    public void deductStock(String orderCode) {
+        OrderReserve orderReserve = orderReserveRepo.findByOrderCode(orderCode);
+        if (orderReserve != null) {
+            List<Item> items = orderReserve.getItem();
+            Map<Integer, Integer> quantityMap = new HashMap<>();
+            for (Item item : items) {
+                quantityMap.put(item.getProductId(), item.getQuantity());
+            }
+            List<Product> products = productRepo.findAllById(quantityMap.keySet());
+            for (Product product : products) {
+                int qty = quantityMap.get(product.getId());
+                product.setReserve(product.getReserve() - qty);
+                product.setQuantity(product.getQuantity() - qty);
+            }
+            productRepo.saveAll(products);
+            orderReserveRepo.delete(orderReserve);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void restoreStock(String orderCode) {
+        OrderReserve orderReserve = orderReserveRepo.findByOrderCode(orderCode);
+        if (orderReserve != null) {
+            List<Item> items = orderReserve.getItem();
+            Map<Integer, Integer> quantityMap = new HashMap<>();
+            for (Item item : items) {
+                quantityMap.put(item.getProductId(), item.getQuantity());
+            }
+            List<Product> products = productRepo.findAllById(quantityMap.keySet());
+            for (Product product : products) {
+                int qty = quantityMap.get(product.getId());
+                product.setReserve(product.getReserve() - qty);
+            }
+            productRepo.saveAll(products);
+            orderReserveRepo.delete(orderReserve);
+        }
+    }
+
+    private void saveItem(OrderRequest request) {
+        Map<Integer,Integer> productQuantities = new HashMap<>();
+        for(OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
+            productQuantities.put(item.getProductId(), productQuantities.getOrDefault(item.getProductId(), 0) + item.getQuantity());
+        }
+        List<Item> items = new ArrayList<>();
+        for(Map.Entry<Integer, Integer> entry : productQuantities.entrySet()) {
+            Item item = new Item();
+            item.setProductId(entry.getKey());
+            item.setQuantity(entry.getValue());
+            items.add(item);
+        }
+        OrderReserve orderReserve = new OrderReserve(request.getOrderCode(), items);
+        orderReserveRepo.save(orderReserve);
+    }
 
 }

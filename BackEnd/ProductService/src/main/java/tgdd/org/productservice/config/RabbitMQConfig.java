@@ -7,6 +7,7 @@ import org.springframework.amqp.core.Queue;
 
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +19,10 @@ public class RabbitMQConfig {
     public static final String ROUTING_KEY = "tgdd.routing.key";
 
     public static final String ORDER_QUEUE_NAME = "tgdd.order.queue";
+    public static final String PRODUCT_QUEUE_NAME = "tgdd.product.queue";
+    @Value("${app.rabbitmq.prefix}")
+    String prefix;
+
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -30,12 +35,17 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue orderQueue() {
-        return new Queue(ORDER_QUEUE_NAME, true);
+        return new Queue(prefix + "." + ORDER_QUEUE_NAME, true);
+    }
+
+    @Bean
+    public Queue productQueue() {
+        return new Queue(prefix + "." + PRODUCT_QUEUE_NAME, true);
     }
 
     @Bean
     public DirectExchange exchange() {
-        return new DirectExchange(EXCHANGE_NAME);
+        return new DirectExchange(prefix+"." +EXCHANGE_NAME);
     }
 
     @Bean
@@ -52,8 +62,6 @@ public class RabbitMQConfig {
     public Binding bindingOrderOutOfStock(Queue orderQueue, DirectExchange exchange) {
         return BindingBuilder.bind(orderQueue).to(exchange).with("product.outOfStock");
     }
-
-
 
 
 }

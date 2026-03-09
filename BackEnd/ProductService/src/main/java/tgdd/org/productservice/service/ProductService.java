@@ -15,6 +15,7 @@ public interface ProductService {
     List<ProductResponse> findByCategoryId(int categoryId);
     List<ProductResponse> findActiveProducts();
     List<ProductResponse> findInactiveProducts();
-    ProductResponse deductStock(int productId, int quantity);
     OrderRequest isStockAvailable(OrderRequest request);
+    void deductStock(String orderCode);
+    void restoreStock(String orderCode);
 }
