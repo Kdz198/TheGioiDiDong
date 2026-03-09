@@ -37,7 +37,7 @@ const mockApiPromotions: ApiPromotion[] = [
   },
 ];
 
-function mapApiPromotionToVoucher(promo: ApiPromotion): Voucher {
+export function mapApiPromotionToVoucher(promo: ApiPromotion): Voucher {
   const typeMap: Record<ApiPromotionType, Voucher["type"]> = {
     PERCENTAGE: "percentage",
     MONEY: "fixed_amount",
@@ -114,7 +114,7 @@ export const promotionService = {
       mockApiPromotions.push(newPromotion);
       return newPromotion;
     }
-    const response = await apiClient.post(API_ENDPOINTS.PROMOTIONS.CREATE, data);
+    const response = await apiClient.post(API_ENDPOINTS.PROMOTIONS.CREATE, { id: 0, ...data });
     return response.data;
   },
 

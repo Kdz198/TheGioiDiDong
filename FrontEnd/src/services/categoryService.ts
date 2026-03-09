@@ -32,8 +32,8 @@ export const categoryService = {
       mockCategories.push(newCat);
       return newCat;
     }
-    const response = await apiClient.post(API_ENDPOINTS.CATEGORIES.CREATE, data);
-    return response.data.data;
+    const response = await apiClient.post(API_ENDPOINTS.CATEGORIES.CREATE, { id: 0, ...data });
+    return response.data;
   },
 
   updateCategory: async (data: {
@@ -50,7 +50,7 @@ export const categoryService = {
       return mockCategories[idx] ?? mockCategories[0];
     }
     const response = await apiClient.put(API_ENDPOINTS.CATEGORIES.UPDATE, data);
-    return response.data.data;
+    return response.data;
   },
 
   deleteCategory: async (id: number): Promise<void> => {
