@@ -77,23 +77,23 @@ export function ProductFormPage() {
   useEffect(() => {
     if (existingProduct) {
       setValue("name", existingProduct.name);
-      setValue("shortDescription", existingProduct.shortDescription);
-      setValue("description", existingProduct.description);
-      setValue("categoryId", existingProduct.categoryId);
-      setValue("brandId", existingProduct.brandId);
-      setValue("tags", existingProduct.tags.join(", "));
-      setValue("isFlashSale", existingProduct.isFlashSale);
-      setValue("flashSaleEndAt", existingProduct.flashSaleEndAt ?? "");
-      setVariants(
-        existingProduct.variants.map((v) => ({
-          sku: v.sku,
-          color: v.color ?? "",
-          size: v.size ?? "",
-          price: v.price,
-          originalPrice: v.originalPrice,
-          stockQuantity: v.stockQuantity,
-        }))
-      );
+      // setValue("shortDescription", existingProduct.shortDescription);
+      // setValue("description", existingProduct.description);
+      // setValue("categoryId", existingProduct.categoryId);
+      // setValue("brandId", existingProduct.brandId);
+      // setValue("tags", existingProduct.tags.join(", "));
+      // setValue("isFlashSale", existingProduct.isFlashSale);
+      // setValue("flashSaleEndAt", existingProduct.flashSaleEndAt ?? "");
+      // setVariants(
+      //   existingProduct.variants.map((v) => ({
+      //     sku: v.sku,
+      //     color: v.color ?? "",
+      //     size: v.size ?? "",
+      //     price: v.price,
+      //     originalPrice: v.originalPrice,
+      //     stockQuantity: v.stockQuantity,
+      //   }))
+      // );
     }
   }, [existingProduct, setValue]);
 

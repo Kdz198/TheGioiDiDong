@@ -39,27 +39,16 @@ export interface ProductVariant {
 
 export interface Product {
   id: number;
-  slug: string;
   name: string;
   description: string;
-  shortDescription: string;
-  categoryId: number;
-  category: Category;
-  brandId: number;
-  brand: Brand;
-  variants: ProductVariant[];
-  defaultPrice: number;
-  defaultOriginalPrice: number;
-  thumbnailUrl: string;
-  rating: number;
-  reviewCount: number;
-  soldCount: number;
-  isFlashSale: boolean;
-  flashSaleEndAt?: string;
-  isActive: boolean;
-  tags: string[];
-  specifications: Record<string, string>;
-  createdAt: string;
+  price: number;
+  quantity: number;
+  reserve: number;
+  imgUrl: string;
+  active: boolean;
+  versionName: string;
+  brandName: string;
+  categoryName: string;
 }
 
 export interface ProductListResponse {

@@ -91,29 +91,27 @@ export function ProductManagerPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <img
-                              src={product.thumbnailUrl}
+                              src={product.imgUrl}
                               alt={product.name}
                               className="h-10 w-10 rounded object-cover"
                             />
                             <span className="font-medium text-zinc-900">{product.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{product.category.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{product.brand.name}</td>
+                        <td className="px-4 py-3 text-gray-600">{product.categoryName}</td>
+                        <td className="px-4 py-3 text-gray-600">{product.brandName}</td>
                         <td className="px-4 py-3 text-right font-medium">
-                          {formatVND(product.defaultPrice)}
+                          {formatVND(product.price)}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {product.variants.reduce((sum, v) => sum + v.stockQuantity, 0)}
-                        </td>
+                        <td className="px-4 py-3 text-right">{product.quantity ?? 0}</td>
                         <td className="px-4 py-3">
                           <Badge
                             className={
-                              product.isActive
+                              product.active
                                 ? "bg-green-100 text-green-700"
                                 : "bg-gray-100 text-gray-500"
                             }>
-                            {product.isActive ? "Đang bán" : "Ẩn"}
+                            {product.active ? "Đang bán" : "Ẩn"}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
