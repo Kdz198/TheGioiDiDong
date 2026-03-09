@@ -4,10 +4,14 @@ import { useAuthStore } from "@/stores/authStore";
 import {
   BarChart3,
   Bookmark,
+  CreditCard,
+  FolderTree,
   LayoutDashboard,
   LogOut,
+  MessageSquare,
   Package,
   ShoppingCart,
+  Tag,
   UserCog,
   Users,
 } from "lucide-react";
@@ -26,6 +30,11 @@ const adminItems: SidebarItem[] = [
   { label: "Báo cáo", href: ROUTES.ADMIN_REPORTS, icon: BarChart3 },
   { label: "Khách hàng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
+  { label: "Sản phẩm", href: ROUTES.ADMIN_PRODUCTS, icon: Package },
+  { label: "Danh mục", href: ROUTES.ADMIN_CATEGORIES, icon: FolderTree },
+  { label: "Thương hiệu", href: ROUTES.ADMIN_BRANDS, icon: Bookmark },
+  { label: "Đơn hàng", href: ROUTES.ADMIN_ORDERS, icon: ShoppingCart },
+  { label: "Khuyến mãi", href: ROUTES.ADMIN_PROMOTIONS, icon: Tag },
 ];
 
 // Staff: orders, products, brands, users only
@@ -35,6 +44,8 @@ const staffItems: SidebarItem[] = [
   { label: "Sản phẩm", href: ROUTES.STAFF_PRODUCTS, icon: Package },
   { label: "Thương hiệu", href: ROUTES.STAFF_BRANDS, icon: Bookmark },
   { label: "Người dùng", href: ROUTES.STAFF_USERS, icon: Users },
+  { label: "Thanh toán", href: ROUTES.STAFF_PAYMENTS, icon: CreditCard },
+  { label: "Phản hồi", href: ROUTES.STAFF_FEEDBACK, icon: MessageSquare },
 ];
 
 export function DashboardSidebar() {

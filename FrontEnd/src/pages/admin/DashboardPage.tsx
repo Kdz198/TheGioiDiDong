@@ -102,7 +102,9 @@ export function DashboardPage() {
                 {recentOrders?.data.map((order) => (
                   <tr key={order.id} className="border-b last:border-0">
                     <td className="py-3 font-medium text-zinc-900">{order.orderCode}</td>
-                    <td className="py-3 text-gray-600">{order.shippingInfo.recipientName}</td>
+                    <td className="py-3 text-gray-600">
+                      {order.shippingInfo?.recipientName ?? "-"}
+                    </td>
                     <td className="py-3 text-right font-medium">{formatVND(order.total)}</td>
                     <td className="py-3">
                       <OrderStatusBadge status={order.status} />
