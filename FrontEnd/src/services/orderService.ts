@@ -79,8 +79,12 @@ export const orderService = {
       if (!order) throw new Error("Đơn hàng không tồn tại");
       return { ...order, status: "canceled" };
     }
-    const response = await apiClient.post(API_ENDPOINTS.ORDERS.CANCEL(orderId), { reason });
-    return response.data.data;
+    const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE, {
+      id: orderId,
+      status: "CANCELED",
+      cancelReason: reason,
+    });
+    return response.data;
   },
 
   getAllOrders: async (params: GetOrdersParams = {}): Promise<PaginatedResponse<Order>> => {

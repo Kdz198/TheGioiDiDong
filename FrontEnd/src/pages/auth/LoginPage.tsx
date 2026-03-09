@@ -8,15 +8,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import type { UserRole } from "@/interfaces/user.types";
 import { ROUTES } from "@/router/routes.const";
 import { authService } from "@/services/authService";
 import { useAuthStore } from "@/stores/authStore";
 import { loginSchema, type LoginFormData } from "@/validations/auth.validation";
 import { toast } from "sonner";
 
+interface DemoAccount {
+  label: string;
+  email: string;
+  password: string;
+  color: string;
+}
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    label: "Quản trị viên",
+    email: "superadmin@gmail.com",
+    password: "123",
+    color: "bg-orange-500 hover:bg-orange-600 text-white",
+  },
+  {
+    label: "Nhân viên",
+    email: "staff@gmail.com",
+    password: "123",
+    color: "bg-blue-500 hover:bg-blue-600 text-white",
+  },
+  {
+    label: "Khách hàng",
+    email: "user@gmail.com",
+    password: "123",
+    color: "bg-teal-500 hover:bg-teal-600 text-white",
+  },
+];
+
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [demoLoadingEmail, setDemoLoadingEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const login = useAuthStore((s) => s.login);
@@ -29,33 +57,27 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  const handleLoginSuccess = (result: Awaited<ReturnType<typeof authService.login>>) => {
+    login(result.user, result.token, result.expiresIn);
+    toast.success("Đăng nhập thành công!");
+
+    const returnUrl = searchParams.get("returnUrl");
+    if (returnUrl) {
+      navigate(returnUrl);
+    } else if (result.user.role === "admin") {
+      navigate(ROUTES.ADMIN_DASHBOARD);
+    } else if (result.user.role === "staff") {
+      navigate(ROUTES.STAFF_ORDERS);
+    } else {
+      navigate(ROUTES.HOME);
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
       const result = await authService.login(data);
-      login(
-        {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.fullName,
-          role: result.user.role,
-          avatar: result.user.avatar,
-        },
-        result.token
-      );
-
-      toast.success("Đăng nhập thành công!");
-
-      const returnUrl = searchParams.get("returnUrl");
-      if (returnUrl) {
-        navigate(returnUrl);
-      } else if (result.user.role === "admin") {
-        navigate(ROUTES.ADMIN_DASHBOARD);
-      } else if (result.user.role === "staff") {
-        navigate(ROUTES.STAFF_ORDERS);
-      } else {
-        navigate(ROUTES.HOME);
-      }
+      handleLoginSuccess(result);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Đăng nhập thất bại. Vui lòng thử lại.");
     } finally {
@@ -63,40 +85,24 @@ export function LoginPage() {
     }
   };
 
-  const handleDemo = (role: UserRole) => {
-    const demoUser = {
-      id: Date.now(),
-      email: `demo+${role}@example.com`,
-      name: `Demo ${role}`,
-      role,
-      avatar: "",
-    };
-
-    // Bypass real auth for demo purposes
-    login(demoUser, "demo-token");
-
-    if (role === "admin") navigate(ROUTES.ADMIN_DASHBOARD);
-    else if (role === "staff") navigate(ROUTES.STAFF_ORDERS);
-    else navigate(ROUTES.HOME);
+  const handleDemo = async (account: DemoAccount) => {
+    try {
+      setDemoLoadingEmail(account.email);
+      const result = await authService.login({
+        email: account.email,
+        password: account.password,
+      });
+      handleLoginSuccess(result);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Đăng nhập demo thất bại. Vui lòng thử lại."
+      );
+    } finally {
+      setDemoLoadingEmail(null);
+    }
   };
 
-  const demoAccounts = [
-    {
-      role: "admin" as UserRole,
-      label: "Quản trị viên",
-      color: "bg-orange-500 hover:bg-orange-600 text-white",
-    },
-    {
-      role: "staff" as UserRole,
-      label: "Nhân viên",
-      color: "bg-blue-500 hover:bg-blue-600 text-white",
-    },
-    {
-      role: "customer" as UserRole,
-      label: "Khách hàng",
-      color: "bg-teal-500 hover:bg-teal-600 text-white",
-    },
-  ];
+  const isAnyLoading = isLoading || demoLoadingEmail !== null;
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
@@ -130,7 +136,10 @@ export function LoginPage() {
           {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
         </div>
 
-        <Button type="submit" className="w-full bg-teal-500 hover:bg-teal-600" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full bg-teal-500 hover:bg-teal-600"
+          disabled={isAnyLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Đăng nhập
         </Button>
@@ -143,13 +152,15 @@ export function LoginPage() {
           Tài khoản demo
         </p>
         <div className="grid grid-cols-3 gap-2">
-          {demoAccounts.map(({ role, label, color }) => (
+          {DEMO_ACCOUNTS.map((account) => (
             <button
-              key={role}
+              key={account.email}
               type="button"
-              onClick={() => handleDemo(role)}
-              className={`rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${color}`}>
-              {label}
+              onClick={() => handleDemo(account)}
+              disabled={isAnyLoading}
+              className={`flex items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${account.color}`}>
+              {demoLoadingEmail === account.email && <Loader2 className="h-3 w-3 animate-spin" />}
+              {account.label}
             </button>
           ))}
         </div>

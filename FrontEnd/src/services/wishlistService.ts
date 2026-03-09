@@ -1,29 +1,15 @@
-import { USE_MOCK_API } from "@/constants/app.const";
-import { apiClient } from "@/lib/api";
-
+// No wishlist endpoints exist in the backend schema.
+// Wishlist state is managed entirely by wishlistStore (localStorage via Zustand persist).
 export const wishlistService = {
   getWishlist: async (): Promise<number[]> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 300));
-      return [1, 6, 12];
-    }
-    const response = await apiClient.get("/wishlist");
-    return response.data.data;
+    return [];
   },
 
-  addToWishlist: async (productId: number): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      return;
-    }
-    await apiClient.post("/wishlist", { productId });
+  addToWishlist: async (_productId: number): Promise<void> => {
+    // no-op — wishlistStore handles state
   },
 
-  removeFromWishlist: async (productId: number): Promise<void> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 200));
-      return;
-    }
-    await apiClient.delete(`/wishlist/${productId}`);
+  removeFromWishlist: async (_productId: number): Promise<void> => {
+    // no-op — wishlistStore handles state
   },
 };
