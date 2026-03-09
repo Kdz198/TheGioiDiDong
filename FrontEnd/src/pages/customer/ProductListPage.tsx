@@ -48,7 +48,7 @@ export function ProductListPage() {
       selectedCategory,
     ],
     queryFn: () =>
-      productService.getProducts({
+      productService.getAppProducts({
         // Nếu API cần truyền categoryName hoặc categoryId để lọc thì truyền vào đây.
         // Ép kiểu 'as any' tạm thời để TypeScript không báo lỗi thuộc tính lạ
         ...(selectedCategory ? { categoryName: selectedCategory.name } : {}),
@@ -67,8 +67,14 @@ export function ProductListPage() {
       variantId: product.id,
       product: {
         id: product.id,
+        slug: product.name,
         name: product.name,
-        imgUrl: product.imgUrl, // Đã sửa
+        thumbnailUrl: product.imgUrl, // Đã sửa
+      },
+      appProduct: {
+        id: product.id,
+        name: product.name,
+        imgUrl: product.imgUrl,
       },
       variant: {
         id: product.id,

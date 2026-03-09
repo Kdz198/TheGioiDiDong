@@ -13,9 +13,9 @@ interface CartItemProps {
 export function CartItemRow({ item, onUpdateQty, onRemove }: CartItemProps) {
   return (
     <div className="flex items-center gap-4 border-b border-gray-100 py-4">
-      <Link to={`/products/${item.product.id}`} className="shrink-0">
+      <Link to={`/products/${item.product.slug}`} className="shrink-0">
         <img
-          src={item.product.imgUrl}
+          src={item.product.thumbnailUrl}
           alt={item.product.name}
           className="h-20 w-20 rounded-lg object-cover"
         />

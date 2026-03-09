@@ -39,6 +39,38 @@ export interface ProductVariant {
 
 export interface Product {
   id: number;
+  slug: string;
+  name: string;
+  description: string;
+  categoryId: number;
+  category: Category;
+  brandId: number;
+  brand: Brand;
+  variants: ProductVariant[];
+  defaultPrice: number;
+  defaultOriginalPrice: number;
+  thumbnailUrl: string;
+  rating: number;
+  reviewCount: number;
+  soldCount: number;
+  flashSaleEndAt?: string;
+  isActive: boolean;
+  specifications: Record<string, string>;
+  createdAt: string;
+  stockQuantity?: number;
+  versionName?: string;
+}
+
+export interface ProductListResponse {
+  items: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface AppProduct {
+  id: number;
   name: string;
   description: string;
   price: number;
@@ -51,8 +83,8 @@ export interface Product {
   categoryName: string;
 }
 
-export interface ProductListResponse {
-  items: Product[];
+export interface AppProductListResponse {
+  items: AppProduct[];
   total: number;
   page: number;
   pageSize: number;

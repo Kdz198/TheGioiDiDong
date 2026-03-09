@@ -80,15 +80,16 @@ export function ProductFormPage() {
       setValue("name", existingProduct.name);
       setValue("description", existingProduct.description);
       // Backend ProductResponse only returns names; resolve IDs by matching loaded lists
-      const cat = categories?.find((c) => c.name === existingProduct.categoryName);
+      const cat = categories?.find((c) => c.name === existingProduct.category.name);
       setValue("categoryId", cat?.id ?? 0);
-      const brand = brands?.find((b) => b.name === existingProduct.brandName);
+      const brand = brands?.find((b) => b.name === existingProduct.brand.name);
       setValue("brandId", brand?.id ?? 0);
       const version = productVersions?.find((v) => v.versionName === existingProduct.versionName);
       if (version?.id) setSelectedVersionId(version.id);
-      setValue("active", existingProduct.active);
-      setValue("price", existingProduct.price ?? 0);
-      setValue("stockQuantity", existingProduct.quantity ?? 0);
+      setValue("flashSaleEndAt", existingProduct.flashSaleEndAt ?? "");
+      setValue("active", existingProduct.isActive);
+      setValue("price", existingProduct.defaultPrice ?? 0);
+      setValue("stockQuantity", existingProduct.stockQuantity ?? 0);
       setVariants(
         existingProduct.variants.map((v) => ({
           sku: v.sku,

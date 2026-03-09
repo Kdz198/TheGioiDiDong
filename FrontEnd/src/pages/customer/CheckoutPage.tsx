@@ -184,7 +184,7 @@ export function CheckoutPage() {
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <img
-                        src={item.product.imgUrl}
+                        src={item.product.thumbnailUrl}
                         alt={item.product.name}
                         className="h-12 w-12 rounded object-cover"
                       />

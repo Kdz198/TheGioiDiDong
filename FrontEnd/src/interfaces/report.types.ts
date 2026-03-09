@@ -12,7 +12,7 @@ export interface RevenueReport {
   averageOrderValue: number;
   data: RevenueDataPoint[];
   topProducts: Array<{
-    product: Pick<Product, "id" | "name" | "imgUrl">;
+    product: Pick<Product, "id" | "name" | "thumbnailUrl">;
     revenue: number;
     soldCount: number;
   }>;

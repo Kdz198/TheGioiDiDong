@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import type { Product } from "@/interfaces";
 
 export function WishlistPage() {
   const { productIds, toggle: toggleWishlist, isInWishlist } = useWishlistStore();
@@ -21,27 +20,35 @@ export function WishlistPage() {
 
   const wishlistedProducts = data?.items.filter((p) => productIds.includes(p.id)) || [];
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: (typeof wishlistedProducts)[0], variantId: number) => {
+    const variant = product.variants.find((v) => v.id === variantId);
+    if (!variant) return;
     addItem({
-      id: Date.now(),
+      id: variant.id,
       productId: product.id,
-      variantId: product.id,
+      variantId: variant.id,
       product: {
         id: product.id,
+        slug: product.slug,
         name: product.name,
-        imgUrl: product.imgUrl,
+        thumbnailUrl: product.thumbnailUrl,
+      },
+      appProduct: {
+        id: product.id,
+        name: product.name,
+        imgUrl: product.thumbnailUrl,
       },
       variant: {
-        id: product.id,
-        sku: `SKU-${product.id}`,
-        color: "Mặc định",
-        size: "Mặc định",
-        price: product.price,
-        originalPrice: product.price,
-        stockQuantity: product.quantity ?? 0,
+        id: variant.id,
+        sku: variant.sku,
+        color: variant.color,
+        size: variant.size,
+        price: variant.price,
+        originalPrice: variant.originalPrice,
+        stockQuantity: variant.stockQuantity,
       },
       quantity: 1,
-      subtotal: product.price,
+      subtotal: variant.price,
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };
@@ -69,7 +76,7 @@ export function WishlistPage() {
           <ProductCard
             key={product.id}
             product={product}
-            onAddToCart={() => handleAddToCart(product)}
+            onAddToCart={() => handleAddToCart(product, product.variants[0]?.id ?? 0)}
             isWishlisted={isInWishlist(product.id)}
             onToggleWishlist={toggleWishlist}
           />

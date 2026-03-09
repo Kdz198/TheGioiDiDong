@@ -1,6 +1,8 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { PAGINATION, USE_MOCK_API } from "@/constants/app.const";
 import type {
+  AppProduct,
+  AppProductListResponse,
   BackendProduct,
   Brand,
   Product,
@@ -37,23 +39,26 @@ interface GetProductsParams {
 
 export const productService = {
   getProducts: async (params: GetProductsParams = {}): Promise<ProductListResponse> => {
-    let allProducts: Product[];
+    let allProducts: Product[] = [];
 
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
-      allProducts = [...mockProducts].filter((p) => p.active);
+      // Ép kiểu tạm thời để tránh lỗi TypeScript khi mock data cũ không khớp interface mới
+      allProducts = [...mockProducts];
     } else {
-      const response = await apiClient.get<Product[]>(API_ENDPOINTS.PRODUCTS.LIST);
-      allProducts = response.data;
+      // 1. Gọi API lấy toàn bộ sản phẩm (bao gồm inactive)
+      const response = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.LIST_ALL);
+      allProducts = response.data.map(mapBackendProduct);
     }
 
+    // 2. Xử lý Lọc (Filter) ở Frontend
     let filtered = [...allProducts];
 
     // Lọc theo trạng thái active
     if (params.activeFilter === "active") {
-      filtered = filtered.filter((p) => p.active);
+      filtered = filtered.filter((p) => p.isActive);
     } else if (params.activeFilter === "inactive") {
-      filtered = filtered.filter((p) => !p.active);
+      filtered = filtered.filter((p) => !p.isActive);
     }
 
     // Lọc theo tìm kiếm tên
@@ -61,19 +66,21 @@ export const productService = {
       const query = params.search.toLowerCase();
       filtered = filtered.filter((p) => p.name.toLowerCase().includes(query));
     }
+    // Lọc theo khoảng giá
     if (params.minPrice !== undefined) {
-      filtered = filtered.filter((p) => p.price >= params.minPrice!); // Sửa thành price
+      filtered = filtered.filter((p) => p.defaultPrice >= params.minPrice!);
     }
     if (params.maxPrice !== undefined) {
-      filtered = filtered.filter((p) => p.price <= params.maxPrice!); // Sửa thành price
+      filtered = filtered.filter((p) => p.defaultPrice <= params.maxPrice!);
     }
+    // Sắp xếp
     if (params.sortBy) {
       switch (params.sortBy) {
         case "price_asc":
-          filtered.sort((a, b) => a.price - b.price); // Sửa thành price
+          filtered.sort((a, b) => a.defaultPrice - b.defaultPrice);
           break;
         case "price_desc":
-          filtered.sort((a, b) => b.price - a.price); // Sửa thành price
+          filtered.sort((a, b) => b.defaultPrice - a.defaultPrice);
           break;
       }
     }
@@ -267,5 +274,74 @@ export const productService = {
       return;
     }
     await apiClient.delete(API_ENDPOINTS.PRODUCT_VERSIONS.DELETE(id));
+  },
+
+  getAppProducts: async (params: GetProductsParams = {}): Promise<AppProductListResponse> => {
+    let allProducts: AppProduct[] = [];
+
+    if (USE_MOCK_API) {
+      return { items: [], total: 0, page: 1, pageSize: 12, totalPages: 0 }; // Tạm bỏ mock cho luồng này
+    } else {
+      const response = await apiClient.get<AppProduct[]>("/api/products/product/active");
+      allProducts = response.data;
+    }
+
+    let filtered = [...allProducts];
+
+    // Lọc theo tìm kiếm
+    if (params.search) {
+      const query = params.search.toLowerCase();
+      filtered = filtered.filter((p) => p.name.toLowerCase().includes(query));
+    }
+    // Lọc theo giá
+    if (params.minPrice !== undefined) {
+      filtered = filtered.filter((p) => p.price >= params.minPrice!);
+    }
+    if (params.maxPrice !== undefined) {
+      filtered = filtered.filter((p) => p.price <= params.maxPrice!);
+    }
+    // Sắp xếp
+    if (params.sortBy) {
+      switch (params.sortBy) {
+        case "price_asc":
+          filtered.sort((a, b) => a.price - b.price);
+          break;
+        case "price_desc":
+          filtered.sort((a, b) => b.price - a.price);
+          break;
+      }
+    }
+
+    const page = params.page || 1;
+    const pageSize = params.pageSize || PAGINATION.DEFAULT_PAGE_SIZE;
+    const start = (page - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    return {
+      items,
+      total: filtered.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(filtered.length / pageSize),
+    };
+  },
+
+  getAppProductById: async (id: string | number): Promise<AppProduct> => {
+    const response = await apiClient.get<AppProduct>(`/api/products/product/${id}`);
+    return response.data;
+  },
+
+  getAppFlashSaleProducts: async (): Promise<AppProduct[]> => {
+    if (USE_MOCK_API) return [];
+    // Tạm gọi API lấy danh sách active làm flash sale
+    const response = await apiClient.get<AppProduct[]>("/api/products/product/active");
+    return response.data;
+  },
+
+  getAppFeaturedProducts: async (): Promise<AppProduct[]> => {
+    if (USE_MOCK_API) return [];
+    // Tạm gọi API lấy danh sách active làm featured
+    const response = await apiClient.get<AppProduct[]>("/api/products/product/active");
+    return response.data.slice(0, 8); // Lấy 8 cái đầu
   },
 };

@@ -61,9 +61,9 @@ export function StaffProductManagerPage() {
                       <tr key={product.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            {product.imgUrl && (
+                            {product.thumbnailUrl && (
                               <img
-                                src={product.imgUrl}
+                                src={product.thumbnailUrl}
                                 alt={product.name}
                                 className="h-10 w-10 rounded-lg object-cover"
                               />
@@ -71,22 +71,23 @@ export function StaffProductManagerPage() {
                             <span className="font-medium text-zinc-900">{product.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{product.categoryName ?? "—"}</td>
-                        <td className="px-4 py-3 text-gray-500">{product.brandName ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-500">{product.category?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-500">{product.brand?.name ?? "—"}</td>
                         <td className="px-4 py-3 text-right font-medium text-zinc-900">
-                          {formatVND(product.price)}
+                          {formatVND(product.defaultPrice)}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-500">
-                          {product.quantity ?? "—"}
+                          {product.variants?.reduce((sum, v) => sum + (v.stockQuantity ?? 0), 0) ??
+                            0}
                         </td>
                         <td className="px-4 py-3">
                           <Badge
                             className={
-                              product.active
+                              product.isActive
                                 ? "bg-green-100 text-green-700"
                                 : "bg-gray-100 text-gray-500"
                             }>
-                            {product.active ? "Đang bán" : "Ẩn"}
+                            {product.isActive ? "Đang bán" : "Ẩn"}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">

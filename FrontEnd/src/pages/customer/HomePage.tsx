@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import type { Product } from "@/interfaces/product.types";
 import { ROUTES } from "@/router/routes.const";
 import { productService } from "@/services/productService";
 import { useCartStore } from "@/stores/cartStore";
@@ -14,6 +13,7 @@ import { ProductCard } from "@/components/common/ProductCard";
 import { ProductCardSkeleton } from "@/components/common/ProductCardSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { AppProduct } from "@/interfaces/product.types.ts";
 
 // --- COMPONENT ĐẾM NGƯỢC GIỮ NGUYÊN ---
 function CountdownTimer({ endAt }: { endAt: string }) {
@@ -60,14 +60,14 @@ export function HomePage() {
   // --- CALL API ---
   const { data: flashSaleProducts, isLoading: flashSaleLoading } = useQuery({
     queryKey: ["products", "flash-sale"],
-    queryFn: productService.getFlashSaleProducts,
+    queryFn: productService.getAppFlashSaleProducts,
   });
 
   // Gọi API lấy toàn bộ sản phẩm active để xử lý lọc
   const { data: allProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["products", "all-active"],
     // Tạm dùng getProducts (nếu API này trả về nhiều) hoặc getFeaturedProducts tuỳ bạn
-    queryFn: productService.getFeaturedProducts,
+    queryFn: productService.getAppFeaturedProducts,
   });
 
   // --- LOGIC TRÍCH XUẤT DANH SÁCH LỌC DUY NHẤT ---
@@ -104,12 +104,18 @@ export function HomePage() {
   }, [allProducts, selectedBrand, selectedCategory, selectedVersion, sortBy]);
 
   // --- THÊM GIỎ HÀNG ---
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: AppProduct) => {
     addItem({
       id: Date.now(),
       productId: product.id,
       variantId: product.id,
       product: {
+        id: product.id,
+        slug: product.name,
+        name: product.name,
+        thumbnailUrl: product.imgUrl,
+      },
+      appProduct: {
         id: product.id,
         name: product.name,
         imgUrl: product.imgUrl,

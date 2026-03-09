@@ -25,7 +25,7 @@ export function ProductDetailPage() {
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", slug],
-    queryFn: () => productService.getProductById(slug!),
+    queryFn: () => productService.getAppProductById(slug!),
     enabled: !!slug,
   });
 
@@ -74,8 +74,14 @@ export function ProductDetailPage() {
       variantId: product.id,
       product: {
         id: product.id,
+        slug: product.name,
         name: product.name,
-        imgUrl: product.imgUrl, // ĐÃ SỬA
+        thumbnailUrl: product.imgUrl, // ĐÃ SỬA
+      },
+      appProduct: {
+        id: product.id,
+        name: product.name,
+        imgUrl: product.imgUrl,
       },
       variant: {
         id: product.id,
