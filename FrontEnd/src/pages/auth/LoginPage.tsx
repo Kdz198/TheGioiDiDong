@@ -65,12 +65,12 @@ export function LoginPage() {
     const returnUrl = searchParams.get("returnUrl");
 
     // Validate returnUrl against the user's actual role to avoid 403.
-    // Admin routes require "admin", staff routes require "admin" or "staff".
+    // Admin routes require "admin", staff routes require "staff" only.
     const canAccessReturnUrl =
       !!returnUrl &&
       ((!returnUrl.startsWith("/admin") && !returnUrl.startsWith("/staff")) ||
         (returnUrl.startsWith("/admin") && role === "admin") ||
-        (returnUrl.startsWith("/staff") && (role === "admin" || role === "staff")));
+        (returnUrl.startsWith("/staff") && role === "staff"));
 
     if (canAccessReturnUrl) {
       navigate(returnUrl);
