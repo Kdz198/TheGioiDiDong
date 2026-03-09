@@ -48,8 +48,9 @@ export function SignUpPage() {
         {
           id: result.user.id,
           email: result.user.email,
-          name: result.user.fullName,
+          fullName: result.user.fullName,
           role: result.user.role,
+          isActive: result.user.isActive,
           avatar: result.user.avatar,
         },
         result.token

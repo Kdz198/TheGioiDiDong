@@ -80,6 +80,7 @@ public class AuthServiceImpl implements AuthService {
 
         return LoginResponse.builder()
                 .token(token)
+                .role( roleName)
                 .type("Bearer")
                 .message("Đăng nhập thành công!")
                 .ttl(ttlInSeconds)

@@ -50,21 +50,12 @@ export const paymentService = {
         transactionId: `${method.toUpperCase()}-${orderId}-${Date.now()}`,
       };
     }
-    const response = await apiClient.post(API_ENDPOINTS.PAYMENTS.INITIATE, {
+    const response = await apiClient.post(API_ENDPOINTS.PAYMENTS.MAKE_PAYMENT, {
       orderId,
       method,
       returnUrl: `${window.location.origin}/order/success`,
     });
-    return response.data.data;
-  },
-
-  verifyPayment: async (transactionId: string): Promise<{ status: "paid" | "failed" }> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 500));
-      return { status: "paid" };
-    }
-    const response = await apiClient.get(API_ENDPOINTS.PAYMENTS.VERIFY(transactionId));
-    return response.data.data;
+    return response.data;
   },
 
   getAllPayments: async (): Promise<ApiPayment[]> => {

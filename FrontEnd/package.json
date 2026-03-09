@@ -8,7 +8,7 @@
     "cypress:component": "cypress run --component",
     "cypress:e2e": "cypress run --e2e",
     "cypress:open": "cypress open",
-    "dev": "vite",
+    "dev": "vite --port 3000",
     "format": "prettier --write .",
     "generate-schema": "pnpm run generate-schema:orders && pnpm run generate-schema:products && pnpm run generate-schema:users",
     "generate-schema:orders": "pnpm exec openapi-typescript https://tgdd-api.kdz.asia/api/orders/v3/api-docs -o ./schema-orders.d.ts",

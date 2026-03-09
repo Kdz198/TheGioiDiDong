@@ -2,6 +2,9 @@ package tgdd.org.userservice.Service.Impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import tgdd.org.userservice.Enum.Permission;
 import tgdd.org.userservice.Model.Account;
@@ -63,10 +66,19 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<RetrieveAccountResponse> getAllAccounts() {
-        return accountRepository.findAll().stream()
-                .map(this::convertToResponse)
-                .toList();
+    public Page<RetrieveAccountResponse> getAllAccounts(List<String> roles, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Account> accounts;
+
+        if (roles == null || roles.isEmpty()) {
+            accounts = accountRepository.findAll(pageable);
+        } else {
+            accounts = accountRepository.findByRole_NameIn(roles, pageable);
+        }
+
+        return accounts.map(this::convertToResponse);
     }
 
     RetrieveAccountResponse convertToResponse(Account account) {
