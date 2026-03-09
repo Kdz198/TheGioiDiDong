@@ -41,9 +41,8 @@ export const ROUTES = {
   STAFF_PRODUCTS: "/staff/products",
   STAFF_BRANDS: "/staff/brands",
   STAFF_USERS: "/staff/users",
-  // Hidden temporarily — can be unblocked when needed
-  // STAFF_PAYMENTS: "/staff/payments",
-  // STAFF_FEEDBACK: "/staff/feedback",
+  STAFF_PAYMENTS: "/staff/payments",
+  STAFF_FEEDBACK: "/staff/feedback",
 
   UNAUTHORIZED: "/401",
   FORBIDDEN: "/403",
