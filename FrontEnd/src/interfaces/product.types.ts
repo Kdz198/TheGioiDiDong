@@ -5,6 +5,7 @@ export interface Category {
   icon: string;
   parentId?: number;
   productCount: number;
+  description?: string;
 }
 
 export interface Brand {
@@ -42,7 +43,6 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  shortDescription: string;
   categoryId: number;
   category: Category;
   brandId: number;
@@ -54,12 +54,12 @@ export interface Product {
   rating: number;
   reviewCount: number;
   soldCount: number;
-  isFlashSale: boolean;
   flashSaleEndAt?: string;
   isActive: boolean;
-  tags: string[];
   specifications: Record<string, string>;
   createdAt: string;
+  stockQuantity?: number;
+  versionName?: string;
 }
 
 export interface ProductListResponse {
@@ -68,4 +68,52 @@ export interface ProductListResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+/** Raw category shape returned by BE GET /api/products/categories */
+export interface BackendCategory {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+/** Raw product shape returned by BE GET /api/products/product */
+export interface BackendProduct {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  reserve: number;
+  imgUrl: string;
+  active: boolean;
+  versionName: string;
+  brandName: string;
+  categoryName: string;
+}
+
+/** Map BackendProduct to the FE Product interface for display */
+export function mapBackendProduct(p: BackendProduct): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    slug: p.name.toLowerCase().replace(/\s+/g, "-"),
+    categoryId: 0,
+    category: { id: 0, name: p.categoryName, slug: "", icon: "", productCount: 0 },
+    brandId: 0,
+    brand: { id: 0, name: p.brandName },
+    variants: [],
+    defaultPrice: p.price,
+    defaultOriginalPrice: p.price,
+    thumbnailUrl: p.imgUrl,
+    rating: 0,
+    reviewCount: 0,
+    soldCount: 0,
+    isActive: p.active,
+    specifications: {},
+    createdAt: new Date().toISOString(),
+    stockQuantity: p.quantity,
+    versionName: p.versionName,
+  };
 }
