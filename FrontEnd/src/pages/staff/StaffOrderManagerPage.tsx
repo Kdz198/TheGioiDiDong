@@ -1,4 +1,5 @@
 import { OrderStatusBadge } from "@/components/common/OrderStatusBadge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +13,7 @@ import { orderService } from "@/services/orderService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -31,7 +32,7 @@ export function StaffOrderManagerPage() {
   const filteredOrders = data?.data.filter((order) =>
     search
       ? order.orderCode.toLowerCase().includes(search.toLowerCase()) ||
-        order.shippingInfo.recipientName.toLowerCase().includes(search.toLowerCase())
+        (order.shippingInfo?.recipientName ?? "").toLowerCase().includes(search.toLowerCase())
       : true
   );
 
@@ -75,6 +76,7 @@ export function StaffOrderManagerPage() {
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Tổng tiền</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Ngày tạo</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Chi tiết</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,9 +98,11 @@ export function StaffOrderManagerPage() {
                           </Link>
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {order.shippingInfo.recipientName}
+                          {order.shippingInfo?.recipientName ?? "-"}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{order.shippingInfo.phone}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {order.shippingInfo?.phone ?? "-"}
+                        </td>
                         <td className="px-4 py-3 text-gray-600 uppercase">{order.paymentMethod}</td>
                         <td className="px-4 py-3 text-right font-medium">
                           {formatVND(order.total)}
@@ -107,6 +111,17 @@ export function StaffOrderManagerPage() {
                           <OrderStatusBadge status={order.status} />
                         </td>
                         <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-teal-500"
+                            asChild>
+                            <Link to={`/staff/orders/${order.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </td>
                       </tr>
                     ))}
               </tbody>

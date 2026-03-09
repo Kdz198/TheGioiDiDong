@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -8,11 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { UserRole } from "@/interfaces/user.types";
+import type { User, UserRole } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import { useState } from "react";
 
 const roleLabels: Record<UserRole, string> = {
@@ -25,6 +27,7 @@ const roleLabels: Record<UserRole, string> = {
 export function StaffUserManagerPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [detailUser, setDetailUser] = useState<User | null>(null);
 
   // Map frontend filter value to backend role name(s) for server-side filtering
   const backendRoles =
@@ -80,6 +83,7 @@ export function StaffUserManagerPage() {
                   <th className="px-4 py-3 font-medium text-gray-500">Vai trò</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Ngày tham gia</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Chi tiết</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,11 +113,20 @@ export function StaffUserManagerPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-gray-400">{formatDate(user.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-teal-500"
+                            onClick={() => setDetailUser(user)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                 {!isLoading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                       Không tìm thấy người dùng nào
                     </td>
                   </tr>
@@ -123,6 +136,51 @@ export function StaffUserManagerPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!detailUser} onOpenChange={(open) => !open && setDetailUser(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Chi tiết người dùng</DialogTitle>
+          </DialogHeader>
+          {detailUser && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-gray-400">Họ và tên</p>
+                <p className="font-medium text-zinc-900">{detailUser.fullName}</p>
+              </div>
+              <div>
+                <p className="text-gray-400">Email</p>
+                <p className="text-gray-700">{detailUser.email}</p>
+              </div>
+              {detailUser.phone && (
+                <div>
+                  <p className="text-gray-400">Số điện thoại</p>
+                  <p className="text-gray-700">{detailUser.phone}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-gray-400">Vai trò</p>
+                <Badge variant="outline">{roleLabels[detailUser.role] ?? detailUser.role}</Badge>
+              </div>
+              <div>
+                <p className="text-gray-400">Trạng thái</p>
+                <Badge
+                  className={
+                    detailUser.isActive
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-500"
+                  }>
+                  {detailUser.isActive ? "Hoạt động" : "Khóa"}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-gray-400">Ngày tham gia</p>
+                <p className="text-gray-700">{formatDate(detailUser.createdAt)}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

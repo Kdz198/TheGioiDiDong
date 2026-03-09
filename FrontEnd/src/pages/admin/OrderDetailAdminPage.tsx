@@ -62,8 +62,10 @@ export function OrderDetailAdminPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">{order.orderCode}</h1>
-          <p className="text-sm text-gray-500">{formatDate(order.createdAt)}</p>
+          <h1 className="text-2xl font-bold text-zinc-900">
+            {order.orderCode ?? `Đơn hàng #${order.id}`}
+          </h1>
+          <p className="text-sm text-gray-500">{formatDate(order.createdAt ?? "")}</p>
         </div>
         <OrderStatusBadge status={order.status} />
       </div>
@@ -80,9 +82,9 @@ export function OrderDetailAdminPage() {
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Chờ xử lý</SelectItem>
-                <SelectItem value="paid">Đã thanh toán</SelectItem>
-                <SelectItem value="canceled">Đã hủy</SelectItem>
+                <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+                <SelectItem value="PAID">Đã thanh toán</SelectItem>
+                <SelectItem value="CANCELED">Đã hủy</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -100,45 +102,34 @@ export function OrderDetailAdminPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Sản phẩm</CardTitle>
+              <CardTitle className="text-base">Chi tiết đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex gap-4">
-                  <img
-                    src={item.thumbnailUrl}
-                    alt={item.productName}
-                    className="h-14 w-14 rounded-lg object-cover"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-900">{item.productName}</p>
-                    <p className="text-xs text-gray-400">
-                      {item.variantLabel} × {item.quantity}
-                    </p>
+              {order.items?.length > 0 ? (
+                order.items.map((item) => (
+                  <div key={item.id} className="flex gap-4">
+                    {item.thumbnailUrl && (
+                      <img
+                        src={item.thumbnailUrl}
+                        alt={item.productName}
+                        className="h-14 w-14 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-zinc-900">
+                        {item.productName ?? `Sản phẩm #${item.productId}`}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {item.variantLabel ? `${item.variantLabel} × ` : ""}
+                        SL: {item.quantity}
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium">{formatVND(item.subtotal)}</span>
                   </div>
-                  <span className="text-sm font-medium">{formatVND(item.subtotal)}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Lịch sử trạng thái</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {order.statusHistory.map((h, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="mt-1 h-2 w-2 rounded-full bg-teal-500" />
-                  <div>
-                    <p className="text-sm font-medium text-zinc-900">{h.note}</p>
-                    <p className="text-xs text-gray-400">
-                      {formatDate(h.timestamp)}
-                      {h.updatedBy && ` · ${h.updatedBy}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">Không có chi tiết sản phẩm</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -146,45 +137,21 @@ export function OrderDetailAdminPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Thông tin giao hàng</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <p className="font-medium">{order.shippingInfo.recipientName}</p>
-              <p className="text-gray-500">{order.shippingInfo.phone}</p>
-              <p className="mt-1 text-gray-500">
-                {order.shippingInfo.streetAddress}, {order.shippingInfo.ward},{" "}
-                {order.shippingInfo.district}, {order.shippingInfo.province}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Thanh toán</CardTitle>
+              <CardTitle className="text-base">Thông tin đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Phương thức</span>
-                <span className="uppercase">{order.paymentMethod}</span>
+                <span className="text-gray-500">Mã đơn</span>
+                <span>{order.orderCode ?? `#${order.id}`}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Tạm tính</span>
-                <span>{formatVND(order.subtotal)}</span>
-              </div>
-              {order.discountAmount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Giảm giá</span>
-                  <span>-{formatVND(order.discountAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Phí ship</span>
-                <span>{order.shippingFee === 0 ? "Miễn phí" : formatVND(order.shippingFee)}</span>
+                <span className="text-gray-500">User ID</span>
+                <span>{order.userId ?? "—"}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold">
                 <span>Tổng cộng</span>
-                <span>{formatVND(order.total)}</span>
+                <span>{formatVND(order.total ?? order.subtotal ?? 0)}</span>
               </div>
             </CardContent>
           </Card>

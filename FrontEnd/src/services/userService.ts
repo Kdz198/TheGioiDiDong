@@ -113,9 +113,21 @@ export const userService = {
       user.isActive = !user.isActive;
       return;
     }
-    const current = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
-    const currentUser = current.data as BackendUser;
-    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), { active: !currentUser.active });
+    // Fetch current user to know their role
+    const userResp = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    const currentUser = userResp.data as BackendUser;
+    // Fetch all roles to find roleId by roleName
+    const rolesResp = await apiClient.get<BackendRole[]>(API_ENDPOINTS.ROLES.LIST);
+    const role = rolesResp.data.find((r) => r.name === currentUser.roleName);
+    if (!role?.id) throw new Error("Không tìm thấy vai trò");
+    // Send full update with all required fields
+    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), {
+      email: currentUser.email,
+      fullName: currentUser.fullName,
+      password: "",
+      roleId: role.id,
+      customPermissions: currentUser.allPermissions ?? [],
+    });
   },
 
   updateUserRole: async (id: number, role: UserRole): Promise<void> => {
@@ -126,7 +138,27 @@ export const userService = {
       user.role = role;
       return;
     }
-    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), { role });
+    // Fetch current user to get all fields
+    const userResp = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    const currentUser = userResp.data as BackendUser;
+    // Map FE role to BE role name
+    const roleNameMap: Record<string, string> = {
+      admin: "ADMIN",
+      staff: "STAFF",
+      customer: "USER",
+    };
+    const targetRoleName = roleNameMap[role] ?? "USER";
+    // Fetch all roles to find target roleId
+    const rolesResp = await apiClient.get<BackendRole[]>(API_ENDPOINTS.ROLES.LIST);
+    const targetRole = rolesResp.data.find((r) => r.name === targetRoleName);
+    if (!targetRole?.id) throw new Error("Không tìm thấy vai trò");
+    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), {
+      email: currentUser.email,
+      fullName: currentUser.fullName,
+      password: "",
+      roleId: targetRole.id,
+      customPermissions: currentUser.allPermissions ?? [],
+    });
   },
 
   /** Create a new account */
@@ -166,7 +198,11 @@ export const userService = {
     await apiClient.delete(API_ENDPOINTS.USERS.DELETE(id));
   },
 
-  createEmployee: async (data: { fullName: string; email: string }): Promise<void> => {
+  createEmployee: async (data: {
+    fullName: string;
+    email: string;
+    password: string;
+  }): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
       mockUsers.push({
@@ -179,7 +215,60 @@ export const userService = {
       });
       return;
     }
-    await apiClient.post(API_ENDPOINTS.USERS.CREATE, { ...data, role: "staff" });
+    // Fetch STAFF role ID dynamically
+    const rolesResp = await apiClient.get<BackendRole[]>(API_ENDPOINTS.ROLES.LIST);
+    const staffRole = rolesResp.data.find((r) => r.name === "STAFF");
+    if (!staffRole?.id) throw new Error("Không tìm thấy vai trò STAFF");
+    await apiClient.post(API_ENDPOINTS.USERS.CREATE, {
+      fullName: data.fullName,
+      email: data.email,
+      password: data.password,
+      roleId: staffRole.id,
+      customPermissions: [],
+    });
+  },
+
+  /** Fetch all available permissions from /api/users/roles/permissions */
+  getPermissions: async (): Promise<string[]> => {
+    if (USE_MOCK_API) {
+      return [
+        "CREATE_ORDER",
+        "VIEW_OWN_ORDER",
+        "CREATE_REVIEW",
+        "ACCESS_VIP_DISCOUNTS",
+        "CREATE_PRODUCT",
+        "UPDATE_PRODUCT",
+        "VIEW_ALL_ORDERS",
+        "UPDATE_ORDER_STATUS",
+        "DELETE_PRODUCT",
+        "MANAGE_STAFF",
+        "VIEW_REVENUE_REPORT",
+      ];
+    }
+    const response = await apiClient.get(API_ENDPOINTS.ROLES.PERMISSIONS);
+    return response.data;
+  },
+
+  /** Update a user's custom permissions — sends full CreateAccountRequest body */
+  updateUserPermissions: async (id: number, permissions: string[]): Promise<void> => {
+    if (USE_MOCK_API) {
+      await new Promise((r) => setTimeout(r, 500));
+      const user = mockUsers.find((u) => u.id === id);
+      if (user) (user as { allPermissions?: string[] }).allPermissions = permissions;
+      return;
+    }
+    const userResp = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    const currentUser = userResp.data as BackendUser;
+    const rolesResp = await apiClient.get<BackendRole[]>(API_ENDPOINTS.ROLES.LIST);
+    const role = rolesResp.data.find((r) => r.name === currentUser.roleName);
+    if (!role?.id) throw new Error("Không tìm thấy vai trò");
+    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), {
+      email: currentUser.email,
+      fullName: currentUser.fullName,
+      password: "",
+      roleId: role.id,
+      customPermissions: permissions,
+    });
   },
 
   /** Stub — no customer profile endpoint yet */

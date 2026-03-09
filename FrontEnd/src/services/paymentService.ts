@@ -50,12 +50,10 @@ export const paymentService = {
         transactionId: `${method.toUpperCase()}-${orderId}-${Date.now()}`,
       };
     }
-    const response = await apiClient.post(API_ENDPOINTS.PAYMENTS.MAKE_PAYMENT, {
-      orderId,
-      method,
-      returnUrl: `${window.location.origin}/order/success`,
+    const response = await apiClient.post(API_ENDPOINTS.PAYMENTS.MAKE_PAYMENT, null, {
+      params: { orderCode: String(orderId) },
     });
-    return response.data;
+    return { transactionId: String(response.data), paymentUrl: String(response.data) };
   },
 
   getAllPayments: async (): Promise<ApiPayment[]> => {
@@ -64,7 +62,7 @@ export const paymentService = {
       return mockApiPayments;
     }
     const response = await apiClient.get(API_ENDPOINTS.PAYMENTS.ALL);
-    return response.data.data;
+    return response.data;
   },
 
   getPaymentsByStatus: async (status: string): Promise<ApiPayment[]> => {
@@ -73,7 +71,7 @@ export const paymentService = {
       return mockApiPayments.filter((p) => p.status === status);
     }
     const response = await apiClient.get(API_ENDPOINTS.PAYMENTS.BY_STATUS(status));
-    return response.data.data;
+    return response.data;
   },
 
   updatePaymentStatus: async (id: number, status: ApiPaymentStatus): Promise<ApiPayment> => {
@@ -83,7 +81,10 @@ export const paymentService = {
       if (idx !== -1) mockApiPayments[idx] = { ...mockApiPayments[idx], status };
       return mockApiPayments[idx] ?? mockApiPayments[0];
     }
-    const response = await apiClient.put(API_ENDPOINTS.PAYMENTS.UPDATE, { id, status });
-    return response.data.data;
+    // BE requires full Payment entity for PUT — fetch current payment first
+    const currentResp = await apiClient.get(API_ENDPOINTS.PAYMENTS.DETAIL(id));
+    const current = currentResp.data as ApiPayment;
+    const response = await apiClient.put(API_ENDPOINTS.PAYMENTS.UPDATE, { ...current, status });
+    return response.data;
   },
 };

@@ -40,9 +40,10 @@ interface EmployeeFormState {
   fullName: string;
   email: string;
   phone: string;
+  password: string;
 }
 
-const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "" };
+const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "", password: "" };
 const PAGE_SIZE = 10;
 
 export function EmployeeManagerPage() {
@@ -104,7 +105,7 @@ export function EmployeeManagerPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName || !form.email) {
+    if (!form.fullName || !form.email || !form.password) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
@@ -153,6 +154,16 @@ export function EmployeeManagerPage() {
                   placeholder="0901234567"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Mật khẩu</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 />
               </div>
               <DialogFooter>

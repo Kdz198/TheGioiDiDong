@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/router/routes.const";
@@ -65,25 +66,30 @@ export function ProductFormPage() {
     resolver: zodResolver(createProductSchema),
     defaultValues: {
       name: "",
-      shortDescription: "",
       description: "",
       categoryId: 0,
       brandId: 0,
-      tags: "",
-      isFlashSale: false,
+      price: 0,
+      stockQuantity: 0,
+      active: true,
     },
   });
 
   useEffect(() => {
     if (existingProduct) {
       setValue("name", existingProduct.name);
-      setValue("shortDescription", existingProduct.shortDescription);
       setValue("description", existingProduct.description);
-      setValue("categoryId", existingProduct.categoryId);
-      setValue("brandId", existingProduct.brandId);
-      setValue("tags", existingProduct.tags.join(", "));
-      setValue("isFlashSale", existingProduct.isFlashSale);
+      // Backend ProductResponse only returns names; resolve IDs by matching loaded lists
+      const cat = categories?.find((c) => c.name === existingProduct.category.name);
+      setValue("categoryId", cat?.id ?? 0);
+      const brand = brands?.find((b) => b.name === existingProduct.brand.name);
+      setValue("brandId", brand?.id ?? 0);
+      const version = productVersions?.find((v) => v.versionName === existingProduct.versionName);
+      if (version?.id) setSelectedVersionId(version.id);
       setValue("flashSaleEndAt", existingProduct.flashSaleEndAt ?? "");
+      setValue("active", existingProduct.isActive);
+      setValue("price", existingProduct.defaultPrice ?? 0);
+      setValue("stockQuantity", existingProduct.stockQuantity ?? 0);
       setVariants(
         existingProduct.variants.map((v) => ({
           sku: v.sku,
@@ -95,7 +101,7 @@ export function ProductFormPage() {
         }))
       );
     }
-  }, [existingProduct, setValue]);
+  }, [existingProduct, categories, brands, productVersions, setValue]);
 
   const productName = watch("name");
   const slug = generateSlug(productName || "");
@@ -123,12 +129,12 @@ export function ProductFormPage() {
       const fd = new FormData();
       if (isEdit && id) fd.append("id", id);
       fd.append("name", data.name);
-      fd.append("shortDescription", data.shortDescription ?? "");
       fd.append("description", data.description ?? "");
       fd.append("categoryId", String(data.categoryId));
       fd.append("brandId", String(data.brandId));
-      fd.append("tags", data.tags ?? "");
-      fd.append("isFlashSale", String(data.isFlashSale ?? false));
+      fd.append("active", String(data.active ?? true));
+      fd.append("price", String(data.price ?? 0));
+      fd.append("stockQuantity", String(data.stockQuantity ?? 0));
       if (selectedVersionId) fd.append("versionId", String(selectedVersionId));
       if (imageFile) fd.append("img", imageFile);
       return isEdit ? productService.updateProduct(fd) : productService.createProduct(fd);
@@ -142,6 +148,10 @@ export function ProductFormPage() {
   });
 
   const onSubmit = (data: CreateProductFormData) => {
+    if (!isEdit && !imageFile) {
+      toast.error("Vui lòng tải lên hình ảnh sản phẩm");
+      return;
+    }
     saveMutation.mutate(data);
   };
 
@@ -182,17 +192,6 @@ export function ProductFormPage() {
                     <Label>Slug</Label>
                     <Input value={slug} placeholder="tu-dong-tao" disabled />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shortDescription">Mô tả ngắn</Label>
-                  <Input
-                    id="shortDescription"
-                    placeholder="Mô tả ngắn gọn..."
-                    {...register("shortDescription")}
-                  />
-                  {errors.shortDescription && (
-                    <p className="text-xs text-red-500">{errors.shortDescription.message}</p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Mô tả chi tiết</Label>
@@ -257,9 +256,41 @@ export function ProductFormPage() {
                     </select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
-                  <Input id="tags" placeholder="tag1, tag2, tag3" {...register("tags")} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Giá bán (VNĐ) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="0"
+                      {...register("price", { valueAsNumber: true })}
+                    />
+                    {errors.price && (
+                      <p className="text-xs text-red-500">{errors.price.message as string}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stockQuantity">Số lượng tồn kho *</Label>
+                    <Input
+                      id="stockQuantity"
+                      type="number"
+                      placeholder="0"
+                      {...register("stockQuantity", { valueAsNumber: true })}
+                    />
+                    {errors.stockQuantity && (
+                      <p className="text-xs text-red-500">
+                        {errors.stockQuantity.message as string}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="active"
+                    checked={watch("active") ?? true}
+                    onCheckedChange={(v) => setValue("active", v)}
+                  />
+                  <Label htmlFor="active">Hiển thị sản phẩm</Label>
                 </div>
               </CardContent>
             </Card>

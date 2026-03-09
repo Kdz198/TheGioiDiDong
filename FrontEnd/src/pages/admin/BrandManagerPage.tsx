@@ -57,12 +57,19 @@ export function BrandManagerPage() {
 
   const saveMutation = useMutation({
     mutationFn: () => {
+      if (editing) {
+        return productService.updateBrand({
+          id: editing.id,
+          name: form.name,
+          description: form.description,
+          logoUrl: editing.logoUrl,
+        });
+      }
       const fd = new FormData();
-      if (editing) fd.append("id", String(editing.id));
       fd.append("name", form.name);
       fd.append("description", form.description);
       if (logoFile) fd.append("file", logoFile);
-      return editing ? productService.updateBrand(fd) : productService.createBrand(fd);
+      return productService.createBrand(fd);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
