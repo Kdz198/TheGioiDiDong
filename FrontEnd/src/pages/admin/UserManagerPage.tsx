@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { CreateAccountRequest, User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Search, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -34,6 +42,20 @@ interface UserFormState {
   fullName: string;
   roleId?: number; // Not used in this form since we're only managing customers
 }
+
+const PERMISSION_LABELS: Record<string, string> = {
+  CREATE_ORDER: "Tạo đơn hàng",
+  VIEW_OWN_ORDER: "Xem đơn hàng của mình",
+  CREATE_REVIEW: "Đánh giá sản phẩm",
+  ACCESS_VIP_DISCOUNTS: "Truy cập ưu đãi VIP",
+  CREATE_PRODUCT: "Thêm sản phẩm",
+  UPDATE_PRODUCT: "Cập nhật sản phẩm",
+  VIEW_ALL_ORDERS: "Xem tất cả đơn hàng",
+  UPDATE_ORDER_STATUS: "Cập nhật trạng thái đơn hàng",
+  DELETE_PRODUCT: "Xóa sản phẩm",
+  MANAGE_STAFF: "Quản lý nhân viên",
+  VIEW_REVENUE_REPORT: "Xem báo cáo doanh thu",
+};
 
 const emptyForm: UserFormState = { email: "", password: "", fullName: "", roleId: 0 };
 const PAGE_SIZE = 10;
@@ -47,10 +69,25 @@ export function UserManagerPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [roleFilter, setRoleFilter] = useState<"USER" | "STAFF">("USER");
+  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
+  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
 
   const { data: pagedData, isLoading } = useQuery({
-    queryKey: ["admin", "users", page],
-    queryFn: () => userService.getUsers(page, PAGE_SIZE, ["USER"]),
+    queryKey: ["admin", "users", page, roleFilter],
+    queryFn: () => userService.getUsers(page, PAGE_SIZE, [roleFilter]),
+  });
+
+  const { data: roles } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => userService.getRoles(),
+  });
+  const userRoleId =
+    roles?.find((r) => r.name === (roleFilter === "STAFF" ? "STAFF" : "USER"))?.id ?? 3;
+
+  const { data: availablePerms } = useQuery({
+    queryKey: ["permissions"],
+    queryFn: userService.getPermissions,
   });
 
   // Server already filters to USER role — no client-side role filter needed
@@ -90,10 +127,21 @@ export function UserManagerPage() {
     mutationFn: (id: number) => userService.deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success("Xóa khách hàng thành công");
+      toast.success("Xóa thành công");
       setDeletingUser(null);
     },
-    onError: () => toast.error("Xóa khách hàng thất bại"),
+    onError: () => toast.error("Xóa thất bại"),
+  });
+
+  const updatePermsMutation = useMutation({
+    mutationFn: ({ id, permissions }: { id: number; permissions: string[] }) =>
+      userService.updateUserPermissions(id, permissions),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success("Cập nhật quyền thành công");
+      setPermissionsUser(null);
+    },
+    onError: () => toast.error("Cập nhật quyền thất bại"),
   });
 
   const openCreate = () => {
@@ -104,8 +152,13 @@ export function UserManagerPage() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
-    setForm({ email: user.email, password: "", fullName: user.fullName, roleId: 1 });
+    setForm({ email: user.email, password: "", fullName: user.fullName });
     setDialogOpen(true);
+  };
+
+  const openPermissions = (user: User) => {
+    setPermissionsUser(user);
+    setSelectedPerms(user.allPermissions ?? []);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -119,7 +172,7 @@ export function UserManagerPage() {
         email: form.email,
         fullName: form.fullName,
         ...(form.password ? { password: form.password } : {}),
-        roleId: 3,
+        roleId: userRoleId,
       };
       updateMutation.mutate(payload);
     } else {
@@ -131,7 +184,7 @@ export function UserManagerPage() {
         email: form.email,
         password: form.password,
         fullName: form.fullName,
-        roleId: 3,
+        roleId: userRoleId,
       });
     }
   };
@@ -142,10 +195,12 @@ export function UserManagerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-900">Quản lý khách hàng</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">
+          {roleFilter === "STAFF" ? "Quản lý nhân viên" : "Quản lý khách hàng"}
+        </h1>
         <Button className="bg-teal-500 hover:bg-teal-600" onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Thêm khách hàng
+          {roleFilter === "STAFF" ? "Thêm nhân viên" : "Thêm khách hàng"}
         </Button>
       </div>
 
@@ -153,12 +208,28 @@ export function UserManagerPage() {
         <div className="relative max-w-sm flex-1">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Tìm kiếm khách hàng..."
+            placeholder={
+              roleFilter === "STAFF" ? "Tìm kiếm nhân viên..." : "Tìm kiếm khách hàng..."
+            }
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Select
+          value={roleFilter}
+          onValueChange={(v) => {
+            setRoleFilter(v as "USER" | "STAFF");
+            setPage(0);
+          }}>
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="USER">Khách hàng</SelectItem>
+            <SelectItem value="STAFF">Nhân viên</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
@@ -209,6 +280,14 @@ export function UserManagerPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 text-teal-500"
+                              title="Cấp quyền"
+                              onClick={() => openPermissions(user)}>
+                              <Shield className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8"
                               onClick={() => openEdit(user)}>
                               <Pencil className="h-3.5 w-3.5" />
@@ -227,7 +306,9 @@ export function UserManagerPage() {
                 {!isLoading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                      Không tìm thấy khách hàng nào
+                      {roleFilter === "STAFF"
+                        ? "Không tìm thấy nhân viên nào"
+                        : "Không tìm thấy khách hàng nào"}
                     </td>
                   </tr>
                 )}
@@ -265,7 +346,13 @@ export function UserManagerPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? "Chỉnh sửa khách hàng" : "Thêm khách hàng mới"}
+              {editingUser
+                ? roleFilter === "STAFF"
+                  ? "Chỉnh sửa nhân viên"
+                  : "Chỉnh sửa khách hàng"
+                : roleFilter === "STAFF"
+                  ? "Thêm nhân viên mới"
+                  : "Thêm khách hàng mới"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -310,6 +397,51 @@ export function UserManagerPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={!!permissionsUser} onOpenChange={(open) => !open && setPermissionsUser(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Cấp quyền — {permissionsUser?.fullName}</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-gray-400">
+            Quyền mặc định của vai trò luôn được giữ nguyên. Đây là các quyền đặc biệt bổ sung.
+          </p>
+          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
+            {(availablePerms ?? Object.keys(PERMISSION_LABELS)).map((perm) => (
+              <div key={perm} className="flex items-center gap-2">
+                <Checkbox
+                  id={`perm-${perm}`}
+                  checked={selectedPerms.includes(perm)}
+                  onCheckedChange={(checked) =>
+                    setSelectedPerms((prev) =>
+                      checked ? [...prev, perm] : prev.filter((p) => p !== perm)
+                    )
+                  }
+                />
+                <Label htmlFor={`perm-${perm}`} className="cursor-pointer text-sm font-normal">
+                  {PERMISSION_LABELS[perm] ?? perm}
+                </Label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermissionsUser(null)}>
+              Hủy
+            </Button>
+            <Button
+              className="bg-teal-500 hover:bg-teal-600"
+              disabled={updatePermsMutation.isPending}
+              onClick={() =>
+                permissionsUser &&
+                updatePermsMutation.mutate({ id: permissionsUser.id, permissions: selectedPerms })
+              }>
+              {updatePermsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Lưu quyền
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
