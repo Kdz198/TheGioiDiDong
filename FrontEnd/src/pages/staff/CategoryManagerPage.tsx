@@ -47,7 +47,6 @@ export function CategoryManagerPage() {
 
   const openEdit = (cat: Category) => {
     setEditing(cat);
-    setForm({ name: cat.name, description: "" });
     setDialogOpen(true);
   };
 
@@ -97,8 +96,7 @@ export function CategoryManagerPage() {
               <thead>
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">Tên danh mục</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Slug</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">Số sản phẩm</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Mô tả</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -106,7 +104,7 @@ export function CategoryManagerPage() {
                 {isLoading
                   ? Array.from({ length: 6 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={4} className="px-4 py-3">
+                        <td colSpan={3} className="px-4 py-3">
                           <div className="h-8 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
@@ -119,8 +117,6 @@ export function CategoryManagerPage() {
                             <span className="font-medium text-zinc-900">{cat.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{cat.slug}</td>
-                        <td className="px-4 py-3 text-right">{cat.productCount}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
                             <Button

@@ -31,12 +31,12 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { ApiPromotion, ApiPromotionType } from "@/interfaces/promotion.types";
-import { promotionService } from "@/services/promotionService";
+import { mapApiPromotionToVoucher, promotionService } from "@/services/promotionService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface PromoForm {
@@ -72,22 +72,12 @@ export function PromotionManagerPage() {
   const [form, setForm] = useState<PromoForm>(defaultForm);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const { data: vouchers } = useQuery({
-    queryKey: ["vouchers"],
-    queryFn: promotionService.getVouchers,
-  });
-  const { data: flashSales } = useQuery({
-    queryKey: ["flash-sales"],
-    queryFn: promotionService.getFlashSales,
-  });
-  const { data: promotions } = useQuery({
-    queryKey: ["promotions"],
-    queryFn: promotionService.getPromotions,
-  });
   const { data: apiPromotions } = useQuery({
-    queryKey: ["admin", "promotions"],
+    queryKey: ["staff", "promotions"],
     queryFn: promotionService.getApiPromotions,
   });
+
+  const vouchers = useMemo(() => apiPromotions?.map(mapApiPromotionToVoucher), [apiPromotions]);
 
   const openCreate = () => {
     setEditing(null);
@@ -131,7 +121,7 @@ export function PromotionManagerPage() {
         : promotionService.createPromotion(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "promotions"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "promotions"] });
       toast.success(editing ? "Cập nhật khuyến mãi thành công" : "Tạo khuyến mãi thành công");
       setDialogOpen(false);
     },
@@ -141,7 +131,7 @@ export function PromotionManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => promotionService.deletePromotion(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "promotions"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "promotions"] });
       toast.success("Đã xóa khuyến mãi");
       setDeletingId(null);
     },
@@ -159,10 +149,8 @@ export function PromotionManagerPage() {
 
       <Tabs defaultValue="api-promotions">
         <TabsList>
-          <TabsTrigger value="api-promotions">Khuyến mãi API</TabsTrigger>
+          <TabsTrigger value="api-promotions">Khuyến mãi</TabsTrigger>
           <TabsTrigger value="vouchers">Voucher</TabsTrigger>
-          <TabsTrigger value="flash-sales">Flash Sale</TabsTrigger>
-          <TabsTrigger value="promotions">Khuyến mãi</TabsTrigger>
         </TabsList>
 
         <TabsContent value="api-promotions">
@@ -268,56 +256,6 @@ export function PromotionManagerPage() {
                   ))}
                 </tbody>
               </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="flash-sales">
-          <Card>
-            <CardContent className="space-y-4 p-6">
-              {flashSales?.map((fs) => (
-                <div key={fs.id} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-zinc-900">{fs.name}</h3>
-                    <Badge
-                      className={
-                        fs.isActive ? "bg-red-400 text-white" : "bg-gray-100 text-gray-500"
-                      }>
-                      {fs.isActive ? "Đang diễn ra" : "Kết thúc"}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {formatDate(fs.startAt)} - {formatDate(fs.endAt)}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {fs.products.length} sản phẩm tham gia
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="promotions">
-          <Card>
-            <CardContent className="space-y-4 p-6">
-              {promotions?.map((p) => (
-                <div key={p.id} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-zinc-900">{p.name}</h3>
-                    <Badge
-                      className={
-                        p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                      }>
-                      {p.isActive ? "Hoạt động" : "Tắt"}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-600">{p.description}</p>
-                  <p className="mt-1 text-xs text-gray-400">
-                    {formatDate(p.startAt)} - {formatDate(p.endAt)}
-                  </p>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </TabsContent>

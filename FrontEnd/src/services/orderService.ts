@@ -1,7 +1,8 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import type { PaginatedResponse } from "@/interfaces/api.types";
-import type { Order, PaymentMethod, ShippingInfo } from "@/interfaces/order.types";
+import type { BackendOrder, Order, PaymentMethod, ShippingInfo } from "@/interfaces/order.types";
+import { mapBackendOrder } from "@/interfaces/order.types";
 import { apiClient } from "@/lib/api";
 import { mockOrders } from "@/mocks/orders.mock";
 
@@ -39,7 +40,7 @@ export const orderService = {
       };
     }
     const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, data);
-    return response.data.data;
+    return response.data;
   },
 
   getOrders: async (params: GetOrdersParams = {}): Promise<PaginatedResponse<Order>> => {
@@ -57,8 +58,16 @@ export const orderService = {
         totalPages: 1,
       };
     }
-    const response = await apiClient.get(API_ENDPOINTS.ORDERS.LIST, { params });
-    return response.data.data;
+    const response = await apiClient.get<BackendOrder[]>(API_ENDPOINTS.ORDERS.LIST, { params });
+    const raw = Array.isArray(response.data) ? response.data : [];
+    const orders = raw.map(mapBackendOrder);
+    return {
+      data: orders,
+      total: orders.length,
+      page: params.page || 1,
+      limit: params.pageSize || 10,
+      totalPages: 1,
+    };
   },
 
   getOrderById: async (orderId: number): Promise<Order> => {
@@ -68,23 +77,21 @@ export const orderService = {
       if (!order) throw new Error("Đơn hàng không tồn tại");
       return order;
     }
-    const response = await apiClient.get(API_ENDPOINTS.ORDERS.DETAIL(orderId));
-    return response.data.data;
+    const response = await apiClient.get<BackendOrder>(API_ENDPOINTS.ORDERS.DETAIL(orderId));
+    return mapBackendOrder(response.data);
   },
 
-  cancelOrder: async (orderId: number, reason: string): Promise<Order> => {
+  cancelOrder: async (orderId: number, _reason: string): Promise<Order> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
       const order = mockOrders.find((o) => o.id === orderId);
       if (!order) throw new Error("Đơn hàng không tồn tại");
       return { ...order, status: "canceled" };
     }
-    const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE, {
-      id: orderId,
-      status: "CANCELED",
-      cancelReason: reason,
+    const response = await apiClient.put<BackendOrder>(API_ENDPOINTS.ORDERS.UPDATE_STATUS, null, {
+      params: { orderId, status: "CANCELED" },
     });
-    return response.data;
+    return mapBackendOrder(response.data);
   },
 
   getAllOrders: async (params: GetOrdersParams = {}): Promise<PaginatedResponse<Order>> => {
@@ -98,8 +105,20 @@ export const orderService = {
         totalPages: 1,
       };
     }
-    const response = await apiClient.get(API_ENDPOINTS.ORDERS.ALL, { params });
-    return response.data.data;
+    // If filtering by status, use the BY_STATUS endpoint
+    const endpoint = params.status
+      ? API_ENDPOINTS.ORDERS.BY_STATUS(params.status.toUpperCase())
+      : API_ENDPOINTS.ORDERS.ALL;
+    const response = await apiClient.get<BackendOrder[]>(endpoint);
+    const raw = Array.isArray(response.data) ? response.data : [];
+    const orders = raw.map(mapBackendOrder);
+    return {
+      data: orders,
+      total: orders.length,
+      page: params.page || 1,
+      limit: params.pageSize || 10,
+      totalPages: 1,
+    };
   },
 
   updateOrderStatus: async (orderId: number, status: string, _note?: string): Promise<Order> => {
@@ -109,10 +128,11 @@ export const orderService = {
       if (!order) throw new Error("Đơn hàng không tồn tại");
       return { ...order, status: status as Order["status"] };
     }
-    const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE_STATUS, null, {
-      params: { orderId, status },
+    // Backend expects UPPERCASE status (PENDING/PAID/CANCELED)
+    const response = await apiClient.put<BackendOrder>(API_ENDPOINTS.ORDERS.UPDATE_STATUS, null, {
+      params: { orderId, status: status.toUpperCase() },
     });
-    return response.data.data;
+    return mapBackendOrder(response.data);
   },
 
   getOrdersByUserId: async (userId: number): Promise<Order[]> => {
@@ -120,7 +140,7 @@ export const orderService = {
       await new Promise((r) => setTimeout(r, 300));
       return mockOrders.filter((o) => o.userId === userId);
     }
-    const response = await apiClient.get(API_ENDPOINTS.ORDERS.BY_USER(userId));
-    return response.data.data;
+    const response = await apiClient.get<BackendOrder[]>(API_ENDPOINTS.ORDERS.BY_USER(userId));
+    return Array.isArray(response.data) ? response.data.map(mapBackendOrder) : [];
   },
 };

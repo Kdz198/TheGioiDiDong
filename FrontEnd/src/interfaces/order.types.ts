@@ -37,7 +37,7 @@ export interface Order {
   orderCode: string;
   userId?: number;
   items: OrderItem[];
-  shippingInfo: ShippingInfo;
+  shippingInfo?: ShippingInfo;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   status: OrderStatus;
@@ -52,4 +52,71 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   statusHistory: OrderStatusHistory[];
+}
+
+// ─── Raw shapes returned by the backend (/api/orders) ─────────────────────────
+
+export interface BackendOrderDetail {
+  id?: number;
+  productId?: number;
+  quantity?: number;
+  subtotal?: number;
+  type?: string;
+}
+
+export type BackendOrderStatus = "PENDING" | "PAID" | "CANCELED";
+
+export interface BackendOrder {
+  id?: number;
+  userId?: number;
+  orderDate?: string;
+  status?: BackendOrderStatus;
+  totalPrice?: number;
+  basePrice?: number;
+  orderCode?: string;
+  orderDetails?: BackendOrderDetail[];
+}
+
+const STATUS_MAP: Record<string, OrderStatus> = {
+  PENDING: "pending",
+  PAID: "paid",
+  CANCELED: "canceled",
+};
+
+/** Map a raw BackendOrder (from /api/orders) to the frontend Order shape */
+export function mapBackendOrder(raw: BackendOrder): Order {
+  const rawStatus = (raw.status ?? "PENDING").toUpperCase();
+  return {
+    id: raw.id ?? 0,
+    orderCode: raw.orderCode ?? `#${raw.id ?? 0}`,
+    userId: raw.userId,
+    items: (raw.orderDetails ?? []).map((d) => ({
+      id: d.id ?? 0,
+      productId: d.productId ?? 0,
+      variantId: 0,
+      productName: `Sản phẩm #${d.productId ?? 0}`,
+      variantLabel: d.type ?? "",
+      thumbnailUrl: "",
+      quantity: d.quantity ?? 0,
+      unitPrice:
+        d.subtotal && d.quantity && d.quantity > 0 ? Math.round(d.subtotal / d.quantity) : 0,
+      subtotal: d.subtotal ?? 0,
+    })),
+    shippingInfo: undefined,
+    paymentMethod: "cod",
+    paymentStatus: rawStatus === "PAID" ? "paid" : "pending",
+    status: STATUS_MAP[rawStatus] ?? "pending",
+    subtotal: raw.basePrice ?? 0,
+    discountAmount:
+      (raw.basePrice ?? 0) - (raw.totalPrice ?? 0) > 0
+        ? (raw.basePrice ?? 0) - (raw.totalPrice ?? 0)
+        : 0,
+    shippingFee: 0,
+    total: raw.totalPrice ?? 0,
+    pointsUsed: 0,
+    pointsEarned: 0,
+    createdAt: raw.orderDate ?? "",
+    updatedAt: raw.orderDate ?? "",
+    statusHistory: [],
+  };
 }

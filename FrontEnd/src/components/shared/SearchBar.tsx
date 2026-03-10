@@ -77,7 +77,7 @@ export function SearchBar({ className, placeholder = "Tìm kiếm sản phẩm..
   const handleSuggestionClick = (product: Product) => {
     setIsOpen(false);
     setQuery("");
-    navigate(`/products/${product.slug}`);
+    navigate(`/products/${product.id}`);
   };
 
   const handleClear = () => {

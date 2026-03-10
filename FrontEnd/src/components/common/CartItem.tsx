@@ -23,7 +23,7 @@ export function CartItemRow({ item, onUpdateQty, onRemove }: CartItemProps) {
 
       <div className="flex-1 space-y-1">
         <Link
-          to={`/products/${item.product.slug}`}
+          to={`/products/${item.product.id}`}
           className="text-sm font-medium text-zinc-900 hover:text-teal-500">
           {item.product.name}
         </Link>

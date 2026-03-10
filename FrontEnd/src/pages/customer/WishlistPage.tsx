@@ -33,6 +33,11 @@ export function WishlistPage() {
         name: product.name,
         thumbnailUrl: product.thumbnailUrl,
       },
+      appProduct: {
+        id: product.id,
+        name: product.name,
+        imgUrl: product.thumbnailUrl,
+      },
       variant: {
         id: variant.id,
         sku: variant.sku,

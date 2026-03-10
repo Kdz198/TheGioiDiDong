@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -29,20 +30,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const PERMISSION_LABELS: Record<string, string> = {
+  CREATE_ORDER: "Tạo đơn hàng",
+  VIEW_OWN_ORDER: "Xem đơn của bản thân",
+  CREATE_REVIEW: "Viết đánh giá",
+  ACCESS_VIP_DISCOUNTS: "Truy cập ưu đãi VIP",
+  CREATE_PRODUCT: "Thêm sản phẩm",
+  UPDATE_PRODUCT: "Chỉnh sửa sản phẩm",
+  VIEW_ALL_ORDERS: "Xem tất cả đơn hàng",
+  UPDATE_ORDER_STATUS: "Cập nhật trạng thái đơn",
+  DELETE_PRODUCT: "Xóa sản phẩm",
+  MANAGE_STAFF: "Quản lý nhân viên",
+  VIEW_REVENUE_REPORT: "Xem báo cáo doanh thu",
+};
 
 interface EmployeeFormState {
   fullName: string;
   email: string;
   phone: string;
+  password: string;
 }
 
-const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "" };
+const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "", password: "" };
 const PAGE_SIZE = 10;
 
 export function EmployeeManagerPage() {
@@ -53,12 +70,27 @@ export function EmployeeManagerPage() {
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
   const [page, setPage] = useState(0);
 
+  // ── Edit state ─────────────────────────────────────────────────────────────
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingEmp, setEditingEmp] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ fullName: "", email: "", password: "" });
+
+  // ── Permissions state ──────────────────────────────────────────────────────
+  const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [permEmp, setPermEmp] = useState<User | null>(null);
+  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
+
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin", "employees", page],
     queryFn: () => userService.getUsers(page, PAGE_SIZE, ["STAFF"]),
   });
 
-  // Server already filters to STAFF role — no client-side role filter needed
+  const { data: availablePerms = [] } = useQuery({
+    queryKey: ["permissions"],
+    queryFn: userService.getPermissions,
+    staleTime: Infinity,
+  });
+
   const employees = users?.content ?? [];
 
   const filtered = employees.filter((emp) => {
@@ -73,15 +105,6 @@ export function EmployeeManagerPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const toggleActiveMutation = useMutation({
-    mutationFn: (id: number) => userService.toggleUserActive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "employees"] });
-      toast.success("Cập nhật trạng thái nhân viên thành công");
-    },
-    onError: () => toast.error("Cập nhật thất bại"),
-  });
-
   const createMutation = useMutation({
     mutationFn: () => userService.createEmployee(form),
     onSuccess: () => {
@@ -91,6 +114,29 @@ export function EmployeeManagerPage() {
       setForm(emptyForm);
     },
     onError: () => toast.error("Thêm nhân viên thất bại"),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: () =>
+      userService.updateEmployee(editingEmp!.id, editForm, editingEmp!.allPermissions ?? []),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "employees"] });
+      toast.success("Cập nhật nhân viên thành công");
+      setEditDialogOpen(false);
+      setEditingEmp(null);
+    },
+    onError: () => toast.error("Cập nhật nhân viên thất bại"),
+  });
+
+  const permMutation = useMutation({
+    mutationFn: () => userService.updateUserPermissions(permEmp!.id, selectedPerms),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "employees"] });
+      toast.success("Cập nhật quyền thành công");
+      setPermDialogOpen(false);
+      setPermEmp(null);
+    },
+    onError: () => toast.error("Cập nhật quyền thất bại"),
   });
 
   const deleteMutation = useMutation({
@@ -104,11 +150,29 @@ export function EmployeeManagerPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName || !form.email) {
+    if (!form.fullName || !form.email || !form.password) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
     createMutation.mutate();
+  };
+
+  const openEditDialog = (emp: User) => {
+    setEditingEmp(emp);
+    setEditForm({ fullName: emp.fullName, email: emp.email, password: "" });
+    setEditDialogOpen(true);
+  };
+
+  const openPermDialog = (emp: User) => {
+    setPermEmp(emp);
+    setSelectedPerms(emp.allPermissions ?? []);
+    setPermDialogOpen(true);
+  };
+
+  const togglePerm = (perm: string) => {
+    setSelectedPerms((prev) =>
+      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+    );
   };
 
   return (
@@ -153,6 +217,16 @@ export function EmployeeManagerPage() {
                   placeholder="0901234567"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Mật khẩu</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 />
               </div>
               <DialogFooter>
@@ -202,9 +276,9 @@ export function EmployeeManagerPage() {
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">Tên</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Email</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Điện thoại</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Ngày tham gia</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Quyền</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -221,7 +295,6 @@ export function EmployeeManagerPage() {
                       <tr key={emp.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium text-zinc-900">{emp.fullName}</td>
                         <td className="px-4 py-3 text-gray-600">{emp.email}</td>
-                        <td className="px-4 py-3 text-gray-600">{emp.phone || "—"}</td>
                         <td className="px-4 py-3">
                           <Badge
                             className={
@@ -233,20 +306,36 @@ export function EmployeeManagerPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-gray-400">{formatDate(emp.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          {emp.allPermissions && emp.allPermissions.length > 0 ? (
+                            <span className="text-xs text-teal-600">
+                              {emp.allPermissions.length} quyền
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">Mặc định</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Edit button */}
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className={
-                                emp.isActive
-                                  ? "h-8 text-xs text-gray-600"
-                                  : "h-8 text-xs text-teal-600"
-                              }
-                              disabled={toggleActiveMutation.isPending}
-                              onClick={() => toggleActiveMutation.mutate(emp.id)}>
-                              {emp.isActive ? "Khóa" : "Mở khóa"}
+                              size="icon"
+                              className="h-8 w-8 text-blue-500 hover:bg-blue-50"
+                              title="Chỉnh sửa"
+                              onClick={() => openEditDialog(emp)}>
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
+                            {/* Permissions button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-teal-500 hover:bg-teal-50"
+                              title="Cấp quyền"
+                              onClick={() => openPermDialog(emp)}>
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                            </Button>
+                            {/* Delete button */}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -314,6 +403,105 @@ export function EmployeeManagerPage() {
           </Button>
         </div>
       )}
+
+      {/* ── Edit Dialog ─────────────────────────────────────────────────────── */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa nhân viên</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editForm.fullName || !editForm.email) {
+                toast.error("Vui lòng điền đầy đủ thông tin");
+                return;
+              }
+              editMutation.mutate();
+            }}
+            className="space-y-4">
+            <div className="space-y-2">
+              <Label>Họ và tên</Label>
+              <Input
+                value={editForm.fullName}
+                onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))}
+                placeholder="Nguyễn Văn A"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="nhanvien@techgear.vn"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mật khẩu mới</Label>
+              <Input
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+                placeholder="Để trống nếu không đổi mật khẩu"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                className="bg-teal-500 hover:bg-teal-600"
+                disabled={editMutation.isPending}>
+                {editMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Lưu
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Permissions Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={permDialogOpen} onOpenChange={setPermDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Cấp quyền cho <span className="text-teal-600">{permEmp?.fullName}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500">
+            Chọn các quyền bổ sung ngoài quyền mặc định của nhân viên.
+          </p>
+          <div className="max-h-80 space-y-3 overflow-y-auto py-2">
+            {availablePerms.map((perm) => (
+              <div key={perm} className="flex items-center gap-3">
+                <Checkbox
+                  id={`perm-${perm}`}
+                  checked={selectedPerms.includes(perm)}
+                  onCheckedChange={() => togglePerm(perm)}
+                />
+                <Label htmlFor={`perm-${perm}`} className="cursor-pointer text-sm font-normal">
+                  <span className="font-medium">{PERMISSION_LABELS[perm] ?? perm}</span>
+                  <span className="ml-2 text-xs text-gray-400">{perm}</span>
+                </Label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              className="bg-teal-500 hover:bg-teal-600"
+              disabled={permMutation.isPending}
+              onClick={() => permMutation.mutate()}>
+              {permMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Lưu quyền
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

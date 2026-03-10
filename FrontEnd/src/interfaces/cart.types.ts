@@ -1,4 +1,4 @@
-import type { Product, ProductVariant } from "./product.types";
+import type { AppProduct, Product, ProductVariant } from "./product.types";
 import type { Voucher } from "./promotion.types";
 
 export interface CartItem {
@@ -6,6 +6,7 @@ export interface CartItem {
   productId: number;
   variantId: number;
   product: Pick<Product, "id" | "slug" | "name" | "thumbnailUrl">;
+  appProduct: Pick<AppProduct, "id" | "name" | "imgUrl">;
   variant: Pick<
     ProductVariant,
     "id" | "sku" | "color" | "size" | "price" | "originalPrice" | "stockQuantity"

@@ -54,4 +54,5 @@ export interface ApiPromotion {
   endDate: string;
   active: boolean;
   quantity: number;
+  applicableProductIds?: number[];
 }
