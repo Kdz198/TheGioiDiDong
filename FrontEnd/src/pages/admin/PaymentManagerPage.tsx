@@ -18,20 +18,20 @@ import { Eye } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function StaffPaymentManagerPage() {
+export function PaymentManagerPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [detailPayment, setDetailPayment] = useState<ApiPayment | null>(null);
 
   const { data: payments } = useQuery({
-    queryKey: ["staff", "payments"],
+    queryKey: ["admin", "payments"],
     queryFn: paymentService.getAllPayments,
   });
 
   const confirmMutation = useMutation({
     mutationFn: (id: number) => paymentService.updatePaymentStatus(id, "COMPLETED"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "payments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "payments"] });
       toast.success("Đã xác nhận thanh toán COD");
     },
     onError: () => toast.error("Xác nhận thất bại"),

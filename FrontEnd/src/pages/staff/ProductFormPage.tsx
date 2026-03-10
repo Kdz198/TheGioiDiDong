@@ -79,7 +79,6 @@ export function ProductFormPage() {
     if (existingProduct) {
       setValue("name", existingProduct.name);
       setValue("description", existingProduct.description);
-      // Backend ProductResponse only returns names; resolve IDs by matching loaded lists
       const cat = categories?.find((c) => c.name === existingProduct.category.name);
       setValue("categoryId", cat?.id ?? 0);
       const brand = brands?.find((b) => b.name === existingProduct.brand.name);
@@ -140,9 +139,9 @@ export function ProductFormPage() {
       return isEdit ? productService.updateProduct(fd) : productService.createProduct(fd);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "products"] });
       toast.success(isEdit ? "Cập nhật sản phẩm thành công!" : "Tạo sản phẩm thành công!");
-      navigate(ROUTES.ADMIN_PRODUCTS);
+      navigate(ROUTES.STAFF_PRODUCTS);
     },
     onError: () => toast.error("Đã xảy ra lỗi, vui lòng thử lại"),
   });
@@ -159,7 +158,7 @@ export function ProductFormPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={ROUTES.ADMIN_PRODUCTS}>
+          <Link to={ROUTES.STAFF_PRODUCTS}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -434,7 +433,7 @@ export function ProductFormPage() {
             {isEdit ? "Cập nhật" : "Tạo sản phẩm"}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link to={ROUTES.ADMIN_PRODUCTS}>Hủy</Link>
+            <Link to={ROUTES.STAFF_PRODUCTS}>Hủy</Link>
           </Button>
         </div>
       </form>

@@ -34,7 +34,7 @@ export function OrderManagerPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "orders", statusFilter],
+    queryKey: ["staff", "orders", statusFilter],
     queryFn: () =>
       orderService.getAllOrders({
         status: statusFilter === "all" ? undefined : statusFilter,
@@ -45,7 +45,7 @@ export function OrderManagerPage() {
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
       orderService.updateOrderStatus(orderId, status),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "orders"] });
       toast.success("Cập nhật trạng thái thành công");
       setPendingStatus((prev) => {
         const next = { ...prev };
@@ -126,7 +126,7 @@ export function OrderManagerPage() {
                         <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <Link
-                              to={ROUTES.ADMIN_ORDER_DETAIL.replace(":orderId", String(order.id))}
+                              to={ROUTES.STAFF_ORDER_DETAIL.replace(":orderId", String(order.id))}
                               className="font-medium text-teal-500 hover:underline">
                               {order.orderCode ?? `#${order.id}`}
                             </Link>
@@ -149,7 +149,7 @@ export function OrderManagerPage() {
                                 className="h-8 w-8 text-teal-500"
                                 asChild>
                                 <Link
-                                  to={ROUTES.ADMIN_ORDER_DETAIL.replace(
+                                  to={ROUTES.STAFF_ORDER_DETAIL.replace(
                                     ":orderId",
                                     String(order.id)
                                   )}>

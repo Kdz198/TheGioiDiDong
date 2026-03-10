@@ -271,6 +271,35 @@ export const userService = {
     });
   },
 
+  /** Update an employee's basic info (fullName, email, optional password) */
+  updateEmployee: async (
+    id: number,
+    data: { fullName: string; email: string; password: string },
+    currentAllPermissions: string[]
+  ): Promise<void> => {
+    if (USE_MOCK_API) {
+      await new Promise((r) => setTimeout(r, 500));
+      const user = mockUsers.find((u) => u.id === id);
+      if (user) {
+        user.fullName = data.fullName;
+        user.email = data.email;
+      }
+      return;
+    }
+    const userResp = await apiClient.get(API_ENDPOINTS.USERS.DETAIL(id));
+    const currentUser = userResp.data as BackendUser;
+    const rolesResp = await apiClient.get<BackendRole[]>(API_ENDPOINTS.ROLES.LIST);
+    const role = rolesResp.data.find((r) => r.name === currentUser.roleName);
+    if (!role?.id) throw new Error("Không tìm thấy vai trò");
+    await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), {
+      email: data.email,
+      fullName: data.fullName,
+      password: data.password,
+      roleId: role.id,
+      customPermissions: currentAllPermissions,
+    });
+  },
+
   /** Stub — no customer profile endpoint yet */
   getProfile: async (_id?: number): Promise<CustomerProfile> => {
     return mockCustomer;

@@ -95,76 +95,56 @@ const EmployeeManagerPage = lazy(() =>
     default: m.EmployeeManagerPage,
   }))
 );
-const ProductManagerPage = lazy(() =>
-  import("@/pages/admin/ProductManagerPage").then((m) => ({
-    default: m.ProductManagerPage,
-  }))
-);
-const ProductFormPage = lazy(() =>
-  import("@/pages/admin/ProductFormPage").then((m) => ({
-    default: m.ProductFormPage,
-  }))
-);
-const CategoryManagerPage = lazy(() =>
-  import("@/pages/admin/CategoryManagerPage").then((m) => ({
-    default: m.CategoryManagerPage,
-  }))
-);
-const BrandManagerPage = lazy(() =>
-  import("@/pages/admin/BrandManagerPage").then((m) => ({
-    default: m.BrandManagerPage,
-  }))
-);
-const OrderManagerPage = lazy(() =>
-  import("@/pages/admin/OrderManagerPage").then((m) => ({
-    default: m.OrderManagerPage,
-  }))
-);
-const OrderDetailAdminPage = lazy(() =>
-  import("@/pages/admin/OrderDetailAdminPage").then((m) => ({
-    default: m.OrderDetailAdminPage,
-  }))
-);
-const PromotionManagerPage = lazy(() =>
-  import("@/pages/admin/PromotionManagerPage").then((m) => ({
-    default: m.PromotionManagerPage,
+const PaymentManagerPage = lazy(() =>
+  import("@/pages/admin/PaymentManagerPage").then((m) => ({
+    default: m.PaymentManagerPage,
   }))
 );
 
 // Staff pages
-const StaffOrderManagerPage = lazy(() =>
-  import("@/pages/staff/StaffOrderManagerPage").then((m) => ({
-    default: m.StaffOrderManagerPage,
-  }))
-);
-const StaffOrderDetailPage = lazy(() =>
-  import("@/pages/staff/StaffOrderDetailPage").then((m) => ({
-    default: m.StaffOrderDetailPage,
-  }))
-);
 const StaffProductManagerPage = lazy(() =>
-  import("@/pages/staff/StaffProductManagerPage").then((m) => ({
-    default: m.StaffProductManagerPage,
+  import("@/pages/staff/ProductManagerPage").then((m) => ({
+    default: m.ProductManagerPage,
+  }))
+);
+const StaffProductFormPage = lazy(() =>
+  import("@/pages/staff/ProductFormPage").then((m) => ({
+    default: m.ProductFormPage,
   }))
 );
 const StaffBrandManagerPage = lazy(() =>
-  import("@/pages/staff/StaffBrandManagerPage").then((m) => ({
-    default: m.StaffBrandManagerPage,
+  import("@/pages/staff/BrandManagerPage").then((m) => ({
+    default: m.BrandManagerPage,
+  }))
+);
+const StaffCategoryManagerPage = lazy(() =>
+  import("@/pages/staff/CategoryManagerPage").then((m) => ({
+    default: m.CategoryManagerPage,
+  }))
+);
+const StaffPromotionManagerPage = lazy(() =>
+  import("@/pages/staff/PromotionManagerPage").then((m) => ({
+    default: m.PromotionManagerPage,
+  }))
+);
+const StaffOrderManagerPage = lazy(() =>
+  import("@/pages/staff/OrderManagerPage").then((m) => ({
+    default: m.OrderManagerPage,
+  }))
+);
+const StaffOrderDetailPage = lazy(() =>
+  import("@/pages/staff/OrderDetailPage").then((m) => ({
+    default: m.OrderDetailPage,
   }))
 );
 const StaffUserManagerPage = lazy(() =>
-  import("@/pages/staff/StaffUserManagerPage").then((m) => ({
-    default: m.StaffUserManagerPage,
-  }))
-);
-const StaffPaymentManagerPage = lazy(() =>
-  import("@/pages/staff/StaffPaymentManagerPage").then((m) => ({
-    default: m.StaffPaymentManagerPage,
+  import("@/pages/staff/UserManagerPage").then((m) => ({
+    default: m.UserManagerPage,
   }))
 );
 const StaffFeedbackManagerPage = lazy(() =>
-  import("@/pages/staff/StaffFeedbackManagerPage").then((m) => ({
-    default: m.StaffFeedbackManagerPage,
+  import("@/pages/staff/FeedbackManagerPage").then((m) => ({
+    default: m.FeedbackManagerPage,
   }))
 );
 
@@ -283,14 +263,7 @@ function App() {
                 <Route path={ROUTES.ADMIN_USERS} element={<UserManagerPage />} />
                 <Route path={ROUTES.ADMIN_USER_DETAIL} element={<UserDetailAdminPage />} />
                 <Route path={ROUTES.ADMIN_EMPLOYEES} element={<EmployeeManagerPage />} />
-                <Route path={ROUTES.ADMIN_PRODUCTS} element={<ProductManagerPage />} />
-                <Route path={ROUTES.ADMIN_PRODUCT_CREATE} element={<ProductFormPage />} />
-                <Route path={ROUTES.ADMIN_PRODUCT_EDIT} element={<ProductFormPage />} />
-                <Route path={ROUTES.ADMIN_CATEGORIES} element={<CategoryManagerPage />} />
-                <Route path={ROUTES.ADMIN_BRANDS} element={<BrandManagerPage />} />
-                <Route path={ROUTES.ADMIN_ORDERS} element={<OrderManagerPage />} />
-                <Route path={ROUTES.ADMIN_ORDER_DETAIL} element={<OrderDetailAdminPage />} />
-                <Route path={ROUTES.ADMIN_PROMOTIONS} element={<PromotionManagerPage />} />
+                <Route path={ROUTES.ADMIN_PAYMENTS} element={<PaymentManagerPage />} />
               </Route>
 
               {/* Staff Routes — DashboardLayout + ProtectedRoute */}
@@ -302,14 +275,17 @@ function App() {
                 }>
                 <Route
                   path={ROUTES.STAFF}
-                  element={<Navigate to={ROUTES.STAFF_ORDERS} replace />}
+                  element={<Navigate to={ROUTES.STAFF_PRODUCTS} replace />}
                 />
+                <Route path={ROUTES.STAFF_PRODUCTS} element={<StaffProductManagerPage />} />
+                <Route path={ROUTES.STAFF_PRODUCT_CREATE} element={<StaffProductFormPage />} />
+                <Route path={ROUTES.STAFF_PRODUCT_EDIT} element={<StaffProductFormPage />} />
+                <Route path={ROUTES.STAFF_BRANDS} element={<StaffBrandManagerPage />} />
+                <Route path={ROUTES.STAFF_CATEGORIES} element={<StaffCategoryManagerPage />} />
                 <Route path={ROUTES.STAFF_ORDERS} element={<StaffOrderManagerPage />} />
                 <Route path={ROUTES.STAFF_ORDER_DETAIL} element={<StaffOrderDetailPage />} />
-                <Route path={ROUTES.STAFF_PRODUCTS} element={<StaffProductManagerPage />} />
-                <Route path={ROUTES.STAFF_BRANDS} element={<StaffBrandManagerPage />} />
+                <Route path={ROUTES.STAFF_PROMOTIONS} element={<StaffPromotionManagerPage />} />
                 <Route path={ROUTES.STAFF_USERS} element={<StaffUserManagerPage />} />
-                <Route path={ROUTES.STAFF_PAYMENTS} element={<StaffPaymentManagerPage />} />
                 <Route path={ROUTES.STAFF_FEEDBACK} element={<StaffFeedbackManagerPage />} />
               </Route>
 

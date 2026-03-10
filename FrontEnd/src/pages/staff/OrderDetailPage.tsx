@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ROUTES } from "@/router/routes.const";
 import { orderService } from "@/services/orderService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
@@ -19,13 +20,13 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-export function OrderDetailAdminPage() {
+export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const queryClient = useQueryClient();
   const [newStatus, setNewStatus] = useState("");
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["admin", "order", orderId],
+    queryKey: ["staff", "order", orderId],
     queryFn: () => orderService.getOrderById(Number(orderId)),
     enabled: !!orderId,
   });
@@ -33,8 +34,8 @@ export function OrderDetailAdminPage() {
   const updateMutation = useMutation({
     mutationFn: () => orderService.updateOrderStatus(Number(orderId), newStatus),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "orders"] });
       toast.success("Cập nhật trạng thái thành công");
       setNewStatus("");
     },
@@ -57,7 +58,7 @@ export function OrderDetailAdminPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/admin/orders">
+          <Link to={ROUTES.STAFF_ORDERS}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
