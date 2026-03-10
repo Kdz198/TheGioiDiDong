@@ -1,4 +1,5 @@
 import { OrderStatusBadge } from "@/components/common/OrderStatusBadge";
+import { PaymentDetailModal } from "@/components/common/PaymentDetailModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,13 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
 import { orderService } from "@/services/orderService";
+import { paymentService } from "@/services/paymentService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Search } from "lucide-react";
-import { useState } from "react";
+import { CreditCard, Eye, Loader2, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -31,6 +34,7 @@ export function OrderManagerPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [pendingStatus, setPendingStatus] = useState<Record<number, string>>({});
+  const [viewingPayment, setViewingPayment] = useState<ApiPayment | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -40,6 +44,19 @@ export function OrderManagerPage() {
         status: statusFilter === "all" ? undefined : statusFilter,
       }),
   });
+
+  const { data: paymentsData } = useQuery({
+    queryKey: ["staff", "payments"],
+    queryFn: () => paymentService.getAllPayments(),
+  });
+
+  const paymentsByOrderId = useMemo(() => {
+    const map = new Map<number, ApiPayment>();
+    (paymentsData ?? []).forEach((p) => {
+      if (p.order?.id) map.set(p.order.id, p);
+    });
+    return map;
+  }, [paymentsData]);
 
   const updateMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
@@ -104,9 +121,11 @@ export function OrderManagerPage() {
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">Mã đơn</th>
                   <th className="px-4 py-3 font-medium text-gray-500">User ID</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">Giá gốc</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Tổng tiền</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Ngày đặt</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Cập nhật TT</th>
                 </tr>
               </thead>
@@ -114,7 +133,7 @@ export function OrderManagerPage() {
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={6} className="px-4 py-3">
+                        <td colSpan={7} className="px-4 py-3">
                           <div className="h-10 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
@@ -132,6 +151,9 @@ export function OrderManagerPage() {
                             </Link>
                           </td>
                           <td className="px-4 py-3 text-gray-600">{order.userId ?? "—"}</td>
+                          <td className="px-4 py-3 text-right text-gray-500 line-through">
+                            {order.subtotal > 0 ? formatVND(order.subtotal) : "—"}
+                          </td>
                           <td className="px-4 py-3 text-right font-medium">
                             {formatVND(order.total ?? 0)}
                           </td>
@@ -141,8 +163,8 @@ export function OrderManagerPage() {
                           <td className="px-4 py-3 text-gray-400">
                             {order.createdAt ? formatDate(order.createdAt) : "—"}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -156,6 +178,21 @@ export function OrderManagerPage() {
                                   <Eye className="h-4 w-4" />
                                 </Link>
                               </Button>
+                              {paymentsByOrderId.has(order.id) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-indigo-400"
+                                  onClick={() =>
+                                    setViewingPayment(paymentsByOrderId.get(order.id)!)
+                                  }>
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
                               <Select
                                 value={selectedStatus}
                                 onValueChange={(v) =>
@@ -193,6 +230,11 @@ export function OrderManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaymentDetailModal
+        payment={viewingPayment}
+        open={viewingPayment !== null}
+        onClose={() => setViewingPayment(null)}
+      />
     </div>
   );
 }

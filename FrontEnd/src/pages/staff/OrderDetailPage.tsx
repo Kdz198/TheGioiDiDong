@@ -17,16 +17,20 @@ import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const location = useLocation();
+  const isAdminContext = location.pathname.startsWith("/admin");
+  const ordersRoute = isAdminContext ? ROUTES.ADMIN_ORDERS : ROUTES.STAFF_ORDERS;
+  const queryPrefix = isAdminContext ? "admin" : "staff";
   const queryClient = useQueryClient();
   const [newStatus, setNewStatus] = useState("");
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["staff", "order", orderId],
+    queryKey: [queryPrefix, "order", orderId],
     queryFn: () => orderService.getOrderById(Number(orderId)),
     enabled: !!orderId,
   });
@@ -34,8 +38,8 @@ export function OrderDetailPage() {
   const updateMutation = useMutation({
     mutationFn: () => orderService.updateOrderStatus(Number(orderId), newStatus),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["staff", "orders"] });
+      queryClient.invalidateQueries({ queryKey: [queryPrefix, "order", orderId] });
+      queryClient.invalidateQueries({ queryKey: [queryPrefix, "orders"] });
       toast.success("Cập nhật trạng thái thành công");
       setNewStatus("");
     },
@@ -58,7 +62,7 @@ export function OrderDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={ROUTES.STAFF_ORDERS}>
+          <Link to={ordersRoute}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
