@@ -4,16 +4,20 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import tgdd.org.userservice.Enum.Permission;
 import tgdd.org.userservice.Exception.CustomException;
 import tgdd.org.userservice.Model.Account;
 import tgdd.org.userservice.Model.DTO.Request.LoginRequest;
 import tgdd.org.userservice.Model.DTO.Response.LoginResponse;
+import tgdd.org.userservice.Model.UserClaims;
 import tgdd.org.userservice.Repository.AccountRepository;
 import tgdd.org.userservice.Service.AuthService;
 
@@ -127,5 +131,35 @@ public class AuthServiceImpl implements AuthService {
                 throw new CustomException("UNAUTHORIZED - Bạn không có quyền truy cập!", HttpStatus.UNAUTHORIZED);
             }
         }
+    }
+
+    @Override
+    public UserClaims getCurrentUser() {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new CustomException("UNAUTHORIZED - Không tìm thấy thông tin xác thực!", HttpStatus.UNAUTHORIZED);
+        }
+
+        String token = authHeader.substring(7);
+
+        Claims claims;
+        try {
+            claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException e) {
+            throw new CustomException("UNAUTHORIZED - Token không hợp lệ!", HttpStatus.UNAUTHORIZED);
+        }
+
+        return new UserClaims(
+                claims.getSubject(),
+                claims.get("accountId", Long.class),
+                claims.get("role", String.class),
+                claims.get("permissions", List.class)
+        );
     }
 }

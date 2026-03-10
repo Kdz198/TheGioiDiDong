@@ -2,16 +2,21 @@ package tgdd.org.userservice;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tgdd.org.userservice.Annotation.RequireAuth;
+import tgdd.org.userservice.Service.AuthService;
 
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Test Authorization API", description = "Bộ API dùng để kiểm thử luồng phân quyền Custom AOP (Role & Permission)")
+@RequiredArgsConstructor
 public class HealthCheckController {
 
+
+    private final AuthService authService;
 
 //    @GetMapping("health-check")
 //    public String healthCheckV1() {
@@ -46,6 +51,9 @@ public class HealthCheckController {
     @RequireAuth(roles = {"STAFF"})
     @GetMapping("/staff-only")
     public String staffOnly() {
+        System.out.println( "DEBUG: Đã vào method staffOnly, bắt đầu gọi authService.getCurrentUser() để xem thông tin user từ Token...");
+        var currentUser = authService.getCurrentUser();
+        System.out.println("DEBUG: Thông tin user lấy được từ Token: " + currentUser);
         return "2. [STAFF ONLY] - Chào nhân viên! Bạn đang có Role STAFF.";
     }
 
