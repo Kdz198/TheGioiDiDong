@@ -86,17 +86,13 @@ export function PaymentManagerPage() {
                             ? "bg-green-100 text-green-700"
                             : payment.status === "PENDING"
                               ? "bg-yellow-100 text-yellow-700"
-                              : payment.status === "REFUNDED"
-                                ? "bg-gray-100 text-gray-500"
-                                : "bg-red-100 text-red-700"
+                              : "bg-red-100 text-red-700"
                         }>
                         {payment.status === "COMPLETED"
                           ? "Đã thanh toán"
                           : payment.status === "PENDING"
                             ? "Chờ thanh toán"
-                            : payment.status === "REFUNDED"
-                              ? "Đã hoàn tiền"
-                              : "Thất bại"}
+                            : "Thất bại"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-gray-400">{formatDate(payment.date)}</td>
@@ -157,17 +153,13 @@ export function PaymentManagerPage() {
                       ? "bg-green-100 text-green-700"
                       : detailPayment.status === "PENDING"
                         ? "bg-yellow-100 text-yellow-700"
-                        : detailPayment.status === "REFUNDED"
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-red-100 text-red-700"
+                        : "bg-red-100 text-red-700"
                   }>
                   {detailPayment.status === "COMPLETED"
                     ? "Đã thanh toán"
                     : detailPayment.status === "PENDING"
                       ? "Chờ thanh toán"
-                      : detailPayment.status === "REFUNDED"
-                        ? "Đã hoàn tiền"
-                        : "Thất bại"}
+                      : "Thất bại"}
                 </Badge>
               </div>
               <div>

@@ -4,7 +4,6 @@ import { useAuthStore } from "@/stores/authStore";
 import {
   BarChart3,
   Bookmark,
-  CreditCard,
   FolderTree,
   LayoutDashboard,
   LogOut,
@@ -26,13 +25,20 @@ interface SidebarItem {
 const adminItems: SidebarItem[] = [
   { label: "Tổng quan", href: ROUTES.ADMIN_DASHBOARD, icon: LayoutDashboard },
   { label: "Báo cáo", href: ROUTES.ADMIN_REPORTS, icon: BarChart3 },
+  { label: "Sản phẩm", href: ROUTES.ADMIN_PRODUCTS, icon: Package },
+  { label: "Phiên bản SP", href: ROUTES.ADMIN_PRODUCT_VERSIONS, icon: Tag },
+  { label: "Thương hiệu", href: ROUTES.ADMIN_BRANDS, icon: Bookmark },
+  { label: "Danh mục", href: ROUTES.ADMIN_CATEGORIES, icon: FolderTree },
+  { label: "Đơn hàng", href: ROUTES.ADMIN_ORDERS, icon: ShoppingCart },
+  { label: "Khuyến mãi", href: ROUTES.ADMIN_PROMOTIONS, icon: Tag },
+  { label: "Phản hồi", href: ROUTES.ADMIN_FEEDBACK, icon: MessageSquare },
   { label: "Người dùng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
-  { label: "Thanh toán", href: ROUTES.ADMIN_PAYMENTS, icon: CreditCard },
 ];
 
 const staffItems: SidebarItem[] = [
   { label: "Sản phẩm", href: ROUTES.STAFF_PRODUCTS, icon: Package },
+  { label: "Phiên bản SP", href: ROUTES.STAFF_PRODUCT_VERSIONS, icon: Tag },
   { label: "Thương hiệu", href: ROUTES.STAFF_BRANDS, icon: Bookmark },
   { label: "Đơn hàng", href: ROUTES.STAFF_ORDERS, icon: ShoppingCart },
   { label: "Danh mục", href: ROUTES.STAFF_CATEGORIES, icon: FolderTree },
@@ -54,7 +60,7 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className="flex w-64 flex-col border-r bg-white">
+    <aside className="flex h-full w-64 flex-col border-r bg-white">
       <div className="border-b p-4">
         <Link to={ROUTES.HOME} className="text-xl font-bold">
           <span className="text-teal-500">Tech</span>
@@ -63,14 +69,14 @@ export function DashboardSidebar() {
         <p className="mt-1 text-xs text-gray-400">{isAdmin ? "Quản trị viên" : "Nhân viên"}</p>
       </div>
 
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {items.map((item) => (
           <Link
             key={item.href}
             to={item.href}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-              location.pathname === item.href
+              location.pathname === item.href || location.pathname.startsWith(item.href + "/")
                 ? "bg-teal-50 font-medium text-teal-600"
                 : "text-gray-600 hover:bg-gray-50"
             )}>

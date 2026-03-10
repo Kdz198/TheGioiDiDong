@@ -257,8 +257,6 @@ export interface components {
             price?: number;
             /** Format: int32 */
             stockQuantity?: number;
-            /** Format: binary */
-            img?: string;
             active?: boolean;
             /** Format: int32 */
             versionId?: number;
@@ -279,6 +277,10 @@ export interface components {
             /** Format: int32 */
             reserve?: number;
             imgUrl?: string;
+            imgUrl2?: string;
+            imgUrl3?: string;
+            imgUrl4?: string;
+            imgUrl5?: string;
             active?: boolean;
             versionName?: string;
             brandName?: string;
@@ -309,8 +311,6 @@ export interface components {
             price?: number;
             /** Format: int32 */
             stockQuantity?: number;
-            /** Format: binary */
-            img?: string;
             active?: boolean;
             /** Format: int32 */
             versionId?: number;
@@ -384,7 +384,19 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "multipart/form-data": components["schemas"]["ProductUpdateRequest"];
+                "multipart/form-data": {
+                    product: components["schemas"]["ProductUpdateRequest"];
+                    /** Format: binary */
+                    img?: string;
+                    /** Format: binary */
+                    img2?: string;
+                    /** Format: binary */
+                    img3?: string;
+                    /** Format: binary */
+                    img4?: string;
+                    /** Format: binary */
+                    img5?: string;
+                };
             };
         };
         responses: {
@@ -408,7 +420,19 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "multipart/form-data": components["schemas"]["ProductRequest"];
+                "multipart/form-data": {
+                    product: components["schemas"]["ProductRequest"];
+                    /** Format: binary */
+                    img?: string;
+                    /** Format: binary */
+                    img2?: string;
+                    /** Format: binary */
+                    img3?: string;
+                    /** Format: binary */
+                    img4?: string;
+                    /** Format: binary */
+                    img5?: string;
+                };
             };
         };
         responses: {

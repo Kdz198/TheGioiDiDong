@@ -108,12 +108,28 @@ export function Header() {
                     Hồ sơ
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to={ROUTES.ORDER_HISTORY}>
-                    <Package className="mr-2 h-4 w-4" />
-                    Đơn hàng
-                  </Link>
-                </DropdownMenuItem>
+                {user?.role === "admin" ? (
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.ADMIN_DASHBOARD}>
+                      <Package className="mr-2 h-4 w-4" />
+                      Quản lý
+                    </Link>
+                  </DropdownMenuItem>
+                ) : user?.role === "staff" ? (
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.STAFF_PRODUCTS}>
+                      <Package className="mr-2 h-4 w-4" />
+                      Quản lý
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.ORDER_HISTORY}>
+                      <Package className="mr-2 h-4 w-4" />
+                      Đơn hàng
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                   <LogOut className="mr-2 h-4 w-4" />

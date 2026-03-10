@@ -38,9 +38,8 @@ import { toast } from "sonner";
 
 interface UserFormState {
   email: string;
-  password: string;
   fullName: string;
-  roleId?: number; // Not used in this form since we're only managing customers
+  roleId?: number;
 }
 
 const PERMISSION_LABELS: Record<string, string> = {
@@ -57,7 +56,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   VIEW_REVENUE_REPORT: "Xem báo cáo doanh thu",
 };
 
-const emptyForm: UserFormState = { email: "", password: "", fullName: "", roleId: 0 };
+const emptyForm: UserFormState = { email: "", fullName: "", roleId: 0 };
 const PAGE_SIZE = 10;
 
 export function UserManagerPage() {
@@ -152,7 +151,7 @@ export function UserManagerPage() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
-    setForm({ email: user.email, password: "", fullName: user.fullName });
+    setForm({ email: user.email, fullName: user.fullName });
     setDialogOpen(true);
   };
 
@@ -171,18 +170,12 @@ export function UserManagerPage() {
       const payload: CreateAccountRequest = {
         email: form.email,
         fullName: form.fullName,
-        ...(form.password ? { password: form.password } : {}),
         roleId: userRoleId,
       };
       updateMutation.mutate(payload);
     } else {
-      if (!form.password) {
-        toast.error("Vui lòng nhập mật khẩu");
-        return;
-      }
       createMutation.mutate({
         email: form.email,
-        password: form.password,
         fullName: form.fullName,
         roleId: userRoleId,
       });
@@ -373,18 +366,6 @@ export function UserManagerPage() {
                 placeholder="khachhang@email.com"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cu-password">
-                Mật khẩu {editingUser ? "(để trống nếu không đổi)" : "*"}
-              </Label>
-              <Input
-                id="cu-password"
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               />
             </div>
             <DialogFooter>

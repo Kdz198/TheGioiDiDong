@@ -56,10 +56,9 @@ interface EmployeeFormState {
   fullName: string;
   email: string;
   phone: string;
-  password: string;
 }
 
-const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "", password: "" };
+const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "" };
 const PAGE_SIZE = 10;
 
 export function EmployeeManagerPage() {
@@ -73,7 +72,7 @@ export function EmployeeManagerPage() {
   // ── Edit state ─────────────────────────────────────────────────────────────
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingEmp, setEditingEmp] = useState<User | null>(null);
-  const [editForm, setEditForm] = useState({ fullName: "", email: "", password: "" });
+  const [editForm, setEditForm] = useState({ fullName: "", email: "" });
 
   // ── Permissions state ──────────────────────────────────────────────────────
   const [permDialogOpen, setPermDialogOpen] = useState(false);
@@ -150,7 +149,7 @@ export function EmployeeManagerPage() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.fullName || !form.email || !form.password) {
+    if (!form.fullName || !form.email) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
@@ -159,7 +158,7 @@ export function EmployeeManagerPage() {
 
   const openEditDialog = (emp: User) => {
     setEditingEmp(emp);
-    setEditForm({ fullName: emp.fullName, email: emp.email, password: "" });
+    setEditForm({ fullName: emp.fullName, email: emp.email });
     setEditDialogOpen(true);
   };
 
@@ -217,16 +216,6 @@ export function EmployeeManagerPage() {
                   placeholder="0901234567"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Mật khẩu</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Nhập mật khẩu"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 />
               </div>
               <DialogFooter>
@@ -435,15 +424,6 @@ export function EmployeeManagerPage() {
                 value={editForm.email}
                 onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder="nhanvien@techgear.vn"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Mật khẩu mới</Label>
-              <Input
-                type="password"
-                value={editForm.password}
-                onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="Để trống nếu không đổi mật khẩu"
               />
             </div>
             <DialogFooter>

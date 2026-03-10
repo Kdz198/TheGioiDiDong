@@ -484,6 +484,29 @@ export interface components {
             virtualAccountName?: string;
             virtualAccountNumber?: string;
         };
+        FeedbackRequest: {
+            /** Format: int32 */
+            userId?: number;
+            /** Format: int32 */
+            productId?: number;
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+            /** Format: int32 */
+            orderDetailId?: number;
+        };
+        FeedbackResponse: {
+            userName?: string;
+            /** Format: int32 */
+            productId?: number;
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: int32 */
+            orderDetailId?: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -725,7 +748,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Feedback"];
+                "application/json": components["schemas"]["FeedbackRequest"];
             };
         };
         responses: {
@@ -1184,7 +1207,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["Feedback"][];
+                    "*/*": components["schemas"]["FeedbackResponse"][];
                 };
             };
         };
