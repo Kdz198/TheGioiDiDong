@@ -142,6 +142,58 @@ const StaffFeedbackManagerPage = lazy(() =>
     default: m.FeedbackManagerPage,
   }))
 );
+const StaffProductVersionManagerPage = lazy(() =>
+  import("@/pages/staff/ProductVersionManagerPage").then((m) => ({
+    default: m.ProductVersionManagerPage,
+  }))
+);
+
+// Admin CRUD pages
+const AdminProductManagerPage = lazy(() =>
+  import("@/pages/admin/AdminProductManagerPage").then((m) => ({
+    default: m.AdminProductManagerPage,
+  }))
+);
+const AdminProductFormPage = lazy(() =>
+  import("@/pages/staff/ProductFormPage").then((m) => ({
+    default: m.ProductFormPage,
+  }))
+);
+const AdminOrderManagerPage = lazy(() =>
+  import("@/pages/admin/AdminOrderManagerPage").then((m) => ({
+    default: m.AdminOrderManagerPage,
+  }))
+);
+const AdminOrderDetailPage = lazy(() =>
+  import("@/pages/staff/OrderDetailPage").then((m) => ({
+    default: m.OrderDetailPage,
+  }))
+);
+const AdminBrandManagerPage = lazy(() =>
+  import("@/pages/admin/BrandManagerPage").then((m) => ({
+    default: m.BrandManagerPage,
+  }))
+);
+const AdminCategoryManagerPage = lazy(() =>
+  import("@/pages/admin/CategoryManagerPage").then((m) => ({
+    default: m.CategoryManagerPage,
+  }))
+);
+const AdminPromotionManagerPage = lazy(() =>
+  import("@/pages/admin/PromotionManagerPage").then((m) => ({
+    default: m.PromotionManagerPage,
+  }))
+);
+const AdminFeedbackManagerPage = lazy(() =>
+  import("@/pages/admin/FeedbackManagerPage").then((m) => ({
+    default: m.FeedbackManagerPage,
+  }))
+);
+const AdminProductVersionManagerPage = lazy(() =>
+  import("@/pages/admin/ProductVersionManagerPage").then((m) => ({
+    default: m.ProductVersionManagerPage,
+  }))
+);
 
 function PageLoader() {
   return (
@@ -258,6 +310,19 @@ function App() {
                 <Route path={ROUTES.ADMIN_USERS} element={<UserManagerPage />} />
                 <Route path={ROUTES.ADMIN_USER_DETAIL} element={<UserDetailAdminPage />} />
                 <Route path={ROUTES.ADMIN_EMPLOYEES} element={<EmployeeManagerPage />} />
+                <Route path={ROUTES.ADMIN_PRODUCTS} element={<AdminProductManagerPage />} />
+                <Route path={ROUTES.ADMIN_PRODUCT_CREATE} element={<AdminProductFormPage />} />
+                <Route path={ROUTES.ADMIN_PRODUCT_EDIT} element={<AdminProductFormPage />} />
+                <Route path={ROUTES.ADMIN_BRANDS} element={<AdminBrandManagerPage />} />
+                <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoryManagerPage />} />
+                <Route path={ROUTES.ADMIN_ORDERS} element={<AdminOrderManagerPage />} />
+                <Route path={ROUTES.ADMIN_ORDER_DETAIL} element={<AdminOrderDetailPage />} />
+                <Route path={ROUTES.ADMIN_PROMOTIONS} element={<AdminPromotionManagerPage />} />
+                <Route path={ROUTES.ADMIN_FEEDBACK} element={<AdminFeedbackManagerPage />} />
+                <Route
+                  path={ROUTES.ADMIN_PRODUCT_VERSIONS}
+                  element={<AdminProductVersionManagerPage />}
+                />
               </Route>
 
               {/* Staff Routes — DashboardLayout + ProtectedRoute */}
@@ -281,6 +346,10 @@ function App() {
                 <Route path={ROUTES.STAFF_PROMOTIONS} element={<StaffPromotionManagerPage />} />
                 <Route path={ROUTES.STAFF_USERS} element={<StaffUserManagerPage />} />
                 <Route path={ROUTES.STAFF_FEEDBACK} element={<StaffFeedbackManagerPage />} />
+                <Route
+                  path={ROUTES.STAFF_PRODUCT_VERSIONS}
+                  element={<StaffProductVersionManagerPage />}
+                />
               </Route>
 
               {/* Error Routes */}
