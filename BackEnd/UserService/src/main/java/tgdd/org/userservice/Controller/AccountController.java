@@ -44,4 +44,8 @@ public class AccountController {
     void deleteAccount(@PathVariable Long id) {
         accountService.deleteAccount(id);
     }
+
+    @GetMapping("/{id}/name")
+    String getNameAccount(@PathVariable long id) {
+        return accountService.getNameAccount(id);}
 }

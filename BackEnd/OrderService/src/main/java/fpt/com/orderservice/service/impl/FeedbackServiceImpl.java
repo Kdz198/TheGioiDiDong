@@ -1,11 +1,17 @@
 package fpt.com.orderservice.service.impl;
 
+import fpt.com.orderservice.feignclient.UserClient;
 import fpt.com.orderservice.model.Feedback;
+import fpt.com.orderservice.model.OrderDetail;
+import fpt.com.orderservice.model.dto.FeedbackRequest;
+import fpt.com.orderservice.model.dto.FeedbackResponse;
 import fpt.com.orderservice.repo.FeedbackRepo;
+import fpt.com.orderservice.repo.OrderDetailRepo;
 import fpt.com.orderservice.service.FeedbackService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -13,6 +19,10 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Autowired
     private FeedbackRepo feedbackRepo;
+    @Autowired
+    private OrderDetailRepo orderDetailRepo;
+    @Autowired
+    private UserClient userClient;
 
     @Override
     public List<Feedback> findAll() {
@@ -26,8 +36,15 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     @Override
-    public Feedback save(Feedback feedback) {
-        return feedbackRepo.save(feedback);
+    public Feedback save(FeedbackRequest feedback) {
+        Feedback newFeedback = new Feedback();
+        newFeedback.setUserId(feedback.getUserId());
+        newFeedback.setProductId(feedback.getProductId());
+        newFeedback.setRating(feedback.getRating());
+        newFeedback.setComment(feedback.getComment());
+        OrderDetail detail = orderDetailRepo.findById(feedback.getOrderDetailId());
+        newFeedback.setOrderDetail(detail);
+        return feedbackRepo.save(newFeedback);
     }
 
     @Override
@@ -49,8 +66,28 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     @Override
-    public List<Feedback> findByProductId(int productId) {
-        return feedbackRepo.findByProductId(productId);
+    public List<FeedbackResponse> findByProductId(int productId) {
+        List<Feedback> feedbacks =  feedbackRepo.findByProductId(productId);
+        List<FeedbackResponse> list = new ArrayList<>();
+        for (Feedback feedback : feedbacks) {
+            FeedbackResponse feedbackResponse = new FeedbackResponse();
+            String name = userClient.getNameAccount(feedback.getUserId());
+            feedbackResponse.setUserName(name);
+            feedbackResponse.setProductId(feedback.getProductId());
+            feedbackResponse.setRating(feedback.getRating());
+            feedbackResponse.setComment(feedback.getComment());
+            feedbackResponse.setOrderDetailId(feedback.getOrderDetail().getId());
+            feedbackResponse.setDate(feedback.getDate());
+            list.add(feedbackResponse);
+        }
+        return list;
     }
+
+    @Override
+    public Feedback findByOrderDetail(int orderDetailId) {
+        return feedbackRepo.findByOrOrderDetail_Id(orderDetailId);
+    }
+
+
 }
 

@@ -81,6 +81,13 @@ public class AccountServiceImpl implements AccountService {
         return accounts.map(this::convertToResponse);
     }
 
+    @Override
+    public String getNameAccount(long id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found with id: " + id))
+                .getFullName();
+    }
+
     RetrieveAccountResponse convertToResponse(Account account) {
         RetrieveAccountResponse response = objectMapper.convertValue(account, RetrieveAccountResponse.class);
         response.setRoleName(account.getRole().getName());
