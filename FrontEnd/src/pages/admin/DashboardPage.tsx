@@ -12,8 +12,14 @@ import { ArrowDown, ArrowUp, DollarSign, Package, ShoppingCart, Users } from "lu
 import { useMemo, useState } from "react";
 import {
   Area,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
+  Legend,
+  Pie,
+  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -142,6 +148,24 @@ const RANGE_OPTIONS: { label: string; value: Exclude<RangeMode, "custom"> }[] = 
   { label: "30N", value: "30" },
 ];
 
+const METHOD_LABELS: Record<string, string> = {
+  cod: "COD",
+  momo: "MoMo",
+  vnpay: "VNPay",
+};
+
+const PIE_COLORS: Record<string, string> = {
+  COMPLETED: "#14b8a6",
+  PENDING: "#f97316",
+  FAILED: "#f87171",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  COMPLETED: "Hoàn thành",
+  PENDING: "Đang xử lý",
+  FAILED: "Thất bại",
+};
+
 // ── Component ──────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   // A — flexible date range
@@ -205,6 +229,31 @@ export function DashboardPage() {
 
   // G — average revenue reference line
   const avgRevenue = chartData.length > 0 ? Math.round(periodTotals.revenue / chartData.length) : 0;
+
+  // Payment method chart data
+  const methodChartData = useMemo(() => {
+    const map: Record<string, { method: string; revenue: number; count: number }> = {};
+    for (const p of rawPayments) {
+      const key = p.paymentMethod ?? "other";
+      if (!map[key]) map[key] = { method: METHOD_LABELS[key] ?? key, revenue: 0, count: 0 };
+      if (p.status === "COMPLETED") {
+        map[key].revenue += p.amount ?? 0;
+        map[key].count += 1;
+      }
+    }
+    return Object.values(map);
+  }, [rawPayments]);
+
+  // Transaction status pie data
+  const statusPieData = useMemo(() => {
+    const map: Record<string, number> = { COMPLETED: 0, PENDING: 0, FAILED: 0 };
+    for (const p of rawPayments) {
+      if (p.status in map) map[p.status] += 1;
+    }
+    return Object.entries(map)
+      .filter(([, v]) => v > 0)
+      .map(([status, value]) => ({ name: STATUS_LABELS[status] ?? status, value, status }));
+  }, [rawPayments]);
 
   const kpiCards = [
     {
@@ -507,7 +556,98 @@ export function DashboardPage() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+      {/* Payment Method & Transaction Status Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Doanh thu theo phương thức thanh toán</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {methodChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={methodChartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="method" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    yAxisId="rev"
+                    orientation="left"
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: number) =>
+                      v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : `${(v / 1000).toFixed(0)}K`
+                    }
+                  />
+                  <YAxis
+                    yAxisId="cnt"
+                    orientation="right"
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === "revenue" ? formatVND(Number(value)) : `${Number(value)} giao dịch`,
+                      name === "revenue" ? "Doanh thu" : "Số giao dịch",
+                    ]}
+                  />
+                  <Legend
+                    formatter={(value) => (value === "revenue" ? "Doanh thu" : "Số giao dịch")}
+                  />
+                  <Bar
+                    yAxisId="rev"
+                    dataKey="revenue"
+                    fill="#14b8a6"
+                    radius={[4, 4, 0, 0]}
+                    name="revenue"
+                  />
+                  <Bar
+                    yAxisId="cnt"
+                    dataKey="count"
+                    fill="#f97316"
+                    radius={[4, 4, 0, 0]}
+                    name="count"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu thanh toán
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Phân bổ trạng thái giao dịch</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statusPieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={statusPieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
+                    {statusPieData.map((entry) => (
+                      <Cell key={entry.status} fill={PIE_COLORS[entry.status] ?? "#94a3b8"} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${Number(value)} giao dịch`, "Số lượng"]} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu thanh toán
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       {/* Recent Orders */}
       <Card>
         <CardHeader>
