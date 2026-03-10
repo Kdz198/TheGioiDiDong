@@ -13,7 +13,7 @@ export interface PaymentInitiateResponse {
   transactionId: string;
 }
 
-export type ApiPaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+export type ApiPaymentStatus = "PENDING" | "COMPLETED" | "FAILED";
 
 export interface ApiPayment {
   id: number;
