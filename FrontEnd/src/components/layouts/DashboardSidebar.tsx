@@ -4,7 +4,6 @@ import { useAuthStore } from "@/stores/authStore";
 import {
   BarChart3,
   Bookmark,
-  CreditCard,
   FolderTree,
   LayoutDashboard,
   LogOut,
@@ -28,7 +27,6 @@ const adminItems: SidebarItem[] = [
   { label: "Báo cáo", href: ROUTES.ADMIN_REPORTS, icon: BarChart3 },
   { label: "Người dùng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
-  { label: "Thanh toán", href: ROUTES.ADMIN_PAYMENTS, icon: CreditCard },
 ];
 
 const staffItems: SidebarItem[] = [
@@ -54,7 +52,7 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className="flex w-64 flex-col border-r bg-white">
+    <aside className="flex h-full w-64 flex-col border-r bg-white">
       <div className="border-b p-4">
         <Link to={ROUTES.HOME} className="text-xl font-bold">
           <span className="text-teal-500">Tech</span>

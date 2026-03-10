@@ -95,11 +95,6 @@ const EmployeeManagerPage = lazy(() =>
     default: m.EmployeeManagerPage,
   }))
 );
-const PaymentManagerPage = lazy(() =>
-  import("@/pages/admin/PaymentManagerPage").then((m) => ({
-    default: m.PaymentManagerPage,
-  }))
-);
 
 // Staff pages
 const StaffProductManagerPage = lazy(() =>
@@ -263,7 +258,6 @@ function App() {
                 <Route path={ROUTES.ADMIN_USERS} element={<UserManagerPage />} />
                 <Route path={ROUTES.ADMIN_USER_DETAIL} element={<UserDetailAdminPage />} />
                 <Route path={ROUTES.ADMIN_EMPLOYEES} element={<EmployeeManagerPage />} />
-                <Route path={ROUTES.ADMIN_PAYMENTS} element={<PaymentManagerPage />} />
               </Route>
 
               {/* Staff Routes — DashboardLayout + ProtectedRoute */}

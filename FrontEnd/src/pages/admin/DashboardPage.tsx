@@ -72,15 +72,20 @@ function CustomTooltip({
 }
 
 // ── Data helpers ───────────────────────────────────────────────────────────────
-function buildChartData(payments: ApiPayment[], rangeDays: number): ChartPoint[] {
-  const today = new Date();
+function buildChartDataByDates(
+  payments: ApiPayment[],
+  startDate: string,
+  endDate: string
+): ChartPoint[] {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
   const days: ChartPoint[] = [];
-  for (let i = rangeDays - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const cur = new Date(start);
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10);
+    const label = `${String(cur.getDate()).padStart(2, "0")}/${String(cur.getMonth() + 1).padStart(2, "0")}`;
     days.push({ date: key, label, revenue: 0, orderCount: 0 });
+    cur.setDate(cur.getDate() + 1);
   }
   for (const p of payments) {
     if (p.status !== "COMPLETED") continue;
@@ -96,20 +101,22 @@ function buildChartData(payments: ApiPayment[], rangeDays: number): ChartPoint[]
 
 function getPrevPeriodTotals(
   payments: ApiPayment[],
-  rangeDays: number
+  startDate: string,
+  endDate: string
 ): { revenue: number; orderCount: number } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const prevEnd = new Date(today);
-  prevEnd.setDate(prevEnd.getDate() - rangeDays);
-  const prevStart = new Date(prevEnd);
-  prevStart.setDate(prevStart.getDate() - rangeDays);
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  const spanMs = end.getTime() - start.getTime();
+  const prevEnd = new Date(start.getTime() - 1);
+  const prevStart = new Date(prevEnd.getTime() - spanMs);
   let revenue = 0;
   let orderCount = 0;
   for (const p of payments) {
     if (p.status !== "COMPLETED") continue;
     const d = new Date(p.date ?? "");
-    if (d >= prevStart && d < prevEnd) {
+    if (d >= prevStart && d <= prevEnd) {
       revenue += p.amount ?? 0;
       orderCount += 1;
     }
@@ -117,17 +124,30 @@ function getPrevPeriodTotals(
   return { revenue, orderCount };
 }
 
+// Returns the interval for XAxis ticks to avoid label overcrowding:
+// ≤30 pts → all labels, ≤60 → every 2nd, ≤120 → ~20 labels, >120 → ~12 labels
+function getXAxisInterval(numPoints: number): number {
+  if (numPoints <= 30) return 0;
+  if (numPoints <= 60) return 1;
+  if (numPoints <= 120) return Math.ceil(numPoints / 20) - 1;
+  return Math.ceil(numPoints / 12) - 1;
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────────
-const RANGE_OPTIONS = [
-  { label: "7N", days: 7 },
-  { label: "14N", days: 14 },
-  { label: "30N", days: 30 },
-] as const;
+type RangeMode = "7" | "14" | "30" | "custom";
+
+const RANGE_OPTIONS: { label: string; value: Exclude<RangeMode, "custom"> }[] = [
+  { label: "7N", value: "7" },
+  { label: "14N", value: "14" },
+  { label: "30N", value: "30" },
+];
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   // A — flexible date range
-  const [rangeDays, setRangeDays] = useState<7 | 14 | 30>(7);
+  const [rangeMode, setRangeMode] = useState<RangeMode>("7");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   // C — dual metric toggles
   const [showRevenue, setShowRevenue] = useState(true);
   const [showOrders, setShowOrders] = useState(true);
@@ -147,7 +167,22 @@ export function DashboardPage() {
     queryFn: paymentService.getAllPayments,
   });
 
-  const chartData = useMemo(() => buildChartData(rawPayments, rangeDays), [rawPayments, rangeDays]);
+  const effectiveDates = useMemo(() => {
+    if (rangeMode === "custom" && customFrom && customTo && customFrom <= customTo) {
+      return { from: customFrom, to: customTo };
+    }
+    const today = new Date();
+    const to = today.toISOString().slice(0, 10);
+    const from = new Date(today);
+    const days = rangeMode === "custom" ? 7 : Number(rangeMode);
+    from.setDate(from.getDate() - (days - 1));
+    return { from: from.toISOString().slice(0, 10), to };
+  }, [rangeMode, customFrom, customTo]);
+
+  const chartData = useMemo(
+    () => buildChartDataByDates(rawPayments, effectiveDates.from, effectiveDates.to),
+    [rawPayments, effectiveDates]
+  );
 
   // D — period totals for header summary
   const periodTotals = useMemo(
@@ -159,8 +194,8 @@ export function DashboardPage() {
   );
 
   const prevTotals = useMemo(
-    () => getPrevPeriodTotals(rawPayments, rangeDays),
-    [rawPayments, rangeDays]
+    () => getPrevPeriodTotals(rawPayments, effectiveDates.from, effectiveDates.to),
+    [rawPayments, effectiveDates]
   );
 
   const revenueGrowth =
@@ -253,7 +288,11 @@ export function DashboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {/* Left: title + period summary */}
             <div>
-              <CardTitle className="text-base">Doanh thu {rangeDays} ngày qua</CardTitle>
+              <CardTitle className="text-base">
+                {rangeMode === "custom" && customFrom && customTo
+                  ? `Doanh thu từ ${customFrom.split("-").reverse().join("/")} đến ${customTo.split("-").reverse().join("/")}`
+                  : `Doanh thu ${rangeMode} ngày qua`}
+              </CardTitle>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-2xl font-bold text-zinc-900">
                   {formatVND(periodTotals.revenue)}
@@ -281,20 +320,51 @@ export function DashboardPage() {
             {/* Right: range selector + metric toggles */}
             <div className="flex flex-wrap items-center gap-2">
               {/* A — Date range selector */}
-              <div className="flex rounded-lg border border-gray-200 p-0.5">
-                {RANGE_OPTIONS.map((opt) => (
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex rounded-lg border border-gray-200 p-0.5">
+                  {RANGE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setRangeMode(opt.value)}
+                      className={cn(
+                        "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                        rangeMode === opt.value
+                          ? "bg-teal-500 text-white shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      )}>
+                      {opt.label}
+                    </button>
+                  ))}
                   <button
-                    key={opt.days}
-                    onClick={() => setRangeDays(opt.days)}
+                    onClick={() => setRangeMode("custom")}
                     className={cn(
                       "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                      rangeDays === opt.days
+                      rangeMode === "custom"
                         ? "bg-teal-500 text-white shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
                     )}>
-                    {opt.label}
+                    Tùy chỉnh
                   </button>
-                ))}
+                </div>
+                {rangeMode === "custom" && (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={customTo || undefined}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-400">đến</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom || undefined}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* C — Metric toggles */}
@@ -357,6 +427,7 @@ export function DashboardPage() {
                 tick={{ fontSize: 11, fill: "#9ca3af" }}
                 axisLine={false}
                 tickLine={false}
+                interval={getXAxisInterval(chartData.length)}
               />
               {/* Always keep both axes to avoid layout shift when toggling */}
               <YAxis

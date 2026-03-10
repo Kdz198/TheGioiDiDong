@@ -271,10 +271,10 @@ export const userService = {
     });
   },
 
-  /** Update an employee's basic info (fullName, email, optional password) */
+  /** Update an employee's basic info (fullName, email) */
   updateEmployee: async (
     id: number,
-    data: { fullName: string; email: string; password: string },
+    data: { fullName: string; email: string; password?: string },
     currentAllPermissions: string[]
   ): Promise<void> => {
     if (USE_MOCK_API) {
