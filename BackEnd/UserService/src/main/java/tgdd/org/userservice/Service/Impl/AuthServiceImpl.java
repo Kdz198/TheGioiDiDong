@@ -144,7 +144,6 @@ public class AuthServiceImpl implements AuthService {
 
         String token = authHeader.substring(7);
 
-        // 2. Decode lấy Claims
         Claims claims;
         try {
             claims = Jwts.parser()
@@ -156,10 +155,9 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException("UNAUTHORIZED - Token không hợp lệ!", HttpStatus.UNAUTHORIZED);
         }
 
-        // 3. Đóng gói vào DTO và trả về
         return new UserClaims(
-                claims.getSubject(), // subject thường lưu email
-                claims.get("accountId", Long.class), // Ép kiểu luôn cho an toàn
+                claims.getSubject(),
+                claims.get("accountId", Long.class),
                 claims.get("role", String.class),
                 claims.get("permissions", List.class)
         );
