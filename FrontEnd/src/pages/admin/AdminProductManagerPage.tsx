@@ -32,7 +32,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-export function ProductManagerPage() {
+export function AdminProductManagerPage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -40,7 +40,7 @@ export function ProductManagerPage() {
   const queryClient = useQueryClient();
 
   const { data: rawProducts, isLoading } = useQuery({
-    queryKey: ["staff", "products-raw"],
+    queryKey: ["admin", "products-raw"],
     queryFn: async () => {
       const res = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.LIST_ALL);
       return res.data;
@@ -57,8 +57,8 @@ export function ProductManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => productService.deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "products-raw"] });
-      queryClient.invalidateQueries({ queryKey: ["staff", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products-raw"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       toast.success("Đã xóa sản phẩm");
       setDeletingId(null);
     },
@@ -71,7 +71,7 @@ export function ProductManagerPage() {
         <h1 className="text-2xl font-bold text-zinc-900">Quản lý sản phẩm</h1>
         <div className="flex flex-wrap gap-2">
           <Button className="bg-teal-500 hover:bg-teal-600" asChild>
-            <Link to={`${ROUTES.STAFF_PRODUCT_CREATE}`}>
+            <Link to={`${ROUTES.ADMIN_PRODUCT_CREATE}`}>
               <Plus className="mr-2 h-4 w-4" /> Thêm sản phẩm
             </Link>
           </Button>
@@ -79,7 +79,7 @@ export function ProductManagerPage() {
             variant="outline"
             className="border-orange-400 text-orange-500 hover:bg-orange-50"
             asChild>
-            <Link to={`${ROUTES.STAFF_PRODUCT_CREATE}?service=true`}>
+            <Link to={`${ROUTES.ADMIN_PRODUCT_CREATE}?service=true`}>
               <Wrench className="mr-2 h-4 w-4" /> Thêm dịch vụ
             </Link>
           </Button>
@@ -193,7 +193,7 @@ export function ProductManagerPage() {
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                               <Link
-                                to={ROUTES.STAFF_PRODUCT_EDIT.replace(":id", String(product.id))}>
+                                to={ROUTES.ADMIN_PRODUCT_EDIT.replace(":id", String(product.id))}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>
                             </Button>
