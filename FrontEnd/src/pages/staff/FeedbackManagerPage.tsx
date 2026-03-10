@@ -10,7 +10,7 @@ import { Eye, MessageSquare, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function StaffFeedbackManagerPage() {
+export function FeedbackManagerPage() {
   const {
     data: feedbacks,
     isLoading,

@@ -47,7 +47,6 @@ export function CategoryManagerPage() {
 
   const openEdit = (cat: Category) => {
     setEditing(cat);
-    // setForm({ name: cat.name, description: cat.description ?? "" });
     setDialogOpen(true);
   };
 
@@ -118,7 +117,6 @@ export function CategoryManagerPage() {
                             <span className="font-medium text-zinc-900">{cat.name}</span>
                           </div>
                         </td>
-                        {/*<td className="px-4 py-3 text-gray-500">{cat.description ?? "—"}</td>*/}
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
                             <Button

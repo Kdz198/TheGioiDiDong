@@ -35,7 +35,7 @@ export function ProductManagerPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "products", search, activeFilter],
+    queryKey: ["staff", "products", search, activeFilter],
     queryFn: () =>
       productService.getProducts({ search: search || undefined, pageSize: 100, activeFilter }),
   });
@@ -43,7 +43,7 @@ export function ProductManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => productService.deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "products"] });
       toast.success("Đã xóa sản phẩm");
       setDeletingId(null);
     },
@@ -55,7 +55,7 @@ export function ProductManagerPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-zinc-900">Quản lý sản phẩm</h1>
         <Button className="bg-teal-500 hover:bg-teal-600" asChild>
-          <Link to={ROUTES.ADMIN_PRODUCT_CREATE}>
+          <Link to={ROUTES.STAFF_PRODUCT_CREATE}>
             <Plus className="mr-2 h-4 w-4" /> Thêm sản phẩm
           </Link>
         </Button>
@@ -142,7 +142,7 @@ export function ProductManagerPage() {
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                              <Link to={`/admin/products/${product.id}/edit`}>
+                              <Link to={`/staff/products/${product.id}/edit`}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>
                             </Button>

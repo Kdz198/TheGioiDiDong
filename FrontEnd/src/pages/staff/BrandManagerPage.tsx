@@ -37,7 +37,7 @@ export function BrandManagerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: brands, isLoading } = useQuery({
-    queryKey: ["admin", "brands"],
+    queryKey: ["staff", "brands"],
     queryFn: productService.getBrands,
   });
 
@@ -72,7 +72,7 @@ export function BrandManagerPage() {
       return productService.createBrand(fd);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "brands"] });
       toast.success(editing ? "Cập nhật thương hiệu thành công" : "Tạo thương hiệu thành công");
       setDialogOpen(false);
     },
@@ -82,7 +82,7 @@ export function BrandManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => productService.deleteBrand(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "brands"] });
       toast.success("Đã xóa thương hiệu");
       setDeletingId(null);
     },

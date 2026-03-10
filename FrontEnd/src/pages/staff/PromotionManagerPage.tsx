@@ -73,7 +73,7 @@ export function PromotionManagerPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const { data: apiPromotions } = useQuery({
-    queryKey: ["admin", "promotions"],
+    queryKey: ["staff", "promotions"],
     queryFn: promotionService.getApiPromotions,
   });
 
@@ -121,7 +121,7 @@ export function PromotionManagerPage() {
         : promotionService.createPromotion(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "promotions"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "promotions"] });
       toast.success(editing ? "Cập nhật khuyến mãi thành công" : "Tạo khuyến mãi thành công");
       setDialogOpen(false);
     },
@@ -131,7 +131,7 @@ export function PromotionManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => promotionService.deletePromotion(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "promotions"] });
+      queryClient.invalidateQueries({ queryKey: ["staff", "promotions"] });
       toast.success("Đã xóa khuyến mãi");
       setDeletingId(null);
     },
