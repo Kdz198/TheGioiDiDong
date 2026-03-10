@@ -25,7 +25,55 @@ const mockProductVersions: ProductVersion[] = [
   { id: 3, versionName: "Plus" },
 ];
 
-const mockProducts: any[] = [];
+const mockProducts: BackendProduct[] = [];
+
+export interface ProductSavePayload {
+  id?: number;
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity?: number;
+  active?: boolean;
+  versionId?: number;
+  brandId: number;
+  categoryId: number;
+  /** true = sản phẩm, false = dịch vụ */
+  type?: boolean;
+}
+
+export interface ProductSaveFiles {
+  img?: File | null;
+  img2?: File | null;
+  img3?: File | null;
+  img4?: File | null;
+  img5?: File | null;
+}
+
+/** Build multipart/form-data with product JSON blob + image files */
+function buildProductFormData(payload: ProductSavePayload, files: ProductSaveFiles): FormData {
+  const fd = new FormData();
+  const { img, img2, img3, img4, img5, ...productFields } = { ...payload, ...files } as Record<
+    string,
+    unknown
+  >;
+  void img;
+  void img2;
+  void img3;
+  void img4;
+  void img5;
+  fd.append("product", new Blob([JSON.stringify(productFields)], { type: "application/json" }));
+  const imgFiles: Array<[string, File]> = [
+    ["img", files.img as File],
+    ["img2", files.img2 as File],
+    ["img3", files.img3 as File],
+    ["img4", files.img4 as File],
+    ["img5", files.img5 as File],
+  ];
+  for (const [key, file] of imgFiles) {
+    if (file instanceof File) fd.append(key, file);
+  }
+  return fd;
+}
 
 interface GetProductsParams {
   page?: number;
@@ -43,8 +91,7 @@ export const productService = {
 
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
-      // Ép kiểu tạm thời để tránh lỗi TypeScript khi mock data cũ không khớp interface mới
-      allProducts = [...mockProducts];
+      allProducts = mockProducts.map(mapBackendProduct);
     } else {
       // 1. Gọi API lấy toàn bộ sản phẩm (bao gồm inactive)
       const response = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.LIST_ALL);
@@ -115,7 +162,7 @@ export const productService = {
   getFlashSaleProducts: async (): Promise<Product[]> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));
-      return mockProducts.filter((p) => p.active);
+      return mockProducts.filter((p) => p.active).map(mapBackendProduct);
     }
     const response = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.FLASH_SALE);
     return response.data.map(mapBackendProduct);
@@ -124,31 +171,51 @@ export const productService = {
   getFeaturedProducts: async (): Promise<Product[]> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));
-      return mockProducts.filter((p) => p.active).slice(0, 8);
+      return mockProducts.map(mapBackendProduct);
     }
     const response = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.FEATURED);
     return response.data.map(mapBackendProduct).slice(0, 8);
   },
 
-  createProduct: async (data: FormData): Promise<Product> => {
+  createProduct: async (
+    payload: ProductSavePayload,
+    files: ProductSaveFiles
+  ): Promise<BackendProduct> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 800));
-      return mockProducts[0] as unknown as Product;
+      const mock: BackendProduct = {
+        id: Date.now(),
+        name: payload.name,
+        description: payload.description ?? "",
+        price: payload.price,
+        quantity: payload.stockQuantity ?? 0,
+        reserve: 0,
+        imgUrl: "",
+        active: payload.active ?? true,
+        type: payload.type ?? true,
+        versionName: "",
+        brandName: "",
+        categoryName: "",
+      };
+      return mock;
     }
-    const response = await apiClient.post<Product>(API_ENDPOINTS.PRODUCTS.CREATE, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const fd = buildProductFormData(payload, files);
+    const response = await apiClient.post<BackendProduct>(API_ENDPOINTS.PRODUCTS.CREATE, fd);
     return response.data;
   },
 
-  updateProduct: async (data: FormData): Promise<Product> => {
+  updateProduct: async (
+    payload: ProductSavePayload,
+    files: ProductSaveFiles
+  ): Promise<BackendProduct> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 800));
-      return mockProducts[0] as unknown as Product;
+      const idx = mockProducts.findIndex((p) => p.id === payload.id);
+      if (idx !== -1) mockProducts[idx] = { ...mockProducts[idx], ...payload };
+      return mockProducts[idx] ?? mockProducts[0];
     }
-    const response = await apiClient.put<Product>(API_ENDPOINTS.PRODUCTS.UPDATE, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const fd = buildProductFormData(payload, files);
+    const response = await apiClient.put<BackendProduct>(API_ENDPOINTS.PRODUCTS.UPDATE, fd);
     return response.data;
   },
 
@@ -240,7 +307,10 @@ export const productService = {
     return response.data;
   },
 
-  createProductVersion: async (data: { versionName: string }): Promise<ProductVersion> => {
+  createProductVersion: async (data: {
+    id: number;
+    versionName: string;
+  }): Promise<ProductVersion> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
       const newVersion: ProductVersion = { id: Date.now(), versionName: data.versionName };
