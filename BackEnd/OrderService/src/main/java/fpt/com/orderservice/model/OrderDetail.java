@@ -19,6 +19,6 @@ public class OrderDetail {
     int quantity;
     int subtotal;
     String type;
-    //type: buy, gift
+    //type: buy, gift, service
 
 }

@@ -2,9 +2,11 @@ package tgdd.org.productservice.service.impl;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tgdd.org.productservice.config.Producer;
 import tgdd.org.productservice.exception.CustomException;
 import tgdd.org.productservice.mapper.ProductMapper;
@@ -12,7 +14,9 @@ import tgdd.org.productservice.model.*;
 import tgdd.org.productservice.model.dto.*;
 import tgdd.org.productservice.repo.*;
 import tgdd.org.productservice.service.ProductService;
+import tgdd.org.productservice.util.FileUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -41,6 +45,8 @@ public class ProductServiceImpl implements ProductService {
     private Producer producer;
     @Autowired
     private OrderReserveRepo orderReserveRepo;
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public List<ProductResponse> findAll() {
@@ -51,17 +57,13 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse findById(int id) {
         Product product = productRepo.findById(id);
         if (product == null) {
-            throw new CustomException("Product not found with id: " + id,HttpStatus.NOT_FOUND);
+            throw new CustomException("Product not found with id: " + id, HttpStatus.NOT_FOUND);
         }
         return productMapper.toProductResponse(product);
     }
 
     @Override
-    public ProductResponse save(ProductRequest productRequest) throws IOException {
-        String imgUrl = null;
-        Map<String, String> uploadResult = cloudinaryService.uploadImg(productRequest.getImg());
-        imgUrl = uploadResult.get("secure_url");
-
+    public ProductResponse save(ProductRequest productRequest, MultipartFile img, MultipartFile img2, MultipartFile img3, MultipartFile img4, MultipartFile img5) throws IOException {
         Brand brand = brandRepo.findById(productRequest.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found with id: " + productRequest.getBrandId()));
         Category category = categoryRepo.findById(productRequest.getCategoryId())
@@ -72,45 +74,56 @@ public class ProductServiceImpl implements ProductService {
         product.setVersion(version);
         product.setBrand(brand);
         product.setCategory(category);
-        product.setImgUrl(imgUrl);
         product.setQuantity(productRequest.getStockQuantity());
-
         Product saved = productRepo.save(product);
+        MultipartFile[] files = {img, img2, img3, img4, img5};
+        for (int i = 0; i < files.length; i++) {
+            if (files[i] != null && !files[i].isEmpty()) {
+                String absolutePath = FileUtil.saveFile(files[i]);
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new ProductEventDto(saved, multipartFile, i + 1));
+            }
+        }
         return productMapper.toProductResponse(saved);
     }
 
 
     @Override
-    public ProductResponse update(ProductUpdateRequest request) throws IOException {
-        System.out.println("Updating product with id: " + request.getId());
+    public ProductResponse update(ProductUpdateRequest request, MultipartFile img, MultipartFile img2, MultipartFile img3, MultipartFile img4, MultipartFile img5) throws IOException {
         Product existingProduct = productRepo.findById(request.getId());
         if (existingProduct == null) {
-            throw new CustomException("Product not found ",HttpStatus.NOT_FOUND);
+            throw new CustomException("Product not found ", HttpStatus.NOT_FOUND);
         }
-        String imgUrl = existingProduct.getImgUrl();
-        if (request.getImg() != null && !request.getImg().isEmpty()) {
-            Map<String, String> uploadResult = cloudinaryService.uploadImg(request.getImg());
-            imgUrl = uploadResult.get("secure_url");
-        }
+
         Brand brand = brandRepo.findById(request.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found with id: " + request.getBrandId()));
-
         Category category = categoryRepo.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + request.getCategoryId()));
-
         ProductVersion version = productVersionRepo.findById(request.getVersionId())
                 .orElseThrow(() -> new RuntimeException("ProductVersion not found with id: " + request.getVersionId()));
-
 
         productMapper.updateProductFromRequest(request, existingProduct);
         existingProduct.setVersion(version);
         existingProduct.setBrand(brand);
         existingProduct.setCategory(category);
-        existingProduct.setImgUrl(imgUrl);
         existingProduct.setActive(request.getActive());
         existingProduct.setQuantity(request.getStockQuantity());
-        System.out.println(existingProduct.isActive());
+
         Product updated = productRepo.save(existingProduct);
+
+        MultipartFile[] files = {img, img2, img3, img4, img5};
+        for (int i = 0; i < files.length; i++) {
+            if (files[i] != null && !files[i].isEmpty()) {
+                String absolutePath = FileUtil.saveFile(files[i]);
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new ProductEventDto(updated, multipartFile, i + 1));
+            }
+        }
+
         return productMapper.toProductResponse(updated);
     }
 
@@ -141,8 +154,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public OrderRequest isStockAvailable(OrderRequest request) {
-        Map<Integer,Integer> productQuantities = new HashMap<>();
-        for(OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
+        Map<Integer, Integer> productQuantities = new HashMap<>();
+        for (OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
             productQuantities.put(item.getProductId(), productQuantities.getOrDefault(item.getProductId(), 0) + item.getQuantity());
         }
         List<Product> products = productRepo.findAllById(productQuantities.keySet());
@@ -150,13 +163,15 @@ public class ProductServiceImpl implements ProductService {
             throw new CustomException("Out of stock", HttpStatus.CONFLICT);
         }
         for (Product product : products) {
-            int requiredQuantity = productQuantities.get(product.getId());
-            int availableStock = product.getQuantity() - product.getReserve();
+            if (product.isType()) {
+                int requiredQuantity = productQuantities.get(product.getId());
+                int availableStock = product.getQuantity() - product.getReserve();
 
-            if (!product.isActive() || availableStock < requiredQuantity) {
-                throw new CustomException("Out of stock", HttpStatus.CONFLICT);
+                if (!product.isActive() || availableStock < requiredQuantity) {
+                    throw new CustomException("Out of stock", HttpStatus.CONFLICT);
+                }
+                product.setReserve(product.getReserve() + requiredQuantity);
             }
-            product.setReserve(product.getReserve() + requiredQuantity);
         }
         request.setOrderCode(UUID.randomUUID().toString());
         productRepo.saveAll(products);
@@ -177,9 +192,11 @@ public class ProductServiceImpl implements ProductService {
             }
             List<Product> products = productRepo.findAllById(quantityMap.keySet());
             for (Product product : products) {
-                int qty = quantityMap.get(product.getId());
-                product.setReserve(product.getReserve() - qty);
-                product.setQuantity(product.getQuantity() - qty);
+                if (product.isType()) {
+                    int qty = quantityMap.get(product.getId());
+                    product.setReserve(product.getReserve() - qty);
+                    product.setQuantity(product.getQuantity() - qty);
+                }
             }
             productRepo.saveAll(products);
             orderReserveRepo.delete(orderReserve);
@@ -198,8 +215,10 @@ public class ProductServiceImpl implements ProductService {
             }
             List<Product> products = productRepo.findAllById(quantityMap.keySet());
             for (Product product : products) {
-                int qty = quantityMap.get(product.getId());
-                product.setReserve(product.getReserve() - qty);
+                if (product.isType()) {
+                    int qty = quantityMap.get(product.getId());
+                    product.setReserve(product.getReserve() - qty);
+                }
             }
             productRepo.saveAll(products);
             orderReserveRepo.delete(orderReserve);
@@ -207,12 +226,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void saveItem(OrderRequest request) {
-        Map<Integer,Integer> productQuantities = new HashMap<>();
-        for(OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
+        Map<Integer, Integer> productQuantities = new HashMap<>();
+        for (OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
             productQuantities.put(item.getProductId(), productQuantities.getOrDefault(item.getProductId(), 0) + item.getQuantity());
         }
         List<Item> items = new ArrayList<>();
-        for(Map.Entry<Integer, Integer> entry : productQuantities.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : productQuantities.entrySet()) {
             Item item = new Item();
             item.setProductId(entry.getKey());
             item.setQuantity(entry.getValue());

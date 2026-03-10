@@ -1,6 +1,8 @@
 package fpt.com.orderservice.controller;
 
 import fpt.com.orderservice.model.Feedback;
+import fpt.com.orderservice.model.dto.FeedbackRequest;
+import fpt.com.orderservice.model.dto.FeedbackResponse;
 import fpt.com.orderservice.service.FeedbackService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +28,7 @@ public class FeedbackController {
     }
 
     @PostMapping
-    public ResponseEntity<Feedback> createFeedback(@RequestBody Feedback feedback) {
+    public ResponseEntity<Feedback> createFeedback(@RequestBody FeedbackRequest feedback) {
         return ResponseEntity.ok(feedbackService.save(feedback));
     }
 
@@ -47,8 +49,9 @@ public class FeedbackController {
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<Feedback>> getByProductId(@PathVariable int productId) {
+    public ResponseEntity<List<FeedbackResponse>> getByProductId(@PathVariable int productId) {
         return ResponseEntity.ok(feedbackService.findByProductId(productId));
     }
+
 }
 

@@ -21,16 +21,26 @@ public interface ProductMapper {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "type" ,ignore = true)
+    @Mapping(target = "imgUrl2", ignore = true)
+    @Mapping(target = "imgUrl3", ignore = true)
+    @Mapping(target = "imgUrl4", ignore = true)
+    @Mapping(target = "imgUrl5", ignore = true)
     Product toProduct(ProductRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "quantity", ignore = true)
     @Mapping(target = "reserve", ignore = true)
     @Mapping(target = "imgUrl", ignore = true)
+    @Mapping(target = "imgUrl2", ignore = true)
+    @Mapping(target = "imgUrl3", ignore = true)
+    @Mapping(target = "imgUrl4", ignore = true)
+    @Mapping(target = "imgUrl5", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "active", ignore = true)
+    @Mapping(target = "type", ignore = true)
     void updateProductFromRequest(ProductUpdateRequest request, @MappingTarget Product product);
 
     @Mapping(target = "versionName", source = "version.versionName")

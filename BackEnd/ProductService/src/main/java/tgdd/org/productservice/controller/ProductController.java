@@ -1,10 +1,14 @@
 package tgdd.org.productservice.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tgdd.org.productservice.model.dto.OrderRequest;
 import tgdd.org.productservice.model.dto.ProductRequest;
 import tgdd.org.productservice.model.dto.ProductResponse;
@@ -32,13 +36,42 @@ public class ProductController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductResponse> createProduct(@ModelAttribute ProductRequest product) throws IOException {
-        return ResponseEntity.ok(productService.save(product));
+    @Operation(
+
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            encoding = {
+                                    @Encoding(name = "product", contentType = "application/json")
+                            }
+                    )
+            )
+    )
+    public ResponseEntity<ProductResponse> createProduct(@RequestPart ProductRequest product,@RequestPart(value = "img", required = false) MultipartFile img,@RequestPart(value = "img2", required = false) MultipartFile img2,@RequestPart(value = "img3", required = false) MultipartFile img3,@RequestPart(value = "img4", required = false) MultipartFile img4,@RequestPart(value = "img5", required = false) MultipartFile img5
+                                                         ) throws IOException {
+        return ResponseEntity.ok(productService.save(product, img, img2, img3, img4, img5));
     }
 
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductResponse> updateProduct(@ModelAttribute ProductUpdateRequest product) throws IOException {
-        return ResponseEntity.ok(productService.update(product));
+    @Operation(
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            encoding = {
+                                    @Encoding(name = "product", contentType = "application/json")
+                            }
+                    )
+            )
+    )
+    public ResponseEntity<ProductResponse> updateProduct(
+            @RequestPart ProductUpdateRequest product,
+            @RequestPart(value = "img", required = false) MultipartFile img,
+            @RequestPart(value = "img2", required = false) MultipartFile img2,
+            @RequestPart(value = "img3", required = false) MultipartFile img3,
+            @RequestPart(value = "img4", required = false) MultipartFile img4,
+            @RequestPart(value = "img5", required = false) MultipartFile img5
+    ) throws IOException {
+        return ResponseEntity.ok(productService.update(product, img, img2, img3, img4, img5));
     }
 
     @DeleteMapping("/{id}")

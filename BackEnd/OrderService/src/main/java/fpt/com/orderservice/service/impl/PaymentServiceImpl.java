@@ -9,6 +9,7 @@ import fpt.com.orderservice.model.Promotion;
 import fpt.com.orderservice.model.dto.OrderRequest;
 import fpt.com.orderservice.model.enums.OrderStatus;
 import fpt.com.orderservice.model.enums.PaymentStatus;
+import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.repo.OrderRepo;
 import fpt.com.orderservice.repo.PaymentRepo;
 import fpt.com.orderservice.repo.PromotionRepo;
@@ -67,21 +68,25 @@ public class PaymentServiceImpl implements PaymentService {
             throw new CustomException("Not found", HttpStatus.NOT_FOUND);
         }
         Payment payment = new Payment();
+        int discount = 0;
         if (promotion != null) {
             promotion.setQuantity(promotion.getQuantity() - 1);
             promotionRepo.save(promotion);
             payment.setPromotion(promotion);
+            discount = promotion.getType() == PromotionType.PERCENTAGE ? (int) (order.getTotalPrice() * promotion.getDiscountValue() / 100) : (int) promotion.getDiscountValue();
         }
 
+        int amount = (int) (order.getTotalPrice() - discount);
         payment.setOrder(order);
-        payment.setAmount(order.getTotalPrice());
+        payment.setAmount(amount);
         payment.setPaymentMethod("PAYOS");
         payment.setStatus(PaymentStatus.PENDING);
         int randomPart = new Random().nextInt(1000);
         payment.setTransactionCode(String.valueOf(System.currentTimeMillis() * 1000 + randomPart));
         paymentRepo.save(payment);
+        //gửi lại tiền qua payos sau khi áp dụng mã giảm giá
 
-        return createPaymentLink(payment.getTransactionCode(), payment.getAmount());
+        return createPaymentLink(payment.getTransactionCode(), amount);
     }
 
     private String createPaymentLink(String transactionCode, long amount) {

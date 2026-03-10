@@ -17,4 +17,6 @@ public interface AccountService {
     RetrieveAccountResponse getAccountById(Long id);
 
     Page<RetrieveAccountResponse> getAllAccounts(List<String> roles, int page, int size);
+
+    String getNameAccount(long id);
 }
