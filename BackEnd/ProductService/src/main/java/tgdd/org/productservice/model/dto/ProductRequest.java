@@ -1,6 +1,5 @@
 package tgdd.org.productservice.model.dto;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,7 +10,6 @@ public class ProductRequest {
     String description;
     int price;
     int stockQuantity;
-    MultipartFile img;
     boolean active;
     int versionId;
     int brandId;

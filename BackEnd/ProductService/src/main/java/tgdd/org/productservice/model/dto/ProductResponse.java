@@ -17,6 +17,10 @@ public class ProductResponse {
     int quantity;
     int reserve;
     String imgUrl;
+    String imgUrl2;
+    String imgUrl3;
+    String imgUrl4;
+    String imgUrl5;
     boolean active;
     String versionName;
     String brandName;

@@ -24,6 +24,10 @@ public class Product {
     int quantity;
     int reserve;
     String imgUrl;
+    String imgUrl2;
+    String imgUrl3;
+    String imgUrl4;
+    String imgUrl5;
     boolean active;
     @JoinColumn
     @ManyToOne
@@ -34,4 +38,6 @@ public class Product {
     @JoinColumn
     @ManyToOne
     Category category;
+    boolean type;
+    //true: product,false: dịch vụ
 }
