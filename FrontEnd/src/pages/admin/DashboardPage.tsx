@@ -12,8 +12,14 @@ import { ArrowDown, ArrowUp, DollarSign, Package, ShoppingCart, Users } from "lu
 import { useMemo, useState } from "react";
 import {
   Area,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
+  Legend,
+  Pie,
+  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -72,15 +78,20 @@ function CustomTooltip({
 }
 
 // ── Data helpers ───────────────────────────────────────────────────────────────
-function buildChartData(payments: ApiPayment[], rangeDays: number): ChartPoint[] {
-  const today = new Date();
+function buildChartDataByDates(
+  payments: ApiPayment[],
+  startDate: string,
+  endDate: string
+): ChartPoint[] {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
   const days: ChartPoint[] = [];
-  for (let i = rangeDays - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const cur = new Date(start);
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0, 10);
+    const label = `${String(cur.getDate()).padStart(2, "0")}/${String(cur.getMonth() + 1).padStart(2, "0")}`;
     days.push({ date: key, label, revenue: 0, orderCount: 0 });
+    cur.setDate(cur.getDate() + 1);
   }
   for (const p of payments) {
     if (p.status !== "COMPLETED") continue;
@@ -96,20 +107,22 @@ function buildChartData(payments: ApiPayment[], rangeDays: number): ChartPoint[]
 
 function getPrevPeriodTotals(
   payments: ApiPayment[],
-  rangeDays: number
+  startDate: string,
+  endDate: string
 ): { revenue: number; orderCount: number } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const prevEnd = new Date(today);
-  prevEnd.setDate(prevEnd.getDate() - rangeDays);
-  const prevStart = new Date(prevEnd);
-  prevStart.setDate(prevStart.getDate() - rangeDays);
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  const spanMs = end.getTime() - start.getTime();
+  const prevEnd = new Date(start.getTime() - 1);
+  const prevStart = new Date(prevEnd.getTime() - spanMs);
   let revenue = 0;
   let orderCount = 0;
   for (const p of payments) {
     if (p.status !== "COMPLETED") continue;
     const d = new Date(p.date ?? "");
-    if (d >= prevStart && d < prevEnd) {
+    if (d >= prevStart && d <= prevEnd) {
       revenue += p.amount ?? 0;
       orderCount += 1;
     }
@@ -117,17 +130,48 @@ function getPrevPeriodTotals(
   return { revenue, orderCount };
 }
 
+// Returns the interval for XAxis ticks to avoid label overcrowding:
+// ≤30 pts → all labels, ≤60 → every 2nd, ≤120 → ~20 labels, >120 → ~12 labels
+function getXAxisInterval(numPoints: number): number {
+  if (numPoints <= 30) return 0;
+  if (numPoints <= 60) return 1;
+  if (numPoints <= 120) return Math.ceil(numPoints / 20) - 1;
+  return Math.ceil(numPoints / 12) - 1;
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────────
-const RANGE_OPTIONS = [
-  { label: "7N", days: 7 },
-  { label: "14N", days: 14 },
-  { label: "30N", days: 30 },
-] as const;
+type RangeMode = "7" | "14" | "30" | "custom";
+
+const RANGE_OPTIONS: { label: string; value: Exclude<RangeMode, "custom"> }[] = [
+  { label: "7N", value: "7" },
+  { label: "14N", value: "14" },
+  { label: "30N", value: "30" },
+];
+
+const METHOD_LABELS: Record<string, string> = {
+  cod: "COD",
+  momo: "MoMo",
+  vnpay: "VNPay",
+};
+
+const PIE_COLORS: Record<string, string> = {
+  COMPLETED: "#14b8a6",
+  PENDING: "#f97316",
+  FAILED: "#f87171",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  COMPLETED: "Hoàn thành",
+  PENDING: "Đang xử lý",
+  FAILED: "Thất bại",
+};
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   // A — flexible date range
-  const [rangeDays, setRangeDays] = useState<7 | 14 | 30>(7);
+  const [rangeMode, setRangeMode] = useState<RangeMode>("7");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   // C — dual metric toggles
   const [showRevenue, setShowRevenue] = useState(true);
   const [showOrders, setShowOrders] = useState(true);
@@ -147,7 +191,22 @@ export function DashboardPage() {
     queryFn: paymentService.getAllPayments,
   });
 
-  const chartData = useMemo(() => buildChartData(rawPayments, rangeDays), [rawPayments, rangeDays]);
+  const effectiveDates = useMemo(() => {
+    if (rangeMode === "custom" && customFrom && customTo && customFrom <= customTo) {
+      return { from: customFrom, to: customTo };
+    }
+    const today = new Date();
+    const to = today.toISOString().slice(0, 10);
+    const from = new Date(today);
+    const days = rangeMode === "custom" ? 7 : Number(rangeMode);
+    from.setDate(from.getDate() - (days - 1));
+    return { from: from.toISOString().slice(0, 10), to };
+  }, [rangeMode, customFrom, customTo]);
+
+  const chartData = useMemo(
+    () => buildChartDataByDates(rawPayments, effectiveDates.from, effectiveDates.to),
+    [rawPayments, effectiveDates]
+  );
 
   // D — period totals for header summary
   const periodTotals = useMemo(
@@ -159,8 +218,8 @@ export function DashboardPage() {
   );
 
   const prevTotals = useMemo(
-    () => getPrevPeriodTotals(rawPayments, rangeDays),
-    [rawPayments, rangeDays]
+    () => getPrevPeriodTotals(rawPayments, effectiveDates.from, effectiveDates.to),
+    [rawPayments, effectiveDates]
   );
 
   const revenueGrowth =
@@ -170,6 +229,31 @@ export function DashboardPage() {
 
   // G — average revenue reference line
   const avgRevenue = chartData.length > 0 ? Math.round(periodTotals.revenue / chartData.length) : 0;
+
+  // Payment method chart data
+  const methodChartData = useMemo(() => {
+    const map: Record<string, { method: string; revenue: number; count: number }> = {};
+    for (const p of rawPayments) {
+      const key = p.paymentMethod ?? "other";
+      if (!map[key]) map[key] = { method: METHOD_LABELS[key] ?? key, revenue: 0, count: 0 };
+      if (p.status === "COMPLETED") {
+        map[key].revenue += p.amount ?? 0;
+        map[key].count += 1;
+      }
+    }
+    return Object.values(map);
+  }, [rawPayments]);
+
+  // Transaction status pie data
+  const statusPieData = useMemo(() => {
+    const map: Record<string, number> = { COMPLETED: 0, PENDING: 0, FAILED: 0 };
+    for (const p of rawPayments) {
+      if (p.status in map) map[p.status] += 1;
+    }
+    return Object.entries(map)
+      .filter(([, v]) => v > 0)
+      .map(([status, value]) => ({ name: STATUS_LABELS[status] ?? status, value, status }));
+  }, [rawPayments]);
 
   const kpiCards = [
     {
@@ -253,7 +337,11 @@ export function DashboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {/* Left: title + period summary */}
             <div>
-              <CardTitle className="text-base">Doanh thu {rangeDays} ngày qua</CardTitle>
+              <CardTitle className="text-base">
+                {rangeMode === "custom" && customFrom && customTo
+                  ? `Doanh thu từ ${customFrom.split("-").reverse().join("/")} đến ${customTo.split("-").reverse().join("/")}`
+                  : `Doanh thu ${rangeMode} ngày qua`}
+              </CardTitle>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-2xl font-bold text-zinc-900">
                   {formatVND(periodTotals.revenue)}
@@ -281,20 +369,51 @@ export function DashboardPage() {
             {/* Right: range selector + metric toggles */}
             <div className="flex flex-wrap items-center gap-2">
               {/* A — Date range selector */}
-              <div className="flex rounded-lg border border-gray-200 p-0.5">
-                {RANGE_OPTIONS.map((opt) => (
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex rounded-lg border border-gray-200 p-0.5">
+                  {RANGE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setRangeMode(opt.value)}
+                      className={cn(
+                        "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                        rangeMode === opt.value
+                          ? "bg-teal-500 text-white shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      )}>
+                      {opt.label}
+                    </button>
+                  ))}
                   <button
-                    key={opt.days}
-                    onClick={() => setRangeDays(opt.days)}
+                    onClick={() => setRangeMode("custom")}
                     className={cn(
                       "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                      rangeDays === opt.days
+                      rangeMode === "custom"
                         ? "bg-teal-500 text-white shadow-sm"
                         : "text-gray-500 hover:text-gray-700"
                     )}>
-                    {opt.label}
+                    Tùy chỉnh
                   </button>
-                ))}
+                </div>
+                {rangeMode === "custom" && (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={customTo || undefined}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-400">đến</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom || undefined}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* C — Metric toggles */}
@@ -357,6 +476,7 @@ export function DashboardPage() {
                 tick={{ fontSize: 11, fill: "#9ca3af" }}
                 axisLine={false}
                 tickLine={false}
+                interval={getXAxisInterval(chartData.length)}
               />
               {/* Always keep both axes to avoid layout shift when toggling */}
               <YAxis
@@ -436,7 +556,98 @@ export function DashboardPage() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+      {/* Payment Method & Transaction Status Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Doanh thu theo phương thức thanh toán</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {methodChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={methodChartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="method" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    yAxisId="rev"
+                    orientation="left"
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: number) =>
+                      v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : `${(v / 1000).toFixed(0)}K`
+                    }
+                  />
+                  <YAxis
+                    yAxisId="cnt"
+                    orientation="right"
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === "revenue" ? formatVND(Number(value)) : `${Number(value)} giao dịch`,
+                      name === "revenue" ? "Doanh thu" : "Số giao dịch",
+                    ]}
+                  />
+                  <Legend
+                    formatter={(value) => (value === "revenue" ? "Doanh thu" : "Số giao dịch")}
+                  />
+                  <Bar
+                    yAxisId="rev"
+                    dataKey="revenue"
+                    fill="#14b8a6"
+                    radius={[4, 4, 0, 0]}
+                    name="revenue"
+                  />
+                  <Bar
+                    yAxisId="cnt"
+                    dataKey="count"
+                    fill="#f97316"
+                    radius={[4, 4, 0, 0]}
+                    name="count"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu thanh toán
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Phân bổ trạng thái giao dịch</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statusPieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={statusPieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
+                    {statusPieData.map((entry) => (
+                      <Cell key={entry.status} fill={PIE_COLORS[entry.status] ?? "#94a3b8"} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${Number(value)} giao dịch`, "Số lượng"]} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu thanh toán
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       {/* Recent Orders */}
       <Card>
         <CardHeader>

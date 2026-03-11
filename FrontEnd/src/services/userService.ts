@@ -201,7 +201,7 @@ export const userService = {
   createEmployee: async (data: {
     fullName: string;
     email: string;
-    password: string;
+    password?: string;
   }): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
@@ -222,7 +222,7 @@ export const userService = {
     await apiClient.post(API_ENDPOINTS.USERS.CREATE, {
       fullName: data.fullName,
       email: data.email,
-      password: data.password,
+      password: data.password ?? "",
       roleId: staffRole.id,
       customPermissions: [],
     });
@@ -271,10 +271,10 @@ export const userService = {
     });
   },
 
-  /** Update an employee's basic info (fullName, email, optional password) */
+  /** Update an employee's basic info (fullName, email) */
   updateEmployee: async (
     id: number,
-    data: { fullName: string; email: string; password: string },
+    data: { fullName: string; email: string; password?: string },
     currentAllPermissions: string[]
   ): Promise<void> => {
     if (USE_MOCK_API) {

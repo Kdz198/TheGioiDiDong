@@ -29,7 +29,7 @@ const STATUS_OPTIONS = [
   { value: "CANCELED", label: "Đã hủy" },
 ];
 
-export function OrderManagerPage() {
+export function AdminOrderManagerPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -38,7 +38,7 @@ export function OrderManagerPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["staff", "orders", statusFilter],
+    queryKey: ["admin", "orders", statusFilter],
     queryFn: () =>
       orderService.getAllOrders({
         status: statusFilter === "all" ? undefined : statusFilter,
@@ -46,7 +46,7 @@ export function OrderManagerPage() {
   });
 
   const { data: paymentsData } = useQuery({
-    queryKey: ["staff", "payments"],
+    queryKey: ["admin", "payments"],
     queryFn: () => paymentService.getAllPayments(),
   });
 
@@ -62,7 +62,7 @@ export function OrderManagerPage() {
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
       orderService.updateOrderStatus(orderId, status),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["staff", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
       toast.success("Cập nhật trạng thái thành công");
       setPendingStatus((prev) => {
         const next = { ...prev };
@@ -145,7 +145,7 @@ export function OrderManagerPage() {
                         <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <Link
-                              to={ROUTES.STAFF_ORDER_DETAIL.replace(":orderId", String(order.id))}
+                              to={ROUTES.ADMIN_ORDER_DETAIL.replace(":orderId", String(order.id))}
                               className="font-medium text-teal-500 hover:underline">
                               {order.orderCode ?? `#${order.id}`}
                             </Link>
@@ -171,7 +171,7 @@ export function OrderManagerPage() {
                                 className="h-8 w-8 text-teal-500"
                                 asChild>
                                 <Link
-                                  to={ROUTES.STAFF_ORDER_DETAIL.replace(
+                                  to={ROUTES.ADMIN_ORDER_DETAIL.replace(
                                     ":orderId",
                                     String(order.id)
                                   )}>

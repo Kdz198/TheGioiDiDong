@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   slug: string;
   icon: string;
+  description?: string;
   parentId?: number;
   productCount: number;
 }
@@ -50,11 +51,17 @@ export interface Product {
   defaultPrice: number;
   defaultOriginalPrice: number;
   thumbnailUrl: string;
+  /** Additional images (imgUrl2–imgUrl5) */
+  extraImages?: string[];
   rating: number;
   reviewCount: number;
   soldCount: number;
   flashSaleEndAt?: string;
   isActive: boolean;
+  /** true = product bình thường, false = dịch vụ */
+  isService?: boolean;
+  /** Số lượng đang được giữ/đặt trước */
+  reserve?: number;
   specifications: Record<string, string>;
   createdAt: string;
   stockQuantity?: number;
@@ -107,7 +114,13 @@ export interface BackendProduct {
   quantity: number;
   reserve: number;
   imgUrl: string;
+  imgUrl2?: string;
+  imgUrl3?: string;
+  imgUrl4?: string;
+  imgUrl5?: string;
   active: boolean;
+  /** true = product bình thường, false = dịch vụ */
+  type?: boolean;
   versionName: string;
   brandName: string;
   categoryName: string;
@@ -128,10 +141,13 @@ export function mapBackendProduct(p: BackendProduct): Product {
     defaultPrice: p.price,
     defaultOriginalPrice: p.price,
     thumbnailUrl: p.imgUrl,
+    extraImages: [p.imgUrl2, p.imgUrl3, p.imgUrl4, p.imgUrl5].filter(Boolean) as string[],
     rating: 0,
     reviewCount: 0,
     soldCount: 0,
     isActive: p.active,
+    isService: p.type === false,
+    reserve: p.reserve,
     specifications: {},
     createdAt: new Date().toISOString(),
     stockQuantity: p.quantity,

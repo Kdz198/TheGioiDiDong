@@ -64,20 +64,22 @@ export function LoginPage() {
     const role = result.user.role;
     const returnUrl = searchParams.get("returnUrl");
 
-    // Validate returnUrl against the user's actual role to avoid 403.
-    // Admin routes require "admin", staff routes require "staff" only.
+    // Admin and staff always return to their own dashboards.
+    // Only redirect via returnUrl when the URL matches the user's role section.
     const canAccessReturnUrl =
       !!returnUrl &&
-      ((!returnUrl.startsWith("/admin") && !returnUrl.startsWith("/staff")) ||
-        (returnUrl.startsWith("/admin") && role === "admin") ||
-        (returnUrl.startsWith("/staff") && role === "staff"));
+      ((role === "admin" && returnUrl.startsWith("/admin")) ||
+        (role === "staff" && returnUrl.startsWith("/staff")) ||
+        (role === "customer" &&
+          !returnUrl.startsWith("/admin") &&
+          !returnUrl.startsWith("/staff")));
 
     if (canAccessReturnUrl) {
       navigate(returnUrl);
     } else if (role === "admin") {
       navigate(ROUTES.ADMIN_DASHBOARD);
     } else if (role === "staff") {
-      navigate(ROUTES.STAFF_ORDERS);
+      navigate(ROUTES.STAFF_PRODUCTS);
     } else {
       navigate(ROUTES.HOME);
     }
