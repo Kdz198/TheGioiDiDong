@@ -4,7 +4,7 @@ import type { ApiPayment } from "@/interfaces/payment.types";
 import { cn } from "@/lib/utils";
 import { orderService } from "@/services/orderService";
 import { paymentService } from "@/services/paymentService";
-import { reportService } from "@/services/reportService";
+import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useQuery } from "@tanstack/react-query";
@@ -176,20 +176,33 @@ export function DashboardPage() {
   const [showRevenue, setShowRevenue] = useState(true);
   const [showOrders, setShowOrders] = useState(true);
 
-  const { data: kpi } = useQuery({
-    queryKey: ["admin", "kpi"],
-    queryFn: reportService.getDashboardKPI,
+  const { data: allOrders } = useQuery({
+    queryKey: ["admin", "all-orders"],
+    queryFn: () => orderService.getAllOrders(),
   });
 
-  const { data: recentOrders } = useQuery({
-    queryKey: ["admin", "recent-orders"],
-    queryFn: () => orderService.getAllOrders({ pageSize: 10 }),
+  const { data: allUsers } = useQuery({
+    queryKey: ["admin", "all-users"],
+    queryFn: () => userService.getUsers(0, 9999),
   });
 
   const { data: rawPayments = [] } = useQuery({
     queryKey: ["admin", "dashboard-payments"],
     queryFn: paymentService.getAllPayments,
   });
+
+  // KPI computed from real data
+  const totalRevenue = useMemo(
+    () =>
+      rawPayments.filter((p) => p.status === "COMPLETED").reduce((s, p) => s + (p.amount ?? 0), 0),
+    [rawPayments]
+  );
+  const totalOrders = allOrders?.data?.length ?? 0;
+  const totalCustomers = allUsers?.totalElements ?? 0;
+  const pendingOrders = useMemo(
+    () => (allOrders?.data ?? []).filter((o) => o.status === "pending").length,
+    [allOrders]
+  );
 
   const effectiveDates = useMemo(() => {
     if (rangeMode === "custom" && customFrom && customTo && customFrom <= customTo) {
@@ -257,31 +270,29 @@ export function DashboardPage() {
 
   const kpiCards = [
     {
-      title: "Doanh thu hôm nay",
-      value: kpi ? formatVND(kpi.totalRevenue) : "...",
-      growth: kpi?.revenueGrowthPercent,
+      title: "Doanh thu",
+      value: totalRevenue > 0 ? formatVND(totalRevenue) : "...",
       icon: DollarSign,
       color: "text-blue-500",
       bg: "bg-blue-50",
     },
     {
-      title: "Đơn hàng mới",
-      value: kpi?.totalOrders?.toString() || "...",
-      growth: kpi?.orderGrowthPercent,
+      title: "Đơn hàng",
+      value: totalOrders > 0 ? totalOrders.toString() : "...",
       icon: ShoppingCart,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
-      title: "Khách hàng mới",
-      value: kpi?.newCustomers?.toString() || "...",
+      title: "Khách hàng",
+      value: totalCustomers > 0 ? totalCustomers.toString() : "...",
       icon: Users,
       color: "text-orange-500",
       bg: "bg-orange-50",
     },
     {
       title: "Đơn chờ xử lý",
-      value: kpi?.pendingOrders?.toString() || "...",
+      value: pendingOrders > 0 ? pendingOrders.toString() : "0",
       icon: Package,
       color: "text-red-500",
       bg: "bg-red-50",
@@ -313,17 +324,6 @@ export function DashboardPage() {
               <div>
                 <p className="text-sm text-gray-500">{card.title}</p>
                 <p className="text-xl font-bold text-zinc-900">{card.value}</p>
-                {card.growth !== undefined && (
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs ${card.growth >= 0 ? "text-green-600" : "text-red-500"}`}>
-                    {card.growth >= 0 ? (
-                      <ArrowUp className="h-3 w-3" />
-                    ) : (
-                      <ArrowDown className="h-3 w-3" />
-                    )}
-                    {Math.abs(card.growth)}%
-                  </span>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -666,12 +666,10 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders?.data.map((order) => (
+                {allOrders?.data.slice(0, 10).map((order) => (
                   <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-zinc-900">{order.orderCode}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {order.userId ? `Khách #${order.userId}` : "-"}
-                    </td>
+                    <td className="px-4 py-3 text-gray-600">{order.userName ?? "—"}</td>
                     <td className="px-4 py-3 text-right font-medium text-zinc-900">
                       {formatVND(order.total)}
                     </td>
@@ -681,7 +679,7 @@ export function DashboardPage() {
                     <td className="px-4 py-3 text-gray-400">{formatDate(order.createdAt)}</td>
                   </tr>
                 ))}
-                {!recentOrders?.data.length && (
+                {!allOrders?.data.length && (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
                       Chưa có đơn hàng nào
@@ -693,17 +691,6 @@ export function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-
-      {kpi && kpi.lowStockProducts > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="flex items-center gap-3 p-4">
-            <Package className="h-5 w-5 text-orange-500" />
-            <p className="text-sm text-orange-700">
-              Có <strong>{kpi.lowStockProducts}</strong> sản phẩm sắp hết hàng (số lượng &lt; 10)
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
