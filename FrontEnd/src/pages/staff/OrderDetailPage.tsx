@@ -1,4 +1,5 @@
 import { OrderStatusBadge } from "@/components/common/OrderStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,15 +11,52 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
 import { orderService } from "@/services/orderService";
+import { paymentService } from "@/services/paymentService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, CreditCard, Gift, Loader2, ShoppingCart, Tag } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
+
+/** Render a badge that clearly shows the line-item type (buy / gift / other) */
+function ItemTypeBadge({ type }: { type?: string }) {
+  if (!type) return null;
+  if (type.toLowerCase() === "buy") {
+    return (
+      <Badge className="border-0 bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-700">
+        <ShoppingCart className="mr-1 h-3 w-3" />
+        Mua
+      </Badge>
+    );
+  }
+  if (type.toLowerCase() === "gift") {
+    return (
+      <Badge className="border-0 bg-pink-100 px-2 py-0.5 text-xs font-semibold text-pink-700">
+        <Gift className="mr-1 h-3 w-3" />
+        Tặng kèm
+      </Badge>
+    );
+  }
+  return <Badge className="border-0 bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{type}</Badge>;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cod: "Thanh toán khi nhận hàng (COD)",
+  momo: "Ví MoMo",
+  vnpay: "VNPay",
+  PAYOS: "PayOS",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  PENDING: { label: "Chờ xử lý", className: "bg-yellow-100 text-yellow-700" },
+  COMPLETED: { label: "Thành công", className: "bg-green-100 text-green-700" },
+  FAILED: { label: "Thất bại", className: "bg-red-100 text-red-600" },
+};
 
 export function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -34,6 +72,17 @@ export function OrderDetailPage() {
     queryFn: () => orderService.getOrderById(Number(orderId)),
     enabled: !!orderId,
   });
+
+  const { data: allPayments = [] } = useQuery({
+    queryKey: [queryPrefix, "payments"],
+    queryFn: () => paymentService.getAllPayments(),
+    enabled: !!orderId,
+  });
+
+  const payment: ApiPayment | undefined = useMemo(
+    () => allPayments.find((p) => p.order?.id === Number(orderId)),
+    [allPayments, orderId]
+  );
 
   const updateMutation = useMutation({
     mutationFn: () => orderService.updateOrderStatus(Number(orderId), newStatus),
@@ -58,8 +107,11 @@ export function OrderDetailPage() {
 
   if (!order) return <p className="text-gray-500">Đơn hàng không tồn tại</p>;
 
+  const hasDiscount = order.discountAmount > 0;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link to={ordersRoute}>
@@ -75,6 +127,7 @@ export function OrderDetailPage() {
         <OrderStatusBadge status={order.status} />
       </div>
 
+      {/* Status update */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Cập nhật trạng thái</CardTitle>
@@ -104,32 +157,35 @@ export function OrderDetailPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left: order items */}
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Chi tiết đơn hàng</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="divide-y">
               {order.items?.length > 0 ? (
                 order.items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
+                  <div key={item.id} className="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
                     {item.thumbnailUrl && (
                       <img
                         src={item.thumbnailUrl}
                         alt={item.productName}
-                        className="h-14 w-14 rounded-lg object-cover"
+                        className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
                       />
                     )}
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-zinc-900">
                         {item.productName ?? `Sản phẩm #${item.productId}`}
                       </p>
-                      <p className="text-xs text-gray-400">
-                        {item.variantLabel ? `${item.variantLabel} × ` : ""}
-                        SL: {item.quantity}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <ItemTypeBadge type={item.variantLabel} />
+                        <span className="text-xs text-gray-500">SL: {item.quantity}</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-medium">{formatVND(item.subtotal)}</span>
+                    <span className="flex-shrink-0 text-sm font-semibold text-zinc-900">
+                      {formatVND(item.subtotal)}
+                    </span>
                   </div>
                 ))
               ) : (
@@ -137,8 +193,56 @@ export function OrderDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Payment details (if available) */}
+          {payment && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CreditCard className="h-4 w-4 text-indigo-400" />
+                  Thông tin thanh toán
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Trạng thái thanh toán</span>
+                  <Badge
+                    className={`border-0 ${(PAYMENT_STATUS_LABELS[payment.status] ?? { className: "bg-gray-100 text-gray-600" }).className}`}>
+                    {(PAYMENT_STATUS_LABELS[payment.status] ?? { label: payment.status }).label}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Phương thức</span>
+                  <span className="font-medium">
+                    {PAYMENT_METHOD_LABELS[payment.paymentMethod] ?? payment.paymentMethod}
+                  </span>
+                </div>
+                {payment.transactionCode && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Mã giao dịch</span>
+                    <span className="font-mono text-xs">{payment.transactionCode}</span>
+                  </div>
+                )}
+                {payment.date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Ngày thanh toán</span>
+                    <span>{formatDate(payment.date)}</span>
+                  </div>
+                )}
+                {payment.promotion && (
+                  <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2">
+                    <Tag className="h-3.5 w-3.5 text-green-600" />
+                    <span className="text-xs font-medium text-green-700">
+                      Khuyến mãi: {payment.promotion.code} — {payment.promotion.description}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
+        {/* Right: order summary */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -147,16 +251,33 @@ export function OrderDetailPage() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Mã đơn</span>
-                <span>{order.orderCode ?? `#${order.id}`}</span>
+                <span className="font-mono text-xs">{order.orderCode ?? `#${order.id}`}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">User ID</span>
-                <span>{order.userId ?? "—"}</span>
+                <span className="text-gray-500">Khách hàng</span>
+                <span className="font-medium">{order.userName ?? "—"}</span>
               </div>
               <Separator />
-              <div className="flex justify-between font-bold">
+              {order.subtotal > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Giá gốc</span>
+                  <span className={hasDiscount ? "text-gray-400 line-through" : ""}>
+                    {formatVND(order.subtotal)}
+                  </span>
+                </div>
+              )}
+              {hasDiscount && (
+                <div className="flex justify-between text-green-600">
+                  <span>Giảm giá</span>
+                  <span>- {formatVND(order.discountAmount)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between text-base font-bold">
                 <span>Tổng cộng</span>
-                <span>{formatVND(order.total ?? order.subtotal ?? 0)}</span>
+                <span className="text-teal-600">
+                  {formatVND(order.total ?? order.subtotal ?? 0)}
+                </span>
               </div>
             </CardContent>
           </Card>
