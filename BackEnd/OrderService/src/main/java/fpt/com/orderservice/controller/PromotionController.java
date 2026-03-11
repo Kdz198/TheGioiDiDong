@@ -1,6 +1,7 @@
 package fpt.com.orderservice.controller;
 
 import fpt.com.orderservice.model.Promotion;
+import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.service.PromotionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,10 @@ public class PromotionController {
     @GetMapping("/code/{code}")
     public ResponseEntity<Promotion> getByCode(@PathVariable String code) {
         return ResponseEntity.ok(promotionService.findByCode(code));
+    }
+    @GetMapping("/type")
+    public ResponseEntity<Promotion> getByType(@RequestParam PromotionType type) {
+        return ResponseEntity.ok(promotionService.findPromotionByType(type));
     }
 }
 

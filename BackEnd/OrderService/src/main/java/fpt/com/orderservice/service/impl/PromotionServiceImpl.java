@@ -1,6 +1,7 @@
 package fpt.com.orderservice.service.impl;
 
 import fpt.com.orderservice.model.Promotion;
+import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.repo.PromotionRepo;
 import fpt.com.orderservice.service.PromotionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,11 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     public Promotion findByCode(String code) {
         return promotionRepo.findByCode(code);
+    }
+
+    @Override
+    public Promotion findPromotionByType(PromotionType type) {
+        return promotionRepo.findByType(type);
     }
 }
 
