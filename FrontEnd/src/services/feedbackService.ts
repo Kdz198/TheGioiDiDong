@@ -2,10 +2,11 @@ import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import { apiClient } from "@/lib/api";
 
-/** Backend Feedback entity shape */
+/** Backend Feedback entity shape — matches FeedbackResponse from schema-orders.d.ts */
 export interface BackendFeedback {
   id: number;
   userId: number;
+  userName?: string;
   productId: number;
   rating: number;
   comment: string;
@@ -17,12 +18,27 @@ export interface BackendFeedback {
     subtotal: number;
     type: string;
   } | null;
+  orderDetailId?: number;
+}
+
+/**
+ * Matches FeedbackResponse from schema-orders.d.ts
+ * Returned by GET /api/orders/feedbacks/product/{productId}
+ */
+export interface ProductFeedbackItem {
+  userName?: string;
+  productId?: number;
+  rating?: number;
+  comment?: string;
+  date?: string;
+  orderDetailId?: number;
 }
 
 const mockFeedbacks: BackendFeedback[] = [
   {
     id: 1,
     userId: 10,
+    userName: "Nguyễn Văn A",
     productId: 5,
     rating: 4,
     comment: "Sản phẩm tốt, giao hàng nhanh",
@@ -32,6 +48,7 @@ const mockFeedbacks: BackendFeedback[] = [
   {
     id: 2,
     userId: 15,
+    userName: "Trần Thị B",
     productId: 3,
     rating: 2,
     comment: "Sản phẩm bị lỗi, tôi muốn đổi hàng",
@@ -80,5 +97,23 @@ export const feedbackService = {
       return;
     }
     await apiClient.delete(API_ENDPOINTS.FEEDBACKS.DELETE(id));
+  },
+
+  getFeedbacksByProduct: async (productId: number): Promise<ProductFeedbackItem[]> => {
+    if (USE_MOCK_API) {
+      await new Promise((r) => setTimeout(r, 300));
+      return mockFeedbacks
+        .filter((f) => f.productId === productId)
+        .map((f) => ({
+          userName: f.userName,
+          productId: f.productId,
+          rating: f.rating,
+          comment: f.comment,
+          date: f.date,
+          orderDetailId: f.orderDetail?.id,
+        }));
+    }
+    const response = await apiClient.get(API_ENDPOINTS.FEEDBACKS.BY_PRODUCT(productId));
+    return response.data;
   },
 };

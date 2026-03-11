@@ -36,6 +36,7 @@ export interface Order {
   id: number;
   orderCode: string;
   userId?: number;
+  userName?: string;
   items: OrderItem[];
   shippingInfo?: ShippingInfo;
   paymentMethod: PaymentMethod;
@@ -59,6 +60,7 @@ export interface Order {
 export interface BackendOrderDetail {
   id?: number;
   productId?: number;
+  productName?: string;
   quantity?: number;
   subtotal?: number;
   type?: string;
@@ -66,9 +68,10 @@ export interface BackendOrderDetail {
 
 export type BackendOrderStatus = "PENDING" | "PAID" | "CANCELED";
 
+/** Matches OrderDto from schema-orders.d.ts */
 export interface BackendOrder {
   id?: number;
-  userId?: number;
+  userName?: string;
   orderDate?: string;
   status?: BackendOrderStatus;
   totalPrice?: number;
@@ -89,12 +92,13 @@ export function mapBackendOrder(raw: BackendOrder): Order {
   return {
     id: raw.id ?? 0,
     orderCode: raw.orderCode ?? `#${raw.id ?? 0}`,
-    userId: raw.userId,
+    userId: undefined,
+    userName: raw.userName,
     items: (raw.orderDetails ?? []).map((d) => ({
       id: d.id ?? 0,
       productId: d.productId ?? 0,
       variantId: 0,
-      productName: `Sản phẩm #${d.productId ?? 0}`,
+      productName: d.productName ?? `Sản phẩm #${d.productId ?? 0}`,
       variantLabel: d.type ?? "",
       thumbnailUrl: "",
       quantity: d.quantity ?? 0,

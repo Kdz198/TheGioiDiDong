@@ -63,6 +63,7 @@ export function BrandManagerPage() {
           name: form.name,
           description: form.description,
           logoUrl: editing.logoUrl,
+          logoFile: logoFile,
         });
       }
       const fd = new FormData();

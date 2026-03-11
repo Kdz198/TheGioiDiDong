@@ -24,17 +24,19 @@ import { API_ENDPOINTS } from "@/constants/api.config";
 import type { BackendProduct } from "@/interfaces/product.types";
 import { apiClient } from "@/lib/api";
 import { ROUTES } from "@/router/routes.const";
+import { feedbackService } from "@/services/feedbackService";
 import { productService } from "@/services/productService";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Info, Pencil, Plus, Search, Trash2, Wrench } from "lucide-react";
-import { useState } from "react";
+import { Info, Pencil, Plus, Search, Star, Trash2, Wrench } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 export function ProductManagerPage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "product" | "service">("all");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [viewingProduct, setViewingProduct] = useState<BackendProduct | null>(null);
   const queryClient = useQueryClient();
@@ -47,9 +49,31 @@ export function ProductManagerPage() {
     },
   });
 
+  const { data: allFeedbacks = [] } = useQuery({
+    queryKey: ["staff", "feedbacks-all"],
+    queryFn: feedbackService.getFeedbacks,
+  });
+
+  const avgRatingByProduct = useMemo(() => {
+    const map = new Map<number, number>();
+    const sumMap = new Map<number, { sum: number; count: number }>();
+    for (const fb of allFeedbacks) {
+      const entry = sumMap.get(fb.productId) ?? { sum: 0, count: 0 };
+      entry.sum += fb.rating;
+      entry.count += 1;
+      sumMap.set(fb.productId, entry);
+    }
+    for (const [id, { sum, count }] of sumMap.entries()) {
+      map.set(id, Math.round((sum / count) * 10) / 10);
+    }
+    return map;
+  }, [allFeedbacks]);
+
   const filteredProducts = (rawProducts ?? []).filter((p) => {
     if (activeFilter === "active" && !p.active) return false;
     if (activeFilter === "inactive" && p.active) return false;
+    if (typeFilter === "product" && p.type === false) return false;
+    if (typeFilter === "service" && p.type !== false) return false;
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -97,6 +121,18 @@ export function ProductManagerPage() {
           />
         </div>
         <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter(v as "all" | "product" | "service")}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Loại" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả loại</SelectItem>
+            <SelectItem value="product">Sản phẩm</SelectItem>
+            <SelectItem value="service">Dịch vụ</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={activeFilter}
           onValueChange={(v) => setActiveFilter(v as "all" | "active" | "inactive")}>
           <SelectTrigger className="w-44">
@@ -123,6 +159,7 @@ export function ProductManagerPage() {
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Giá</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Tồn kho</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Đánh giá</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -130,84 +167,97 @@ export function ProductManagerPage() {
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={8} className="px-4 py-3">
+                        <td colSpan={9} className="px-4 py-3">
                           <div className="h-10 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
                     ))
-                  : filteredProducts.map((product) => (
-                      <tr key={product.id} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            {product.imgUrl ? (
-                              <img
-                                src={product.imgUrl}
-                                alt={product.name}
-                                className="h-10 w-10 rounded object-cover"
-                              />
+                  : filteredProducts.map((product) => {
+                      const rating = product.id ? avgRatingByProduct.get(product.id) : undefined;
+                      return (
+                        <tr key={product.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {product.imgUrl ? (
+                                <img
+                                  src={product.imgUrl}
+                                  alt={product.name}
+                                  className="h-10 w-10 rounded object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-100 text-xs text-gray-400">
+                                  ?
+                                </div>
+                              )}
+                              <span className="font-medium text-zinc-900">{product.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              className={
+                                product.type === false
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }>
+                              {product.type === false ? "Dịch vụ" : "Sản phẩm"}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{product.categoryName}</td>
+                          <td className="px-4 py-3 text-gray-600">{product.brandName}</td>
+                          <td className="px-4 py-3 text-right font-medium">
+                            {formatVND(product.price)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {product.type === false ? "—" : product.quantity}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              className={
+                                product.active
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-500"
+                              }>
+                              {product.active ? "Đang bán" : "Ẩn"}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            {rating !== undefined ? (
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs font-medium text-zinc-700">{rating}</span>
+                              </span>
                             ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded bg-gray-100 text-xs text-gray-400">
-                                ?
-                              </div>
+                              <span className="text-xs text-gray-400">—</span>
                             )}
-                            <span className="font-medium text-zinc-900">{product.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            className={
-                              product.type === false
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-blue-100 text-blue-700"
-                            }>
-                            {product.type === false ? "Dịch vụ" : "Sản phẩm"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{product.categoryName}</td>
-                        <td className="px-4 py-3 text-gray-600">{product.brandName}</td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {formatVND(product.price)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {product.type === false ? "—" : product.quantity}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            className={
-                              product.active
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-500"
-                            }>
-                            {product.active ? "Đang bán" : "Ẩn"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-teal-500"
-                              title="Xem chi tiết"
-                              onClick={() => setViewingProduct(product)}>
-                              <Info className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                              <Link
-                                to={ROUTES.STAFF_PRODUCT_EDIT.replace(":id", String(product.id))}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-400"
-                              onClick={() => setDeletingId(product.id ?? null)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-teal-500"
+                                title="Xem chi tiết"
+                                onClick={() => setViewingProduct(product)}>
+                                <Info className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                <Link
+                                  to={ROUTES.STAFF_PRODUCT_EDIT.replace(":id", String(product.id))}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-400"
+                                onClick={() => setDeletingId(product.id ?? null)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
               </tbody>
             </table>
           </div>
@@ -218,6 +268,7 @@ export function ProductManagerPage() {
         product={viewingProduct}
         open={viewingProduct !== null}
         onClose={() => setViewingProduct(null)}
+        allFeedbacks={allFeedbacks}
       />
 
       <AlertDialog open={deletingId !== null} onOpenChange={() => setDeletingId(null)}>

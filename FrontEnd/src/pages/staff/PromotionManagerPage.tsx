@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { API_ENDPOINTS } from "@/constants/api.config";
+import type { BackendProduct } from "@/interfaces/product.types";
 import type { ApiPromotion, ApiPromotionType } from "@/interfaces/promotion.types";
+import { apiClient } from "@/lib/api";
 import { mapApiPromotionToVoucher, promotionService } from "@/services/promotionService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
@@ -50,6 +54,7 @@ interface PromoForm {
   endDate: string;
   active: boolean;
   quantity: number;
+  applicableProductIds: number[];
 }
 
 const defaultForm: PromoForm = {
@@ -63,6 +68,7 @@ const defaultForm: PromoForm = {
   endDate: "",
   active: true,
   quantity: 100,
+  applicableProductIds: [],
 };
 
 export function PromotionManagerPage() {
@@ -75,6 +81,15 @@ export function PromotionManagerPage() {
   const { data: apiPromotions } = useQuery({
     queryKey: ["staff", "promotions"],
     queryFn: promotionService.getApiPromotions,
+  });
+
+  const { data: allProducts } = useQuery({
+    queryKey: ["products-raw-for-promo"],
+    queryFn: async () => {
+      const res = await apiClient.get<BackendProduct[]>(API_ENDPOINTS.PRODUCTS.LIST_ALL);
+      return res.data;
+    },
+    enabled: dialogOpen,
   });
 
   const vouchers = useMemo(() => apiPromotions?.map(mapApiPromotionToVoucher), [apiPromotions]);
@@ -98,23 +113,35 @@ export function PromotionManagerPage() {
       endDate: promo.endDate.length >= 16 ? promo.endDate.slice(0, 16) : promo.endDate,
       active: promo.active,
       quantity: promo.quantity,
+      applicableProductIds: promo.applicableProductIds ?? [],
     });
     setDialogOpen(true);
   };
 
+  const toggleProductId = (id: number) => {
+    setForm((prev) => {
+      const ids = prev.applicableProductIds.includes(id)
+        ? prev.applicableProductIds.filter((x) => x !== id)
+        : [...prev.applicableProductIds, id];
+      return { ...prev, applicableProductIds: ids };
+    });
+  };
+
   const saveMutation = useMutation({
     mutationFn: () => {
+      const isBogo = form.type === "BOGO";
       const data = {
         code: form.code,
         description: form.description || undefined,
         type: form.type,
-        discountValue: form.discountValue,
-        maxDiscountValue: form.maxDiscountValue || undefined,
-        minOrderAmount: form.minOrderAmount || undefined,
+        discountValue: isBogo ? 0 : form.discountValue,
+        maxDiscountValue: isBogo ? undefined : form.maxDiscountValue || undefined,
+        minOrderAmount: isBogo ? undefined : form.minOrderAmount || undefined,
         startDate: form.startDate,
         endDate: form.endDate,
         active: form.active,
         quantity: form.quantity,
+        applicableProductIds: isBogo ? form.applicableProductIds : undefined,
       };
       return editing
         ? promotionService.updatePromotion({ id: editing.id, ...data })
@@ -137,6 +164,8 @@ export function PromotionManagerPage() {
     },
     onError: () => toast.error("Xóa khuyến mãi thất bại"),
   });
+
+  const isBogo = form.type === "BOGO";
 
   return (
     <div className="space-y-6">
@@ -175,7 +204,11 @@ export function PromotionManagerPage() {
                       <td className="px-4 py-3 font-mono font-medium">{p.code}</td>
                       <td className="px-4 py-3 text-gray-600">{p.type}</td>
                       <td className="px-4 py-3">
-                        {p.type === "MONEY" ? formatVND(p.discountValue) : `${p.discountValue}%`}
+                        {p.type === "BOGO"
+                          ? "Mua 1 tặng 1"
+                          : p.type === "MONEY"
+                            ? formatVND(p.discountValue)
+                            : `${p.discountValue}%`}
                       </td>
                       <td className="px-4 py-3">{p.quantity}</td>
                       <td className="px-4 py-3 text-gray-400">{formatDate(p.startDate)}</td>
@@ -262,7 +295,7 @@ export function PromotionManagerPage() {
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Chỉnh sửa khuyến mãi" : "Tạo khuyến mãi mới"}</DialogTitle>
           </DialogHeader>
@@ -280,7 +313,13 @@ export function PromotionManagerPage() {
                 <Label>Loại</Label>
                 <Select
                   value={form.type}
-                  onValueChange={(v) => setForm((p) => ({ ...p, type: v as ApiPromotionType }))}>
+                  onValueChange={(v) =>
+                    setForm((p) => ({
+                      ...p,
+                      type: v as ApiPromotionType,
+                      applicableProductIds: [],
+                    }))
+                  }>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -301,39 +340,85 @@ export function PromotionManagerPage() {
                 placeholder="Mô tả khuyến mãi"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            {/* BOGO: product selection only */}
+            {isBogo ? (
               <div className="space-y-2">
-                <Label>Giá trị giảm</Label>
-                <Input
-                  type="number"
-                  value={form.discountValue || ""}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, discountValue: Number(e.target.value) }))
-                  }
-                />
+                <Label>Chọn sản phẩm áp dụng mua 1 tặng 1</Label>
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {/* type !== false: includes products (type===true) and legacy items (type===undefined) */}
+                  {(allProducts ?? [])
+                    .filter((p) => p.type !== false)
+                    .map((p) => (
+                      <label
+                        key={p.id}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-gray-50">
+                        <Checkbox
+                          checked={form.applicableProductIds.includes(p.id)}
+                          onCheckedChange={() => toggleProductId(p.id)}
+                        />
+                        <span className="text-sm text-zinc-800">{p.name}</span>
+                      </label>
+                    ))}
+                  {!allProducts && (
+                    <p className="px-2 py-1 text-xs text-gray-400">Đang tải sản phẩm...</p>
+                  )}
+                </div>
+                {form.applicableProductIds.length > 0 && (
+                  <p className="text-xs text-teal-600">
+                    Đã chọn {form.applicableProductIds.length} sản phẩm
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label>Giảm tối đa</Label>
-                <Input
-                  type="number"
-                  value={form.maxDiscountValue || ""}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, maxDiscountValue: Number(e.target.value) }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Đơn tối thiểu</Label>
-                <Input
-                  type="number"
-                  value={form.minOrderAmount || ""}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, minOrderAmount: Number(e.target.value) }))
-                  }
-                />
-              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Giá trị giảm</Label>
+                    <Input
+                      type="number"
+                      value={form.discountValue || ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, discountValue: Number(e.target.value) }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Giảm tối đa</Label>
+                    <Input
+                      type="number"
+                      value={form.maxDiscountValue || ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, maxDiscountValue: Number(e.target.value) }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Đơn tối thiểu</Label>
+                    <Input
+                      type="number"
+                      value={form.minOrderAmount || ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, minOrderAmount: Number(e.target.value) }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Số lượng</Label>
+                    <Input
+                      type="number"
+                      value={form.quantity || ""}
+                      onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Quantity for BOGO */}
+            {isBogo && (
               <div className="space-y-2">
                 <Label>Số lượng</Label>
                 <Input
@@ -342,7 +427,8 @@ export function PromotionManagerPage() {
                   onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))}
                 />
               </div>
-            </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Ngày bắt đầu</Label>

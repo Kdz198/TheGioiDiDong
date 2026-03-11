@@ -7,7 +7,6 @@ import {
   FolderTree,
   LayoutDashboard,
   LogOut,
-  MessageSquare,
   Package,
   ShoppingCart,
   Tag,
@@ -31,7 +30,6 @@ const adminItems: SidebarItem[] = [
   { label: "Danh mục", href: ROUTES.ADMIN_CATEGORIES, icon: FolderTree },
   { label: "Đơn hàng", href: ROUTES.ADMIN_ORDERS, icon: ShoppingCart },
   { label: "Khuyến mãi", href: ROUTES.ADMIN_PROMOTIONS, icon: Tag },
-  { label: "Phản hồi", href: ROUTES.ADMIN_FEEDBACK, icon: MessageSquare },
   { label: "Người dùng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
 ];
@@ -44,7 +42,6 @@ const staffItems: SidebarItem[] = [
   { label: "Danh mục", href: ROUTES.STAFF_CATEGORIES, icon: FolderTree },
   { label: "Khuyến mãi", href: ROUTES.STAFF_PROMOTIONS, icon: Tag },
   { label: "Khách hàng", href: ROUTES.STAFF_USERS, icon: Users },
-  { label: "Phản hồi", href: ROUTES.STAFF_FEEDBACK, icon: MessageSquare },
 ];
 
 export function DashboardSidebar() {

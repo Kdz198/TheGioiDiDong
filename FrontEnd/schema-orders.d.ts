@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/promotions/type": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getByType"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/promotions/code/{code}": {
         parameters: {
             query?: never;
@@ -344,31 +360,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        OrderDetail: {
-            /** Format: int32 */
-            id?: number;
+        OrderDetailRequest: {
             /** Format: int32 */
             productId?: number;
+            productName?: string;
             /** Format: int32 */
             quantity?: number;
             /** Format: int32 */
             subtotal?: number;
             type?: string;
         };
-        OrderResponse: {
+        OrderDto: {
             /** Format: int32 */
             id?: number;
-            /** Format: int32 */
-            userId?: number;
-            /** Format: date-time */
-            orderDate?: string;
+            userName?: string;
             /** @enum {string} */
             status?: "PENDING" | "PAID" | "CANCELED";
             /** Format: int32 */
             totalPrice?: number;
             /** Format: int32 */
             basePrice?: number;
-            orderDetails?: components["schemas"]["OrderDetail"][];
+            orderCode?: string;
+            /** Format: date-time */
+            orderDate?: string;
+            orderDetails?: components["schemas"]["OrderDetailRequest"][];
         };
         Promotion: {
             /** Format: int32 */
@@ -408,6 +423,17 @@ export interface components {
             orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetail"][];
         };
+        OrderDetail: {
+            /** Format: int32 */
+            id?: number;
+            /** Format: int32 */
+            productId?: number;
+            /** Format: int32 */
+            quantity?: number;
+            /** Format: int32 */
+            subtotal?: number;
+            type?: string;
+        };
         Payment: {
             /** Format: int32 */
             id?: number;
@@ -435,15 +461,6 @@ export interface components {
             /** Format: date-time */
             date?: string;
             orderDetail?: components["schemas"]["OrderDetail"];
-        };
-        OrderDetailRequest: {
-            /** Format: int32 */
-            productId?: number;
-            /** Format: int32 */
-            quantity?: number;
-            /** Format: int32 */
-            subtotal?: number;
-            type?: string;
         };
         OrderRequest: {
             /** Format: int32 */
@@ -531,7 +548,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"][];
+                    "*/*": components["schemas"]["OrderDto"][];
                 };
             };
         };
@@ -554,7 +571,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"];
+                    "*/*": components["schemas"]["OrderDto"];
                 };
             };
         };
@@ -578,7 +595,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"];
+                    "*/*": components["schemas"]["OrderDto"];
                 };
             };
         };
@@ -847,7 +864,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"];
+                    "*/*": components["schemas"]["OrderDto"];
                 };
             };
         };
@@ -889,7 +906,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"][];
+                    "*/*": components["schemas"]["OrderDto"][];
                 };
             };
         };
@@ -911,7 +928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["OrderResponse"][];
+                    "*/*": components["schemas"]["OrderDto"][];
                 };
             };
         };
@@ -955,6 +972,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getByType: {
+        parameters: {
+            query: {
+                type: "MONEY" | "PERCENTAGE" | "BOGO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Promotion"];
+                };
             };
         };
     };
