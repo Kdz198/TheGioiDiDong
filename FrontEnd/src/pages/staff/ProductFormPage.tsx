@@ -17,7 +17,7 @@ import {
 import { createProductSchema, type CreateProductFormData } from "@/validations/product.validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Upload, Wrench, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -134,7 +134,7 @@ export function ProductFormPage() {
         categoryId: data.categoryId,
         brandId: data.brandId,
         price: data.price,
-        stockQuantity: isService ? undefined : (data.stockQuantity ?? 0),
+        stockQuantity: isService ? 0 : (data.stockQuantity ?? 0),
         active: data.active ?? true,
         versionId: selectedVersionId || undefined,
         type: !isService,
@@ -157,22 +157,21 @@ export function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "products-raw"] });
       queryClient.invalidateQueries({ queryKey: ["staff", "products"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
-      toast.success(isEdit ? "Cập nhật sản phẩm thành công!" : "Tạo sản phẩm thành công!");
+      const itemLabel = isService ? "dịch vụ" : "sản phẩm";
+      toast.success(isEdit ? `Cập nhật ${itemLabel} thành công!` : `Tạo ${itemLabel} thành công!`);
       navigate(productsRoute);
     },
     onError: () => toast.error("Đã xảy ra lỗi, vui lòng thử lại"),
   });
 
   const onSubmit = (data: CreateProductFormData) => {
-    if (!isEdit && !imageFiles[0]) {
-      toast.error("Vui lòng tải lên ít nhất 1 hình ảnh chính");
-      return;
-    }
     saveMutation.mutate(data);
   };
 
   const pageTitle = isEdit
-    ? "Chỉnh sửa sản phẩm"
+    ? isService
+      ? "Chỉnh sửa dịch vụ"
+      : "Chỉnh sửa sản phẩm"
     : isService
       ? "Thêm dịch vụ mới"
       : "Thêm sản phẩm mới";
@@ -195,19 +194,27 @@ export function ProductFormPage() {
             <CardTitle className="text-base">Thông tin cơ bản</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Type toggle */}
-            <div className="flex items-center gap-3 rounded-lg border border-dashed border-orange-300 bg-orange-50 px-4 py-3">
-              <Switch
-                id="isService"
-                checked={isService}
-                onCheckedChange={(v) => {
-                  setIsService(v);
-                  setValue("type", !v);
-                }}
-              />
-              <Label htmlFor="isService" className="cursor-pointer">
-                {isService ? "Đây là dịch vụ (không có tồn kho)" : "Đây là sản phẩm thông thường"}
-              </Label>
+            {/* Type indicator — read-only, set at creation time via URL param */}
+            <div
+              className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
+                isService ? "border-orange-300 bg-orange-50" : "border-blue-200 bg-blue-50"
+              }`}>
+              {isService ? (
+                <Wrench className="h-5 w-5 flex-shrink-0 text-orange-500" />
+              ) : (
+                <Package className="h-5 w-5 flex-shrink-0 text-blue-500" />
+              )}
+              <div>
+                <p
+                  className={`text-sm font-semibold ${isService ? "text-orange-700" : "text-blue-700"}`}>
+                  {isService ? "Dịch vụ" : "Sản phẩm"}
+                </p>
+                <p className={`text-xs ${isService ? "text-orange-500" : "text-blue-500"}`}>
+                  {isService
+                    ? "Dịch vụ không có quản lý tồn kho"
+                    : "Sản phẩm vật lý — có theo dõi tồn kho"}
+                </p>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

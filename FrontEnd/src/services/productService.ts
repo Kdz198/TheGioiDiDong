@@ -49,28 +49,50 @@ export interface ProductSaveFiles {
   img5?: File | null;
 }
 
-/** Build multipart/form-data with product JSON blob + image files */
+/** Build multipart/form-data with product JSON blob + image files.
+ *  Follows Swagger spec: all 5 img slots are always sent (empty string when absent).
+ */
 function buildProductFormData(payload: ProductSavePayload, files: ProductSaveFiles): FormData {
   const fd = new FormData();
-  const { img, img2, img3, img4, img5, ...productFields } = { ...payload, ...files } as Record<
-    string,
-    unknown
-  >;
-  void img;
-  void img2;
-  void img3;
-  void img4;
-  void img5;
-  fd.append("product", new Blob([JSON.stringify(productFields)], { type: "application/json" }));
-  const imgFiles: Array<[string, File]> = [
-    ["img", files.img as File],
-    ["img2", files.img2 as File],
-    ["img3", files.img3 as File],
-    ["img4", files.img4 as File],
-    ["img5", files.img5 as File],
+  const {
+    id,
+    name,
+    description,
+    price,
+    stockQuantity,
+    active,
+    versionId,
+    brandId,
+    categoryId,
+    type,
+  } = payload;
+  const productJson = JSON.stringify({
+    id,
+    name,
+    description,
+    price,
+    stockQuantity,
+    active,
+    versionId,
+    brandId,
+    categoryId,
+    type,
+  });
+  fd.append("product", new Blob([productJson], { type: "application/json" }));
+
+  const imgSlots: Array<[string, File | null | undefined]> = [
+    ["img", files.img],
+    ["img2", files.img2],
+    ["img3", files.img3],
+    ["img4", files.img4],
+    ["img5", files.img5],
   ];
-  for (const [key, file] of imgFiles) {
-    if (file instanceof File) fd.append(key, file);
+  for (const [key, file] of imgSlots) {
+    if (file instanceof File) {
+      fd.append(key, file);
+    } else {
+      fd.append(key, "");
+    }
   }
   return fd;
 }
@@ -200,7 +222,9 @@ export const productService = {
       return mock;
     }
     const fd = buildProductFormData(payload, files);
-    const response = await apiClient.post<BackendProduct>(API_ENDPOINTS.PRODUCTS.CREATE, fd);
+    const response = await apiClient.post<BackendProduct>(API_ENDPOINTS.PRODUCTS.CREATE, fd, {
+      headers: { "Content-Type": undefined },
+    });
     return response.data;
   },
 
@@ -215,7 +239,9 @@ export const productService = {
       return mockProducts[idx] ?? mockProducts[0];
     }
     const fd = buildProductFormData(payload, files);
-    const response = await apiClient.put<BackendProduct>(API_ENDPOINTS.PRODUCTS.UPDATE, fd);
+    const response = await apiClient.put<BackendProduct>(API_ENDPOINTS.PRODUCTS.UPDATE, fd, {
+      headers: { "Content-Type": undefined },
+    });
     return response.data;
   },
 
@@ -271,6 +297,7 @@ export const productService = {
     name: string;
     description?: string;
     logoUrl?: string;
+    logoFile?: File | null;
   }): Promise<Brand> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
@@ -283,7 +310,15 @@ export const productService = {
       };
       return mockBrands[idx];
     }
-    const response = await apiClient.put(API_ENDPOINTS.BRANDS.UPDATE, data);
+    // Use POST (same endpoint as create) with FormData, including branId for update
+    const fd = new FormData();
+    fd.append("branId", String(data.id));
+    fd.append("name", data.name);
+    if (data.description) fd.append("description", data.description);
+    if (data.logoFile instanceof File) fd.append("file", data.logoFile);
+    const response = await apiClient.post<Brand>(API_ENDPOINTS.BRANDS.CREATE, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
 

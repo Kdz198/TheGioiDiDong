@@ -2,17 +2,36 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { BackendProduct } from "@/interfaces/product.types";
+import type { BackendFeedback } from "@/services/feedbackService";
+import { feedbackService } from "@/services/feedbackService";
+import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
+import { useQuery } from "@tanstack/react-query";
+import { Star } from "lucide-react";
 import { useState } from "react";
 
 interface ProductDetailModalProps {
   product: BackendProduct | null;
   open: boolean;
   onClose: () => void;
+  /** @deprecated Feedbacks are now fetched internally via /product/{id} endpoint */
+  allFeedbacks?: BackendFeedback[];
 }
 
 export function ProductDetailModal({ product, open, onClose }: ProductDetailModalProps) {
   const [activeImg, setActiveImg] = useState(0);
+
+  const { data: feedbacks = [] } = useQuery({
+    queryKey: ["feedbacks", "product", product?.id],
+    queryFn: () => feedbackService.getFeedbacksByProduct(product!.id),
+    enabled: open && !!product?.id,
+  });
+
+  const avgRating =
+    feedbacks.length > 0
+      ? Math.round((feedbacks.reduce((s, f) => s + (f.rating ?? 0), 0) / feedbacks.length) * 10) /
+        10
+      : null;
 
   if (!product) return null;
 
@@ -25,6 +44,14 @@ export function ProductDetailModal({ product, open, onClose }: ProductDetailModa
   ].filter(Boolean) as string[];
 
   const isService = product.type === false;
+
+  const renderStars = (rating: number) =>
+    Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`h-3.5 w-3.5 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+      />
+    ));
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -136,6 +163,44 @@ export function ProductDetailModal({ product, open, onClose }: ProductDetailModa
               </div>
             )}
           </div>
+        </div>
+
+        {/* Feedbacks / Comments */}
+        <div className="mt-4 border-t pt-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+            <span>Nhận xét của khách hàng ({feedbacks.length})</span>
+            {avgRating !== null && (
+              <span className="flex items-center gap-1 text-yellow-500">
+                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                <span className="text-xs font-medium text-zinc-700">{avgRating}/5</span>
+              </span>
+            )}
+          </h3>
+          {feedbacks.length > 0 ? (
+            <div className="space-y-3">
+              {feedbacks.map((fb, idx) => (
+                <div key={idx} className="rounded-lg border bg-gray-50 p-3 text-sm">
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-zinc-800">
+                        {fb.userName ?? "Khách hàng"}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {renderStars(fb.rating ?? 0)}
+                        <span className="ml-1 text-xs text-gray-500">({fb.rating ?? 0}/5)</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {fb.date ? formatDate(fb.date) : ""}
+                    </span>
+                  </div>
+                  <p className="text-gray-700">{fb.comment}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Chưa có nhận xét nào.</p>
+          )}
         </div>
 
         <div className="flex justify-end pt-2">
