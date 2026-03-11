@@ -20,4 +20,5 @@ public interface ProductService {
     OrderRequest isStockAvailable(OrderRequest request);
     void deductStock(String orderCode);
     void restoreStock(String orderCode);
+    List<ProductResponse> findByCate(int cateId);
 }

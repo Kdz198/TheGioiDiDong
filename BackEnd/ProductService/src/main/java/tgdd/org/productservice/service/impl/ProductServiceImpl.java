@@ -225,6 +225,11 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    @Override
+    public List<ProductResponse> findByCate(int cateId) {
+        return productMapper.toProductResponseList(productRepo.findByCategoryId(cateId));
+    }
+
     private void saveItem(OrderRequest request) {
         Map<Integer, Integer> productQuantities = new HashMap<>();
         for (OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {
