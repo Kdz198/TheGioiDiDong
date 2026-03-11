@@ -1,8 +1,11 @@
 package fpt.com.orderservice.service.impl;
 
+import fpt.com.orderservice.feignclient.ProductClient;
+import fpt.com.orderservice.feignclient.UserClient;
 import fpt.com.orderservice.model.Order;
 import fpt.com.orderservice.model.OrderDetail;
 import fpt.com.orderservice.model.Promotion;
+import fpt.com.orderservice.model.dto.OrderDto;
 import fpt.com.orderservice.model.dto.OrderRequest;
 import fpt.com.orderservice.model.dto.OrderResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
@@ -24,16 +27,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderRepo orderRepo;
+
     @Autowired
-    private PromotionRepo promotionRepo;
+    private UserClient userClient;
+    @Autowired
+    private ProductClient productClient;
 
     @Override
-    public List<OrderResponse> findAll() {
+    public List<OrderDto> findAll() {
         return orderRepo.findAll().stream().map(this::toOrderResponse).collect(Collectors.toList());
     }
 
     @Override
-    public OrderResponse findById(int id) {
+    public OrderDto findById(int id) {
         Order order = orderRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
         return toOrderResponse(order);
@@ -41,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderResponse save(OrderRequest orderRequest) {
+    public OrderDto save(OrderRequest orderRequest) {
         Order newOrder = new Order();
         newOrder.setUserId(orderRequest.getUserId());
         newOrder.setStatus(OrderStatus.PENDING);
@@ -63,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse update(int orderId, OrderStatus status) {
+    public OrderDto update(int orderId, OrderStatus status) {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
         order.setStatus(status);
@@ -76,25 +82,37 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderResponse> findByUserId(int userId) {
+    public List<OrderDto> findByUserId(int userId) {
         return orderRepo.findByUserId(userId).stream().map(this::toOrderResponse).collect(Collectors.toList());
     }
 
     @Override
-    public List<OrderResponse> findByStatus(OrderStatus status) {
+    public List<OrderDto> findByStatus(OrderStatus status) {
         return orderRepo.findByStatus(status).stream().map(this::toOrderResponse).collect(Collectors.toList());
     }
 
-    private OrderResponse toOrderResponse(Order order) {
-        return OrderResponse.builder()
-                .id(order.getId())
-                .userId(order.getUserId())
+    private OrderDto toOrderResponse(Order order) {
+        List<OrderDto.OrderDetailRequest> orderDetails = new ArrayList<>();
+        for(OrderDetail detail : order.getOrderDetails()){
+            OrderDto.OrderDetailRequest detailResponse = new OrderDto.OrderDetailRequest();
+            detailResponse.setProductId(detail.getProductId());
+            detailResponse.setProductName(productClient.getProductById(detail.getProductId()).getName());
+            detailResponse.setQuantity(detail.getQuantity());
+            detailResponse.setSubtotal(detail.getSubtotal());
+            detailResponse.setType(detail.getType());
+            orderDetails.add(detailResponse);
+        }
+        String userName = userClient.getNameAccount(order.getUserId());
+       return OrderDto.builder()
+               .id(order.getId())
+               .userName(userName)
+               .status(order.getStatus())
+               .totalPrice(order.getTotalPrice())
+               .basePrice(order.getBasePrice())
+               .orderCode(order.getOrderCode())
                 .orderDate(order.getOrderDate())
-                .status(order.getStatus())
-                .totalPrice(order.getTotalPrice())
-                .basePrice(order.getBasePrice())
-                .orderDetails(order.getOrderDetails())
-                .build();
+               .orderDetails(orderDetails)
+               .build();
     }
 }
 

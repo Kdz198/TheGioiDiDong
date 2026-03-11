@@ -1,5 +1,6 @@
 package fpt.com.orderservice.controller;
 
+import fpt.com.orderservice.model.dto.OrderDto;
 import fpt.com.orderservice.model.dto.OrderRequest;
 import fpt.com.orderservice.model.dto.OrderResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
@@ -18,22 +19,22 @@ public class OrderController {
     private OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+    public ResponseEntity<List<OrderDto>> getAllOrders() {
         return ResponseEntity.ok(orderService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable int id) {
+    public ResponseEntity<OrderDto> getOrderById(@PathVariable int id) {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest order) {
+    public ResponseEntity<OrderDto> createOrder(@RequestBody OrderRequest order) {
         return ResponseEntity.ok(orderService.save(order));
     }
 
     @PutMapping
-    public ResponseEntity<OrderResponse> updateOrderint (@RequestParam int orderId, @RequestParam OrderStatus status) {
+    public ResponseEntity<OrderDto> updateOrderint (@RequestParam int orderId, @RequestParam OrderStatus status) {
         return ResponseEntity.ok(orderService.update(orderId, status));
     }
 
@@ -44,12 +45,12 @@ public class OrderController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderResponse>> getOrdersByUserId(@PathVariable int userId) {
+    public ResponseEntity<List<OrderDto>> getOrdersByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(orderService.findByUserId(userId));
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<OrderResponse>> getOrdersByStatus(@PathVariable OrderStatus status) {
+    public ResponseEntity<List<OrderDto>> getOrdersByStatus(@PathVariable OrderStatus status) {
         return ResponseEntity.ok(orderService.findByStatus(status));
     }
 }
