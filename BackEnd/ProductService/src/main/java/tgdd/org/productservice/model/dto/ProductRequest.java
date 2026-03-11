@@ -14,4 +14,5 @@ public class ProductRequest {
     int versionId;
     int brandId;
     int categoryId;
+    boolean type;
 }

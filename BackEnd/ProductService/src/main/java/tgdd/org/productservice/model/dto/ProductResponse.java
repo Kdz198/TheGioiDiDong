@@ -25,5 +25,6 @@ public class ProductResponse {
     String versionName;
     String brandName;
     String categoryName;
+    boolean type;
 }
 
