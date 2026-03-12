@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +22,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { usePagination } from "@/hooks/usePagination";
 import type { Brand } from "@/interfaces/product.types";
 import { productService } from "@/services/productService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export function BrandManagerPage() {
@@ -40,6 +43,19 @@ export function BrandManagerPage() {
     queryKey: ["staff", "brands"],
     queryFn: productService.getBrands,
   });
+
+  const [sortDir, setSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
+
+  const sortedBrands = useMemo(() => {
+    if (sortDir === "none") return [...(brands ?? [])];
+    return [...(brands ?? [])].sort((a, b) =>
+      sortDir === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+    );
+  }, [brands, sortDir]);
+
+  const pagination = usePagination({ totalCount: sortedBrands.length, pageSize });
+  const pageBrands = sortedBrands.slice(pagination.startIndex, pagination.endIndex + 1);
 
   const openCreate = () => {
     setEditing(null);
@@ -106,7 +122,11 @@ export function BrandManagerPage() {
               <thead>
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">Logo</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Tên thương hiệu</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton direction={sortDir} onChange={setSortDir}>
+                      Tên thương hiệu
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Mô tả</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
@@ -127,7 +147,7 @@ export function BrandManagerPage() {
                     </td>
                   </tr>
                 ) : (
-                  brands?.map((brand) => (
+                  pageBrands.map((brand) => (
                     <tr key={brand.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3">
                         {brand.logoUrl ? (
@@ -170,6 +190,13 @@ export function BrandManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={pagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          pagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
