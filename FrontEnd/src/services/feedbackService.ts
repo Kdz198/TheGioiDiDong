@@ -2,11 +2,10 @@ import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import { apiClient } from "@/lib/api";
 
-/** Backend Feedback entity shape — matches FeedbackResponse from schema-orders.d.ts */
+/** Backend Feedback entity shape — matches Feedback from schema-orders.d.ts */
 export interface BackendFeedback {
-  id: number;
-  userId: number;
-  userName?: string;
+  id?: number;
+  userId?: number;
   productId: number;
   rating: number;
   comment: string;
@@ -18,7 +17,6 @@ export interface BackendFeedback {
     subtotal: number;
     type: string;
   } | null;
-  orderDetailId?: number;
 }
 
 /**
@@ -38,7 +36,6 @@ const mockFeedbacks: BackendFeedback[] = [
   {
     id: 1,
     userId: 10,
-    userName: "Nguyễn Văn A",
     productId: 5,
     rating: 4,
     comment: "Sản phẩm tốt, giao hàng nhanh",
@@ -48,7 +45,6 @@ const mockFeedbacks: BackendFeedback[] = [
   {
     id: 2,
     userId: 15,
-    userName: "Trần Thị B",
     productId: 3,
     rating: 2,
     comment: "Sản phẩm bị lỗi, tôi muốn đổi hàng",
@@ -67,6 +63,7 @@ export const feedbackService = {
     return response.data;
   },
 
+  // WARNING: endpoint may not exist in schema
   getFeedbackById: async (id: number): Promise<BackendFeedback> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));
@@ -89,6 +86,7 @@ export const feedbackService = {
     return response.data;
   },
 
+  // WARNING: endpoint may not exist in schema
   deleteFeedback: async (id: number): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 300));
@@ -105,7 +103,6 @@ export const feedbackService = {
       return mockFeedbacks
         .filter((f) => f.productId === productId)
         .map((f) => ({
-          userName: f.userName,
           productId: f.productId,
           rating: f.rating,
           comment: f.comment,

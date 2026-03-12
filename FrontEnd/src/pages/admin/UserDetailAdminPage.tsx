@@ -26,6 +26,7 @@ export function UserDetailAdminPage() {
     queryKey: ["admin", "user-orders", userId],
     queryFn: () => orderService.getOrdersByUserId(Number(userId)),
     enabled: !!userId,
+    select: (d) => [...d].sort((a, b) => b.id - a.id),
   });
 
   const toggleActiveMutation = useMutation({

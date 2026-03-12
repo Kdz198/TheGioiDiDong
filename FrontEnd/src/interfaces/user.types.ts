@@ -35,9 +35,9 @@ export function mapRoleName(roleName: string): UserRole {
 export interface User {
   id: number;
   email: string;
-  phone?: string;
+  phone?: string; // Not in schema
   fullName: string;
-  avatar?: string;
+  avatar?: string; // Not in schema
   role: UserRole;
   /** Raw role name from backend (e.g. "SUPER ADMIN") */
   roleName?: string;

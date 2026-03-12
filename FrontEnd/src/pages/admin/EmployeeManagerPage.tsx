@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,12 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
 import type { User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const PERMISSION_LABELS: Record<string, string> = {
@@ -59,7 +62,6 @@ interface EmployeeFormState {
 }
 
 const emptyForm: EmployeeFormState = { fullName: "", email: "", phone: "" };
-const PAGE_SIZE = 10;
 
 export function EmployeeManagerPage() {
   const queryClient = useQueryClient();
@@ -79,9 +81,14 @@ export function EmployeeManagerPage() {
   const [permEmp, setPermEmp] = useState<User | null>(null);
   const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
 
+  const [empSortField, setEmpSortField] = useState<"fullName" | "createdAt">("createdAt");
+  const [empSortDir, setEmpSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
+
   const { data: users, isLoading } = useQuery({
-    queryKey: ["admin", "employees", page],
-    queryFn: () => userService.getUsers(page, PAGE_SIZE, ["STAFF"]),
+    queryKey: ["admin", "employees", page, pageSize],
+    queryFn: () => userService.getUsers(page, pageSize, ["STAFF"]),
+    select: (d) => ({ ...d, content: [...d.content].sort((a, b) => b.id - a.id) }),
   });
 
   const { data: availablePerms = [] } = useQuery({
@@ -90,18 +97,40 @@ export function EmployeeManagerPage() {
     staleTime: Infinity,
   });
 
-  const employees = users?.content ?? [];
+  const filtered = useMemo(() => {
+    const employees = users?.content ?? [];
+    let result = employees.filter((emp) => {
+      const matchesSearch =
+        !search ||
+        emp.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        emp.email.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && emp.isActive) ||
+        (statusFilter === "inactive" && !emp.isActive);
+      return matchesSearch && matchesStatus;
+    });
+    if (empSortDir !== "none") {
+      result = [...result].sort((a, b) => {
+        if (empSortField === "fullName") {
+          const diff = a.fullName.localeCompare(b.fullName);
+          return empSortDir === "asc" ? diff : -diff;
+        } else {
+          const diff =
+            new Date(a.createdAt ?? "").getTime() - new Date(b.createdAt ?? "").getTime();
+          return empSortDir === "asc" ? diff : -diff;
+        }
+      });
+    }
+    return result;
+  }, [users, search, statusFilter, empSortField, empSortDir]);
 
-  const filtered = employees.filter((emp) => {
-    const matchesSearch =
-      !search ||
-      emp.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      emp.email.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && emp.isActive) ||
-      (statusFilter === "inactive" && !emp.isActive);
-    return matchesSearch && matchesStatus;
+  // Server-side pagination — use server totals for navigation
+  const serverPagination = usePagination({
+    totalCount: users?.totalElements ?? 0,
+    pageSize,
+    initialPage: page + 1,
+    onPageChange: (p) => setPage(p - 1),
   });
 
   const createMutation = useMutation({
@@ -263,10 +292,28 @@ export function EmployeeManagerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium text-gray-500">Tên</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={empSortField === "fullName" ? empSortDir : "none"}
+                      onChange={(dir) => {
+                        setEmpSortField("fullName");
+                        setEmpSortDir(dir);
+                      }}>
+                      Tên
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Ngày tham gia</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={empSortField === "createdAt" ? empSortDir : "none"}
+                      onChange={(dir) => {
+                        setEmpSortField("createdAt");
+                        setEmpSortDir(dir);
+                      }}>
+                      Ngày tham gia
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Quyền</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
@@ -369,29 +416,13 @@ export function EmployeeManagerPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {(users?.totalPages ?? 1) > 1 && (
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0}
-            onClick={() => setPage((p) => p - 1)}>
-            Trước
-          </Button>
-          <span className="text-sm text-gray-600">
-            Trang {page + 1}/{users?.totalPages ?? 1}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= (users?.totalPages ?? 1) - 1}
-            onClick={() => setPage((p) => p + 1)}>
-            Sau
-          </Button>
-        </div>
-      )}
+      <PaginationControl
+        pagination={serverPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(0);
+        }}
+      />
 
       {/* ── Edit Dialog ─────────────────────────────────────────────────────── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

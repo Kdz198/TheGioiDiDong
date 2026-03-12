@@ -12,6 +12,7 @@ import type {
 import { mapBackendProduct } from "@/interfaces/product.types";
 import { apiClient } from "@/lib/api";
 
+// DEV ONLY
 const mockBrands: Brand[] = [
   { id: 1, name: "Logitech", description: "Gaming & office accessories", logoUrl: "" },
   { id: 2, name: "Apple", description: "Premium consumer electronics", logoUrl: "" },
@@ -19,12 +20,14 @@ const mockBrands: Brand[] = [
   { id: 4, name: "Sony", description: "Audio & electronics", logoUrl: "" },
 ];
 
+// DEV ONLY
 const mockProductVersions: ProductVersion[] = [
   { id: 1, versionName: "Standard" },
   { id: 2, versionName: "Pro" },
   { id: 3, versionName: "Plus" },
 ];
 
+// DEV ONLY
 const mockProducts: BackendProduct[] = [];
 
 export interface ProductSavePayload {
@@ -212,7 +215,7 @@ export const productService = {
         price: payload.price,
         quantity: payload.stockQuantity ?? 0,
         reserve: 0,
-        imgUrl: "",
+        imgUrls: [],
         active: payload.active ?? true,
         type: payload.type ?? true,
         versionName: "",

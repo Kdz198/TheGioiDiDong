@@ -105,6 +105,7 @@ export const userService = {
     return mapBackendUser(response.data as BackendUser);
   },
 
+  // WARNING: This clears password on BE due to partial update not being supported
   toggleUserActive: async (id: number): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));

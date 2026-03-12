@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -29,13 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { API_ENDPOINTS } from "@/constants/api.config";
+import { usePagination } from "@/hooks/usePagination";
 import type { BackendProduct } from "@/interfaces/product.types";
 import type { ApiPromotion, ApiPromotionType } from "@/interfaces/promotion.types";
 import { apiClient } from "@/lib/api";
-import { mapApiPromotionToVoucher, promotionService } from "@/services/promotionService";
+import { promotionService } from "@/services/promotionService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -81,6 +84,7 @@ export function PromotionManagerPage() {
   const { data: apiPromotions } = useQuery({
     queryKey: ["staff", "promotions"],
     queryFn: promotionService.getApiPromotions,
+    select: (data) => [...data].sort((a, b) => b.id - a.id),
   });
 
   const { data: allProducts } = useQuery({
@@ -92,7 +96,32 @@ export function PromotionManagerPage() {
     enabled: dialogOpen,
   });
 
-  const vouchers = useMemo(() => apiPromotions?.map(mapApiPromotionToVoucher), [apiPromotions]);
+  const [promoSortField, setPromoSortField] = useState<"startDate" | "discountValue">("startDate");
+  const [promoSortDir, setPromoSortDir] = useState<SortDirection>("none");
+
+  const sortedPromotions = useMemo(() => {
+    const items = [...(apiPromotions ?? [])];
+    if (promoSortDir === "none") return items;
+    return items.sort((a, b) => {
+      if (promoSortField === "startDate") {
+        const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        return promoSortDir === "asc" ? diff : -diff;
+      } else {
+        const diff = a.discountValue - b.discountValue;
+        return promoSortDir === "asc" ? diff : -diff;
+      }
+    });
+  }, [apiPromotions, promoSortField, promoSortDir]);
+
+  const [promoPageSize, setPromoPageSize] = useState(10);
+  const promoPagination = usePagination({
+    totalCount: sortedPromotions.length,
+    pageSize: promoPageSize,
+  });
+  const pagePromotions = sortedPromotions.slice(
+    promoPagination.startIndex,
+    promoPagination.endIndex + 1
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -176,123 +205,93 @@ export function PromotionManagerPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="api-promotions">
-        <TabsList>
-          <TabsTrigger value="api-promotions">Khuyến mãi</TabsTrigger>
-          <TabsTrigger value="vouchers">Voucher</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="api-promotions">
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="px-4 py-3 font-medium text-gray-500">Mã</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Loại</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Giá trị</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Số lượng</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Bắt đầu</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Kết thúc</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiPromotions?.map((p) => (
-                    <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono font-medium">{p.code}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.type}</td>
-                      <td className="px-4 py-3">
-                        {p.type === "BOGO"
-                          ? "Mua 1 tặng 1"
-                          : p.type === "MONEY"
-                            ? formatVND(p.discountValue)
-                            : `${p.discountValue}%`}
-                      </td>
-                      <td className="px-4 py-3">{p.quantity}</td>
-                      <td className="px-4 py-3 text-gray-400">{formatDate(p.startDate)}</td>
-                      <td className="px-4 py-3 text-gray-400">{formatDate(p.endDate)}</td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          className={
-                            p.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                          }>
-                          {p.active ? "Hoạt động" : "Tắt"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEdit(p)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-400"
-                            onClick={() => setDeletingId(p.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="vouchers">
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="px-4 py-3 font-medium text-gray-500">Mã</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Loại</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Giá trị</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Sử dụng</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Hết hạn</th>
-                    <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vouchers?.map((v) => (
-                    <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono font-medium">{v.code}</td>
-                      <td className="px-4 py-3 text-gray-600 capitalize">
-                        {v.type.replace("_", " ")}
-                      </td>
-                      <td className="px-4 py-3">
-                        {v.type === "fixed_amount"
-                          ? formatVND(v.discountValue)
-                          : `${v.discountValue}%`}
-                      </td>
-                      <td className="px-4 py-3">
-                        {v.usedCount}/{v.usageLimit}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400">{formatDate(v.expiresAt)}</td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          className={
-                            v.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                          }>
-                          {v.isActive ? "Hoạt động" : "Tắt"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardContent className="p-0">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="px-4 py-3 font-medium text-gray-500">Mã</th>
+                <th className="px-4 py-3 font-medium text-gray-500">Loại</th>
+                <th className="px-4 py-3 font-medium text-gray-500">
+                  <SortButton
+                    direction={promoSortField === "discountValue" ? promoSortDir : "none"}
+                    onChange={(dir) => {
+                      setPromoSortField("discountValue");
+                      setPromoSortDir(dir);
+                    }}>
+                    Giá trị
+                  </SortButton>
+                </th>
+                <th className="px-4 py-3 font-medium text-gray-500">Số lượng</th>
+                <th className="px-4 py-3 font-medium text-gray-500">
+                  <SortButton
+                    direction={promoSortField === "startDate" ? promoSortDir : "none"}
+                    onChange={(dir) => {
+                      setPromoSortField("startDate");
+                      setPromoSortDir(dir);
+                    }}>
+                    Bắt đầu
+                  </SortButton>
+                </th>
+                <th className="px-4 py-3 font-medium text-gray-500">Kết thúc</th>
+                <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagePromotions.map((p) => (
+                <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <td className="px-4 py-3 font-mono font-medium">{p.code}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.type}</td>
+                  <td className="px-4 py-3">
+                    {p.type === "BOGO"
+                      ? "Mua 1 tặng 1"
+                      : p.type === "MONEY"
+                        ? formatVND(p.discountValue)
+                        : `${p.discountValue}%`}
+                  </td>
+                  <td className="px-4 py-3">{p.quantity}</td>
+                  <td className="px-4 py-3 text-gray-400">{formatDate(p.startDate)}</td>
+                  <td className="px-4 py-3 text-gray-400">{formatDate(p.endDate)}</td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      className={
+                        p.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }>
+                      {p.active ? "Hoạt động" : "Tắt"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEdit(p)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-400"
+                        onClick={() => setDeletingId(p.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+      <PaginationControl
+        pagination={promoPagination}
+        onPageSizeChange={(size) => {
+          setPromoPageSize(size);
+          promoPagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
@@ -432,18 +431,24 @@ export function PromotionManagerPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Ngày bắt đầu</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.startDate}
-                  onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))}
+                <DatePicker
+                  mode="datetime"
+                  value={form.startDate ? new Date(form.startDate) : undefined}
+                  onChange={(d) =>
+                    setForm((p) => ({ ...p, startDate: d ? d.toISOString().slice(0, 16) : "" }))
+                  }
+                  placeholder="Chọn ngày bắt đầu"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Ngày kết thúc</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.endDate}
-                  onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))}
+                <DatePicker
+                  mode="datetime"
+                  value={form.endDate ? new Date(form.endDate) : undefined}
+                  onChange={(d) =>
+                    setForm((p) => ({ ...p, endDate: d ? d.toISOString().slice(0, 16) : "" }))
+                  }
+                  placeholder="Chọn ngày kết thúc"
                 />
               </div>
             </div>

@@ -1,14 +1,17 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { usePagination } from "@/hooks/usePagination";
 import type { User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function UserManagerPage() {
   const [search, setSearch] = useState("");
@@ -17,14 +20,37 @@ export function UserManagerPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["staff", "customers"],
     queryFn: () => userService.getUsers(0, 100, ["USER"]),
+    select: (d) => ({ ...d, content: [...d.content].sort((a, b) => b.id - a.id) }),
   });
 
-  const filtered = (users?.content ?? []).filter(
-    (user) =>
-      !search ||
-      user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const [userSortField, setUserSortField] = useState<"fullName" | "createdAt">("createdAt");
+  const [userSortDir, setUserSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
+
+  const filtered = useMemo(() => {
+    let result = (users?.content ?? []).filter(
+      (user) =>
+        !search ||
+        user.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        user.email.toLowerCase().includes(search.toLowerCase())
+    );
+    if (userSortDir !== "none") {
+      result = [...result].sort((a, b) => {
+        if (userSortField === "fullName") {
+          const diff = a.fullName.localeCompare(b.fullName);
+          return userSortDir === "asc" ? diff : -diff;
+        } else {
+          const diff =
+            new Date(a.createdAt ?? "").getTime() - new Date(b.createdAt ?? "").getTime();
+          return userSortDir === "asc" ? diff : -diff;
+        }
+      });
+    }
+    return result;
+  }, [users, search, userSortField, userSortDir]);
+
+  const userPagination = usePagination({ totalCount: filtered.length, pageSize });
+  const pageUsers = filtered.slice(userPagination.startIndex, userPagination.endIndex + 1);
 
   return (
     <div className="space-y-6">
@@ -48,10 +74,28 @@ export function UserManagerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium text-gray-500">Tên</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={userSortField === "fullName" ? userSortDir : "none"}
+                      onChange={(dir) => {
+                        setUserSortField("fullName");
+                        setUserSortDir(dir);
+                      }}>
+                      Tên
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Ngày tham gia</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={userSortField === "createdAt" ? userSortDir : "none"}
+                      onChange={(dir) => {
+                        setUserSortField("createdAt");
+                        setUserSortDir(dir);
+                      }}>
+                      Ngày tham gia
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Chi tiết</th>
                 </tr>
               </thead>
@@ -64,7 +108,7 @@ export function UserManagerPage() {
                         </td>
                       </tr>
                     ))
-                  : filtered.map((user) => (
+                  : pageUsers.map((user) => (
                       <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium text-zinc-900">{user.fullName}</td>
                         <td className="px-4 py-3 text-gray-600">{user.email}</td>
@@ -102,6 +146,13 @@ export function UserManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={userPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          userPagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={!!detailUser} onOpenChange={(open) => !open && setDetailUser(null)}>
         <DialogContent className="max-w-sm">

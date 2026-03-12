@@ -1,4 +1,6 @@
 import { ProductDetailModal } from "@/components/common/ProductDetailModal";
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_ENDPOINTS } from "@/constants/api.config";
+import { usePagination } from "@/hooks/usePagination";
 import type { BackendProduct } from "@/interfaces/product.types";
 import { apiClient } from "@/lib/api";
 import { ROUTES } from "@/router/routes.const";
@@ -36,7 +40,7 @@ import { toast } from "sonner";
 export function ProductManagerPage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "product" | "service">("all");
+  const [typeFilter, setTypeFilter] = useState<"product" | "service">("product");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [viewingProduct, setViewingProduct] = useState<BackendProduct | null>(null);
   const queryClient = useQueryClient();
@@ -69,14 +73,38 @@ export function ProductManagerPage() {
     return map;
   }, [allFeedbacks]);
 
-  const filteredProducts = (rawProducts ?? []).filter((p) => {
-    if (activeFilter === "active" && !p.active) return false;
-    if (activeFilter === "inactive" && p.active) return false;
-    if (typeFilter === "product" && p.type === false) return false;
-    if (typeFilter === "service" && p.type !== false) return false;
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const [productSortField, setProductSortField] = useState<"name" | "price">("name");
+  const [productSortDir, setProductSortDir] = useState<SortDirection>("none");
+
+  const filteredProducts = useMemo(() => {
+    let result = (rawProducts ?? []).filter((p) => {
+      if (activeFilter === "active" && !p.active) return false;
+      if (activeFilter === "inactive" && p.active) return false;
+      if (typeFilter === "product" && p.type === false) return false;
+      if (typeFilter === "service" && p.type !== false) return false;
+      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+    if (productSortDir !== "none") {
+      result = [...result].sort((a, b) => {
+        if (productSortField === "name") {
+          const diff = a.name.localeCompare(b.name);
+          return productSortDir === "asc" ? diff : -diff;
+        } else {
+          const diff = a.price - b.price;
+          return productSortDir === "asc" ? diff : -diff;
+        }
+      });
+    }
+    return result;
+  }, [rawProducts, activeFilter, typeFilter, search, productSortField, productSortDir]);
+
+  const [pageSize, setPageSize] = useState(10);
+  const productPagination = usePagination({ totalCount: filteredProducts.length, pageSize });
+  const pageProducts = filteredProducts.slice(
+    productPagination.startIndex,
+    productPagination.endIndex + 1
+  );
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => productService.deleteProduct(id),
@@ -110,6 +138,18 @@ export function ProductManagerPage() {
         </div>
       </div>
 
+      <Tabs
+        value={typeFilter}
+        onValueChange={(v) => {
+          setTypeFilter(v as "product" | "service");
+          productPagination.setPage(1);
+        }}>
+        <TabsList>
+          <TabsTrigger value="product">Sản phẩm</TabsTrigger>
+          <TabsTrigger value="service">Dịch vụ</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex flex-wrap gap-4">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -120,18 +160,6 @@ export function ProductManagerPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select
-          value={typeFilter}
-          onValueChange={(v) => setTypeFilter(v as "all" | "product" | "service")}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Loại" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả loại</SelectItem>
-            <SelectItem value="product">Sản phẩm</SelectItem>
-            <SelectItem value="service">Dịch vụ</SelectItem>
-          </SelectContent>
-        </Select>
         <Select
           value={activeFilter}
           onValueChange={(v) => setActiveFilter(v as "all" | "active" | "inactive")}>
@@ -152,11 +180,29 @@ export function ProductManagerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium text-gray-500">Sản phẩm</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={productSortField === "name" ? productSortDir : "none"}
+                      onChange={(dir) => {
+                        setProductSortField("name");
+                        setProductSortDir(dir);
+                      }}>
+                      Sản phẩm
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Loại</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Danh mục</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Thương hiệu</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">Giá</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">
+                    <SortButton
+                      direction={productSortField === "price" ? productSortDir : "none"}
+                      onChange={(dir) => {
+                        setProductSortField("price");
+                        setProductSortDir(dir);
+                      }}>
+                      Giá
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Tồn kho</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Đánh giá</th>
@@ -172,15 +218,15 @@ export function ProductManagerPage() {
                         </td>
                       </tr>
                     ))
-                  : filteredProducts.map((product) => {
+                  : pageProducts.map((product) => {
                       const rating = product.id ? avgRatingByProduct.get(product.id) : undefined;
                       return (
                         <tr key={product.id} className="border-b last:border-0 hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              {product.imgUrl ? (
+                              {product.imgUrls?.[0] ? (
                                 <img
-                                  src={product.imgUrl}
+                                  src={product.imgUrls[0]}
                                   alt={product.name}
                                   className="h-10 w-10 rounded object-cover"
                                 />
@@ -263,6 +309,13 @@ export function ProductManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={productPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          productPagination.goToFirstPage();
+        }}
+      />
 
       <ProductDetailModal
         product={viewingProduct}
