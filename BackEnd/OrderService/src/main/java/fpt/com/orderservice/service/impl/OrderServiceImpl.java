@@ -99,7 +99,7 @@ public class OrderServiceImpl implements OrderService {
             OrderDto.OrderDetailRequest detailResponse = new OrderDto.OrderDetailRequest();
             detailResponse.setProductId(detail.getProductId());
             detailResponse.setProductName(product.getName());
-            detailResponse.setImgUrl(product.getImgUrl());
+            detailResponse.setImgUrl(product.getImgUrls().get(0));
             detailResponse.setQuantity(detail.getQuantity());
             detailResponse.setSubtotal(detail.getSubtotal());
             detailResponse.setType(detail.getType());
