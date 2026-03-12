@@ -76,15 +76,19 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(category);
         product.setQuantity(productRequest.getStockQuantity());
         Product saved = productRepo.save(product);
-        MultipartFile[] files = {img, img2, img3, img4, img5};
-        for (int i = 0; i < files.length; i++) {
-            if (files[i] != null && !files[i].isEmpty()) {
-                String absolutePath = FileUtil.saveFile(files[i]);
-                File file = FileUtil.getFileByPath(absolutePath);
-                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-                file.delete();
-                applicationEventPublisher.publishEvent(new ProductEventDto(saved, multipartFile, i + 1));
-            }
+        for (int i = 0; i <= 4; i++) {
+            String absolutePath = switch (i) {
+                case 0 -> FileUtil.saveFile(img);
+                case 1 -> FileUtil.saveFile(img2);
+                case 2 -> FileUtil.saveFile(img3);
+                case 3 -> FileUtil.saveFile(img4);
+                case 4 -> FileUtil.saveFile(img5);
+                default -> null;
+            };
+            File file = FileUtil.getFileByPath(absolutePath);
+            MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+            file.delete();
+            applicationEventPublisher.publishEvent(new ProductEventDto(product, multipartFile, i + 1));
         }
         return productMapper.toProductResponse(saved);
     }
