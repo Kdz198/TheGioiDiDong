@@ -34,19 +34,23 @@ public class BrandServiceImpl implements BrandService {
     @Override
     public Brand save(BrandRequest brand) throws IOException {
         if(brand.getBranId()==null){
-            Map<String, String> map = cloudinaryService.uploadImg(brand.getFile());
             Brand newBrand = new Brand();
+            if(brand.getFile()!= null && !brand.getFile().isEmpty()){
+                Map<String, String> map = cloudinaryService.uploadImg(brand.getFile());
+                newBrand.setLogoUrl(map.get("secure_url"));
+            }
             newBrand.setName(brand.getName());
-            newBrand.setLogoUrl(map.get("secure_url"));
             newBrand.setDescription(brand.getDescription());
             return brandRepo.save(newBrand);
         }
         else{
             Brand existingBrand = brandRepo.findById(brand.getBranId())
                     .orElseThrow(() -> new RuntimeException("Brand not found with id: " + brand.getBranId()));
-            Map<String, String> map = cloudinaryService.uploadImg(brand.getFile());
+           if(brand.getFile()!= null && !brand.getFile().isEmpty()){
+               Map<String, String> map = cloudinaryService.uploadImg(brand.getFile());
+               existingBrand.setLogoUrl(map.get("secure_url"));
+              }
             existingBrand.setName(brand.getName());
-            existingBrand.setLogoUrl(map.get("secure_url"));
             existingBrand.setDescription(brand.getDescription());
             return brandRepo.save(existingBrand);
         }
