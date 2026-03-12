@@ -81,7 +81,7 @@ export function AdminOrderManagerPage() {
   const filtered = orders.filter((order) =>
     search
       ? (order.orderCode ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        String(order.userId ?? "").includes(search)
+        (order.userName ?? "").toLowerCase().includes(search.toLowerCase())
       : true
   );
 
@@ -120,7 +120,7 @@ export function AdminOrderManagerPage() {
               <thead>
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">Mã đơn</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">User ID</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">Khách hàng</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Giá gốc</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Tổng tiền</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
@@ -150,7 +150,7 @@ export function AdminOrderManagerPage() {
                               {order.orderCode ?? `#${order.id}`}
                             </Link>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">{order.userId ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-600">{order.userName ?? "—"}</td>
                           <td className="px-4 py-3 text-right text-gray-500 line-through">
                             {order.subtotal > 0 ? formatVND(order.subtotal) : "—"}
                           </td>

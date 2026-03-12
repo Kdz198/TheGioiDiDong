@@ -285,6 +285,7 @@ export interface components {
             versionName?: string;
             brandName?: string;
             categoryName?: string;
+            type?: boolean;
         };
         ProductVersion: {
             /** Format: int32 */
@@ -318,6 +319,7 @@ export interface components {
             brandId?: number;
             /** Format: int32 */
             categoryId?: number;
+            type?: boolean;
         };
         OrderDetailRequest: {
             /** Format: int32 */
@@ -341,6 +343,8 @@ export interface components {
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
         };
         BrandRequest: {
+            /** Format: int32 */
+            branId?: number;
             name?: string;
             description?: string;
             /** Format: binary */
