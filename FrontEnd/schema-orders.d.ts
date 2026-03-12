@@ -364,6 +364,7 @@ export interface components {
             /** Format: int32 */
             productId?: number;
             productName?: string;
+            imgUrl?: string;
             /** Format: int32 */
             quantity?: number;
             /** Format: int32 */
