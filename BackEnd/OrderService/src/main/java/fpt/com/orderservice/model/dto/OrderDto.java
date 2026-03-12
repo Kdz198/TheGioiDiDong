@@ -23,6 +23,7 @@ public class OrderDto {
     public static class OrderDetailRequest{
         int productId;
         String productName;
+        String imgUrl;
         int quantity;
         int subtotal;
         String type;

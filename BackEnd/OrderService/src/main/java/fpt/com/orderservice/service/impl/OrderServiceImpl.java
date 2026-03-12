@@ -8,6 +8,7 @@ import fpt.com.orderservice.model.Promotion;
 import fpt.com.orderservice.model.dto.OrderDto;
 import fpt.com.orderservice.model.dto.OrderRequest;
 import fpt.com.orderservice.model.dto.OrderResponse;
+import fpt.com.orderservice.model.dto.ProductResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
 import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.repo.OrderRepo;
@@ -94,9 +95,11 @@ public class OrderServiceImpl implements OrderService {
     private OrderDto toOrderResponse(Order order) {
         List<OrderDto.OrderDetailRequest> orderDetails = new ArrayList<>();
         for(OrderDetail detail : order.getOrderDetails()){
+            ProductResponse product = productClient.getProductById(detail.getProductId());
             OrderDto.OrderDetailRequest detailResponse = new OrderDto.OrderDetailRequest();
             detailResponse.setProductId(detail.getProductId());
-            detailResponse.setProductName(productClient.getProductById(detail.getProductId()).getName());
+            detailResponse.setProductName(product.getName());
+            detailResponse.setImgUrl(product.getImgUrl());
             detailResponse.setQuantity(detail.getQuantity());
             detailResponse.setSubtotal(detail.getSubtotal());
             detailResponse.setType(detail.getType());
