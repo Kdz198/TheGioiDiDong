@@ -21,7 +21,6 @@ public interface ProductMapper {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "category", ignore = true)
-    @Mapping(target = "type" ,ignore = true)
     @Mapping(target = "imgUrl2", ignore = true)
     @Mapping(target = "imgUrl3", ignore = true)
     @Mapping(target = "imgUrl4", ignore = true)
