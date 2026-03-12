@@ -1,5 +1,7 @@
 import { OrderStatusBadge } from "@/components/common/OrderStatusBadge";
 import { PaymentDetailModal } from "@/components/common/PaymentDetailModal";
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,17 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
 import { orderService } from "@/services/orderService";
 import { paymentService } from "@/services/paymentService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Eye, Loader2, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CreditCard, Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Tất cả" },
@@ -32,10 +34,7 @@ const STATUS_OPTIONS = [
 export function AdminOrderManagerPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [pendingStatus, setPendingStatus] = useState<Record<number, string>>({});
   const [viewingPayment, setViewingPayment] = useState<ApiPayment | null>(null);
-  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "orders", statusFilter],
@@ -43,6 +42,7 @@ export function AdminOrderManagerPage() {
       orderService.getAllOrders({
         status: statusFilter === "all" ? undefined : statusFilter,
       }),
+    select: (d) => ({ ...d, data: [...(d.data ?? [])].sort((a, b) => b.id - a.id) }),
   });
 
   const { data: paymentsData } = useQuery({
@@ -58,32 +58,34 @@ export function AdminOrderManagerPage() {
     return map;
   }, [paymentsData]);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
-      orderService.updateOrderStatus(orderId, status),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
-      toast.success("Cập nhật trạng thái thành công");
-      setPendingStatus((prev) => {
-        const next = { ...prev };
-        delete next[variables.orderId];
-        return next;
-      });
-      setUpdatingId(null);
-    },
-    onError: () => {
-      toast.error("Cập nhật trạng thái thất bại");
-      setUpdatingId(null);
-    },
-  });
+  const [orderSortField, setOrderSortField] = useState<"createdAt" | "total">("createdAt");
+  const [orderSortDir, setOrderSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
 
-  const orders = data?.data ?? [];
-  const filtered = orders.filter((order) =>
-    search
-      ? (order.orderCode ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (order.userName ?? "").toLowerCase().includes(search.toLowerCase())
-      : true
-  );
+  const filtered = useMemo(() => {
+    const orders = data?.data ?? [];
+    let result = orders.filter((order) =>
+      search
+        ? (order.orderCode ?? "").toLowerCase().includes(search.toLowerCase()) ||
+          (order.userName ?? "").toLowerCase().includes(search.toLowerCase())
+        : true
+    );
+    if (orderSortDir !== "none") {
+      result = [...result].sort((a, b) => {
+        if (orderSortField === "createdAt") {
+          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return orderSortDir === "asc" ? diff : -diff;
+        } else {
+          const diff = a.total - b.total;
+          return orderSortDir === "asc" ? diff : -diff;
+        }
+      });
+    }
+    return result;
+  }, [data, search, orderSortField, orderSortDir]);
+
+  const orderPagination = usePagination({ totalCount: filtered.length, pageSize });
+  const pageOrders = filtered.slice(orderPagination.startIndex, orderPagination.endIndex + 1);
 
   return (
     <div className="space-y-6">
@@ -122,11 +124,29 @@ export function AdminOrderManagerPage() {
                   <th className="px-4 py-3 font-medium text-gray-500">Mã đơn</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Khách hàng</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Giá gốc</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">Tổng tiền</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">
+                    <SortButton
+                      direction={orderSortField === "total" ? orderSortDir : "none"}
+                      onChange={(dir) => {
+                        setOrderSortField("total");
+                        setOrderSortDir(dir);
+                      }}
+                      className="ml-auto">
+                      Tổng tiền
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Ngày đặt</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={orderSortField === "createdAt" ? orderSortDir : "none"}
+                      onChange={(dir) => {
+                        setOrderSortField("createdAt");
+                        setOrderSortDir(dir);
+                      }}>
+                      Ngày đặt
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Cập nhật TT</th>
                 </tr>
               </thead>
               <tbody>
@@ -138,9 +158,7 @@ export function AdminOrderManagerPage() {
                         </td>
                       </tr>
                     ))
-                  : filtered.map((order) => {
-                      const selectedStatus = pendingStatus[order.id] ?? "";
-                      const isUpdating = updatingId === order.id && updateMutation.isPending;
+                  : pageOrders.map((order) => {
                       return (
                         <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50">
                           <td className="px-4 py-3">
@@ -191,37 +209,6 @@ export function AdminOrderManagerPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <Select
-                                value={selectedStatus}
-                                onValueChange={(v) =>
-                                  setPendingStatus((prev) => ({ ...prev, [order.id]: v }))
-                                }>
-                                <SelectTrigger className="h-8 w-36 text-xs">
-                                  <SelectValue placeholder="Chọn TT" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                                  <SelectItem value="PAID">Đã thanh toán</SelectItem>
-                                  <SelectItem value="CANCELED">Đã hủy</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                size="sm"
-                                className="h-8 bg-teal-500 px-2 text-xs hover:bg-teal-600"
-                                disabled={!selectedStatus || isUpdating}
-                                onClick={() => {
-                                  setUpdatingId(order.id);
-                                  updateMutation.mutate({
-                                    orderId: order.id,
-                                    status: selectedStatus,
-                                  });
-                                }}>
-                                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "Lưu"}
-                              </Button>
-                            </div>
-                          </td>
                         </tr>
                       );
                     })}
@@ -230,6 +217,13 @@ export function AdminOrderManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={orderPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          orderPagination.goToFirstPage();
+        }}
+      />
       <PaymentDetailModal
         payment={viewingPayment}
         open={viewingPayment !== null}

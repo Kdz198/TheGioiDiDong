@@ -1,5 +1,6 @@
 import { OrderStatusBadge } from "@/components/common/OrderStatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { cn } from "@/lib/utils";
 import { orderService } from "@/services/orderService";
@@ -170,8 +171,8 @@ const STATUS_LABELS: Record<string, string> = {
 export function DashboardPage() {
   // A — flexible date range
   const [rangeMode, setRangeMode] = useState<RangeMode>("7");
-  const [customFrom, setCustomFrom] = useState<string>("");
-  const [customTo, setCustomTo] = useState<string>("");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
   // C — dual metric toggles
   const [showRevenue, setShowRevenue] = useState(true);
   const [showOrders, setShowOrders] = useState(true);
@@ -205,8 +206,10 @@ export function DashboardPage() {
   );
 
   const effectiveDates = useMemo(() => {
-    if (rangeMode === "custom" && customFrom && customTo && customFrom <= customTo) {
-      return { from: customFrom, to: customTo };
+    if (rangeMode === "custom" && customFrom && customTo) {
+      const fromStr = customFrom.toISOString().slice(0, 10);
+      const toStr = customTo.toISOString().slice(0, 10);
+      if (fromStr <= toStr) return { from: fromStr, to: toStr };
     }
     const today = new Date();
     const to = today.toISOString().slice(0, 10);
@@ -339,7 +342,7 @@ export function DashboardPage() {
             <div>
               <CardTitle className="text-base">
                 {rangeMode === "custom" && customFrom && customTo
-                  ? `Doanh thu từ ${customFrom.split("-").reverse().join("/")} đến ${customTo.split("-").reverse().join("/")}`
+                  ? `Doanh thu từ ${customFrom.toLocaleDateString("vi-VN")} đến ${customTo.toLocaleDateString("vi-VN")}`
                   : `Doanh thu ${rangeMode} ngày qua`}
               </CardTitle>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -397,20 +400,20 @@ export function DashboardPage() {
                 </div>
                 {rangeMode === "custom" && (
                   <div className="flex items-center gap-1.5">
-                    <input
-                      type="date"
+                    <DatePicker
                       value={customFrom}
-                      max={customTo || undefined}
-                      onChange={(e) => setCustomFrom(e.target.value)}
-                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                      onChange={setCustomFrom}
+                      maxDate={customTo}
+                      placeholder="Từ ngày"
+                      className="h-7 w-32 text-xs"
                     />
                     <span className="text-xs text-gray-400">đến</span>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={customTo}
-                      min={customFrom || undefined}
-                      onChange={(e) => setCustomTo(e.target.value)}
-                      className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                      onChange={setCustomTo}
+                      minDate={customFrom}
+                      placeholder="Đến ngày"
+                      className="h-7 w-32 text-xs"
                     />
                   </div>
                 )}

@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,13 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { paymentService } from "@/services/paymentService";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function PaymentManagerPage() {
@@ -26,6 +29,7 @@ export function PaymentManagerPage() {
   const { data: payments } = useQuery({
     queryKey: ["admin", "payments"],
     queryFn: paymentService.getAllPayments,
+    select: (data) => [...data].sort((a, b) => b.id - a.id),
   });
 
   const confirmMutation = useMutation({
@@ -37,7 +41,30 @@ export function PaymentManagerPage() {
     onError: () => toast.error("Xác nhận thất bại"),
   });
 
-  const filtered = payments?.filter((p) => statusFilter === "all" || p.status === statusFilter);
+  const [paymentSortField, setPaymentSortField] = useState<"date" | "amount">("date");
+  const [paymentSortDir, setPaymentSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
+
+  const filtered = useMemo(() => {
+    let result = (payments ?? []).filter(
+      (p) => statusFilter === "all" || p.status === statusFilter
+    );
+    if (paymentSortDir !== "none") {
+      result = [...result].sort((a, b) => {
+        if (paymentSortField === "date") {
+          const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+          return paymentSortDir === "asc" ? diff : -diff;
+        } else {
+          const diff = a.amount - b.amount;
+          return paymentSortDir === "asc" ? diff : -diff;
+        }
+      });
+    }
+    return result;
+  }, [payments, statusFilter, paymentSortField, paymentSortDir]);
+
+  const paymentPagination = usePagination({ totalCount: filtered.length, pageSize });
+  const pagePayments = filtered.slice(paymentPagination.startIndex, paymentPagination.endIndex + 1);
 
   return (
     <div className="space-y-6">
@@ -65,14 +92,33 @@ export function PaymentManagerPage() {
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">ID Đơn</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Phương thức</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">Số tiền</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">
+                    <SortButton
+                      direction={paymentSortField === "amount" ? paymentSortDir : "none"}
+                      onChange={(dir) => {
+                        setPaymentSortField("amount");
+                        setPaymentSortDir(dir);
+                      }}
+                      className="ml-auto">
+                      Số tiền
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Ngày</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton
+                      direction={paymentSortField === "date" ? paymentSortDir : "none"}
+                      onChange={(dir) => {
+                        setPaymentSortField("date");
+                        setPaymentSortDir(dir);
+                      }}>
+                      Ngày
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered?.map((payment) => (
+                {pagePayments.map((payment) => (
                   <tr key={payment.id} className="border-b last:border-0 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-zinc-900">#{payment.order.id}</td>
                     <td className="px-4 py-3 text-gray-600 uppercase">{payment.paymentMethod}</td>
@@ -123,6 +169,13 @@ export function PaymentManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={paymentPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          paymentPagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={!!detailPayment} onOpenChange={(open) => !open && setDetailPayment(null)}>
         <DialogContent className="max-w-sm">
