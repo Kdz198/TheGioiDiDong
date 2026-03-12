@@ -38,7 +38,7 @@ export interface Order {
   userId?: number;
   userName?: string;
   items: OrderItem[];
-  shippingInfo?: ShippingInfo;
+  shippingInfo?: ShippingInfo; // Frontend-only
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   status: OrderStatus;
@@ -46,13 +46,13 @@ export interface Order {
   discountAmount: number;
   shippingFee: number;
   total: number;
-  appliedVoucherCode?: string;
-  pointsUsed: number;
-  pointsEarned: number;
+  appliedVoucherCode?: string; // Frontend-only
+  pointsUsed: number; // Frontend-only
+  pointsEarned: number; // Frontend-only
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  statusHistory: OrderStatusHistory[];
+  statusHistory: OrderStatusHistory[]; // Frontend-only
 }
 
 // ─── Raw shapes returned by the backend (/api/orders) ─────────────────────────
