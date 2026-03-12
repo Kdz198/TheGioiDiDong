@@ -17,24 +17,16 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "quantity", ignore = true)
     @Mapping(target = "reserve", ignore = true)
-    @Mapping(target = "imgUrl", ignore = true)
+    @Mapping(target = "imgUrls", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "category", ignore = true)
-    @Mapping(target = "imgUrl2", ignore = true)
-    @Mapping(target = "imgUrl3", ignore = true)
-    @Mapping(target = "imgUrl4", ignore = true)
-    @Mapping(target = "imgUrl5", ignore = true)
     Product toProduct(ProductRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "quantity", ignore = true)
     @Mapping(target = "reserve", ignore = true)
-    @Mapping(target = "imgUrl", ignore = true)
-    @Mapping(target = "imgUrl2", ignore = true)
-    @Mapping(target = "imgUrl3", ignore = true)
-    @Mapping(target = "imgUrl4", ignore = true)
-    @Mapping(target = "imgUrl5", ignore = true)
+    @Mapping(target = "imgUrls", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "category", ignore = true)
@@ -45,6 +37,7 @@ public interface ProductMapper {
     @Mapping(target = "versionName", source = "version.versionName")
     @Mapping(target = "brandName", source = "brand.name")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "imgUrls", source = "imgUrls")
     ProductResponse toProductResponse(Product product);
 
     List<ProductResponse> toProductResponseList(List<Product> products);

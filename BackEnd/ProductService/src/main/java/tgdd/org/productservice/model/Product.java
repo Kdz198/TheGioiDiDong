@@ -6,6 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.jdbc.SqlTypedJdbcType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,11 +30,9 @@ public class Product {
     int price;
     int quantity;
     int reserve;
-    String imgUrl;
-    String imgUrl2;
-    String imgUrl3;
-    String imgUrl4;
-    String imgUrl5;
+    @JdbcTypeCode(SqlTypes.JSON)
+            @Column(columnDefinition = "jsonb")
+    List<String> imgUrls = new ArrayList<>();
     boolean active;
     @JoinColumn
     @ManyToOne

@@ -77,15 +77,16 @@ public class ProductServiceImpl implements ProductService {
         product.setQuantity(productRequest.getStockQuantity());
         Product saved = productRepo.save(product);
         MultipartFile[] files = {img, img2, img3, img4, img5};
-        for (int i = 0; i < files.length; i++) {
-            if (files[i] != null && !files[i].isEmpty()) {
-                String absolutePath = FileUtil.saveFile(files[i]);
-                File file = FileUtil.getFileByPath(absolutePath);
-                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-                file.delete();
-                applicationEventPublisher.publishEvent(new ProductEventDto(saved, multipartFile, i + 1));
+        List<MultipartFile> multipartFiles = new ArrayList<>();
+        for(MultipartFile file : files){
+            if(file != null && !file.isEmpty()){
+                multipartFiles.add(file);
+            }
+            else{
+                multipartFiles.add(null);
             }
         }
+        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, saved.getId(), "CREATE"));
         return productMapper.toProductResponse(saved);
     }
 
@@ -114,15 +115,16 @@ public class ProductServiceImpl implements ProductService {
         Product updated = productRepo.save(existingProduct);
 
         MultipartFile[] files = {img, img2, img3, img4, img5};
-        for (int i = 0; i < files.length; i++) {
-            if (files[i] != null && !files[i].isEmpty()) {
-                String absolutePath = FileUtil.saveFile(files[i]);
-                File file = FileUtil.getFileByPath(absolutePath);
-                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-                file.delete();
-                applicationEventPublisher.publishEvent(new ProductEventDto(updated, multipartFile, i + 1));
+        List<MultipartFile> multipartFiles = new ArrayList<>();
+        for(MultipartFile file : files){
+            if(file != null && !file.isEmpty()){
+                multipartFiles.add(file);
+            }
+            else{
+                multipartFiles.add(null);
             }
         }
+        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, updated.getId(), "UPDATE"));
 
         return productMapper.toProductResponse(updated);
     }

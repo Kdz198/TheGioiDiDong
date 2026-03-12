@@ -6,11 +6,13 @@ import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import tgdd.org.productservice.model.Product;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductEventDto {
-    Product product;
-    MultipartFile img;
-    int index;
+    List<MultipartFile> multipartFiles;
+    int productId;
+    String message;
 }
