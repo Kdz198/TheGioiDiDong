@@ -122,11 +122,13 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    @Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedDelay = 600000)
     public void cancelOrder() {
+        System.out.println("Running cancelOrder ");
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
         List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, Timestamp.valueOf(times));
         for (Order order : orders) {
+            System.out.println("Canceling order with id: " + order.getId());
             order.setStatus(OrderStatus.CANCELED);
         }
         orderRepo.saveAll(orders);
