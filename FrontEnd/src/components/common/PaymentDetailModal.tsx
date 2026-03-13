@@ -1,10 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { formatDate } from "@/utils/formatDate";
 import { formatVND } from "@/utils/formatPrice";
-import { X } from "lucide-react";
 
 interface PaymentDetailModalProps {
   payment: ApiPayment | null;
@@ -38,9 +36,6 @@ export function PaymentDetailModal({ payment, open, onClose }: PaymentDetailModa
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Chi tiết thanh toán #{payment.id}</DialogTitle>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
 
