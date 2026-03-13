@@ -1,17 +1,23 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import type { PaginatedResponse } from "@/interfaces/api.types";
-import type { BackendOrder, Order, PaymentMethod, ShippingInfo } from "@/interfaces/order.types";
+import type { BackendOrder, BackendOrderStatus, Order } from "@/interfaces/order.types";
 import { mapBackendOrder } from "@/interfaces/order.types";
 import { apiClient } from "@/lib/api";
 import { mockOrders } from "@/mocks/orders.mock";
 
-interface CreateOrderRequest {
-  shippingInfo: ShippingInfo;
-  paymentMethod: PaymentMethod;
-  voucherCode?: string;
-  pointsUsed?: number;
-  notes?: string;
+export interface CreateOrderRequest {
+  userId: number;
+  status?: BackendOrderStatus;
+  totalPrice: number;
+  basePrice: number;
+  orderCode?: string;
+  orderDetails: Array<{
+    productId: number;
+    quantity: number;
+    subtotal: number;
+    type: string;
+  }>;
 }
 
 interface GetOrdersParams {
@@ -27,11 +33,15 @@ export const orderService = {
       return {
         ...mockOrders[0],
         id: Date.now(),
-        orderCode: `TG-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Date.now()).slice(-3)}`,
-        shippingInfo: data.shippingInfo,
-        paymentMethod: data.paymentMethod,
+        orderCode:
+          data.orderCode ||
+          `TG-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Date.now()).slice(-3)}`,
+        userId: data.userId,
         status: "pending",
-        paymentStatus: data.paymentMethod === "cod" ? "pending" : "paid",
+        paymentMethod: "cod",
+        paymentStatus: "pending",
+        subtotal: data.basePrice,
+        total: data.totalPrice,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         statusHistory: [
@@ -39,8 +49,8 @@ export const orderService = {
         ],
       };
     }
-    const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, data);
-    return response.data;
+    const response = await apiClient.post<BackendOrder>(API_ENDPOINTS.ORDERS.CREATE, data);
+    return mapBackendOrder(response.data);
   },
 
   getOrders: async (params: GetOrdersParams = {}): Promise<PaginatedResponse<Order>> => {
