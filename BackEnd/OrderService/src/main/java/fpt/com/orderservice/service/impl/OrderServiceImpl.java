@@ -15,6 +15,7 @@ import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.repo.OrderRepo;
 import fpt.com.orderservice.repo.PromotionRepo;
 import fpt.com.orderservice.service.OrderService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,13 @@ public class OrderServiceImpl implements OrderService {
         newOrder.setBasePrice(orderRequest.getBasePrice());
         newOrder.setOrderCode(orderRequest.getOrderCode());
 
+        List<OrderDetail> details = getOrderDetails(orderRequest);
+        newOrder.setOrderDetails(details);
+        return toOrderResponse(orderRepo.save(newOrder));
+    }
+
+    @NotNull
+    private static List<OrderDetail> getOrderDetails(OrderRequest orderRequest) {
         List<OrderDetail> details = new ArrayList<>();
         for (OrderRequest.OrderDetailRequest detailRequest : orderRequest.getOrderDetails()) {
             OrderDetail orderDetail = new OrderDetail();
@@ -71,8 +79,7 @@ public class OrderServiceImpl implements OrderService {
             orderDetail.setType(detailRequest.getType());
             details.add(orderDetail);
         }
-        newOrder.setOrderDetails(details);
-        return toOrderResponse(orderRepo.save(newOrder));
+        return details;
     }
 
     @Override
