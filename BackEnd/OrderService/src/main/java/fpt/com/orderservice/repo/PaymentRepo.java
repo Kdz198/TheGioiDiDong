@@ -4,6 +4,7 @@ import fpt.com.orderservice.model.Payment;
 import fpt.com.orderservice.model.enums.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PaymentRepo extends JpaRepository<Payment, Integer> {
@@ -11,5 +12,7 @@ public interface PaymentRepo extends JpaRepository<Payment, Integer> {
     List<Payment> findByStatus(PaymentStatus status);
 
     Payment findByTransactionCode(String transactionCode);
+
+    List<Payment> findByStatusAndDate(PaymentStatus status, LocalDateTime date);
 }
 

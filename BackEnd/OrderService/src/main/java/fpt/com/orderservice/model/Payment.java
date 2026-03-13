@@ -6,7 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.sql.Date;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,7 +24,7 @@ public class Payment {
     //COD,PayOS
     int amount;
     @CreationTimestamp
-    Date date;
+    LocalDateTime date;
     @JoinColumn(name = "promotionId")
     @ManyToOne
     Promotion promotion;

@@ -15,9 +15,12 @@ import fpt.com.orderservice.repo.OrderRepo;
 import fpt.com.orderservice.repo.PromotionRepo;
 import fpt.com.orderservice.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -94,7 +97,7 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderDto toOrderResponse(Order order) {
         List<OrderDto.OrderDetailRequest> orderDetails = new ArrayList<>();
-        for(OrderDetail detail : order.getOrderDetails()){
+        for (OrderDetail detail : order.getOrderDetails()) {
             ProductResponse product = productClient.getProductById(detail.getProductId());
             OrderDto.OrderDetailRequest detailResponse = new OrderDto.OrderDetailRequest();
             detailResponse.setProductId(detail.getProductId());
@@ -106,16 +109,26 @@ public class OrderServiceImpl implements OrderService {
             orderDetails.add(detailResponse);
         }
         String userName = userClient.getNameAccount(order.getUserId());
-       return OrderDto.builder()
-               .id(order.getId())
-               .userName(userName)
-               .status(order.getStatus())
-               .totalPrice(order.getTotalPrice())
-               .basePrice(order.getBasePrice())
-               .orderCode(order.getOrderCode())
+        return OrderDto.builder()
+                .id(order.getId())
+                .userName(userName)
+                .status(order.getStatus())
+                .totalPrice(order.getTotalPrice())
+                .basePrice(order.getBasePrice())
+                .orderCode(order.getOrderCode())
                 .orderDate(order.getOrderDate())
-               .orderDetails(orderDetails)
-               .build();
+                .orderDetails(orderDetails)
+                .build();
+    }
+
+    @Scheduled(fixedDelay = 300000)
+    public void cancelOrder() {
+        LocalDateTime times = LocalDateTime.now().minusMinutes(10);
+        List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, Timestamp.valueOf(times));
+        for (Order order : orders) {
+            order.setStatus(OrderStatus.CANCELED);
+        }
+        orderRepo.saveAll(orders);
     }
 }
 

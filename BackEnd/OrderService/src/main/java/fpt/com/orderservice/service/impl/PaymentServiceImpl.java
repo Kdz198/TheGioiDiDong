@@ -7,6 +7,7 @@ import fpt.com.orderservice.model.OrderDetail;
 import fpt.com.orderservice.model.Payment;
 import fpt.com.orderservice.model.Promotion;
 import fpt.com.orderservice.model.dto.OrderRequest;
+import fpt.com.orderservice.model.dto.PaymentStatusResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
 import fpt.com.orderservice.model.enums.PaymentStatus;
 import fpt.com.orderservice.model.enums.PromotionType;
@@ -17,14 +18,17 @@ import fpt.com.orderservice.service.PaymentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -47,6 +51,13 @@ public class PaymentServiceImpl implements PaymentService {
     private String cancelUrl;
     @Autowired
     private Producer producer;
+
+    @Value("${payos.client-id}")
+    private String clientId;
+    @Value("${payos.api-key}")
+    private String apiKey;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public List<Payment> findAll() {
@@ -169,6 +180,47 @@ public class PaymentServiceImpl implements PaymentService {
         orderRepo.save(order);
         producer.publishPaymentCancel(order.getOrderCode());
         return payment;
+    }
+
+    @Scheduled(fixedDelay = 300000)
+    public void cancelPayment(){
+        LocalDateTime times = LocalDateTime.now().minusMinutes(10);
+        List<Payment> payments = paymentRepo.findByStatusAndDate(PaymentStatus.PENDING, times);
+
+        for(Payment payment : payments) {
+            try {
+                System.out.println("Checking payment: " + payment.getId());
+                String url = "https://api-merchant.payos.vn/v2/payment-requests/"
+                        + payment.getTransactionCode();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("x-client-id", clientId);
+                headers.set("x-api-key", apiKey);
+
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+
+                ResponseEntity<PaymentStatusResponse> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        entity,
+                        PaymentStatusResponse.class
+                );
+
+                if (response.getBody() != null) {
+                    String status = response.getBody().getData().getStatus();
+                    if ("CANCELLED".equals(status)) {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        paymentRepo.save(payment);
+                    }
+                    else if ("EXPIRED".equals(status)) {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        paymentRepo.save(payment);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 
