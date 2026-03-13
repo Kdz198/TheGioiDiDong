@@ -1,6 +1,6 @@
 export type OrderStatus = "pending" | "paid" | "canceled";
 
-export type PaymentMethod = "momo" | "vnpay" | "cod";
+export type PaymentMethod = "momo" | "vnpay" | "cod" | "payos"; // Added "payos" as a placeholder since backend is currently hardcoded to that. We can adjust this later when backend supports more methods.
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 export interface OrderItem {
@@ -15,6 +15,10 @@ export interface OrderItem {
   subtotal: number;
 }
 
+/**
+ * Keep shipping info as a legacy frontend-only interface for now (might reuse while implementing shipping management features in the future).
+ * @deprecated Not using in this current checkout flow for now.
+ */
 export interface ShippingInfo {
   recipientName: string;
   phone: string;
@@ -107,7 +111,7 @@ export function mapBackendOrder(raw: BackendOrder): Order {
       subtotal: d.subtotal ?? 0,
     })),
     shippingInfo: undefined,
-    paymentMethod: "cod",
+    paymentMethod: "payos", // Since system only allows PayOS for now (backend is hardcoded to that), we can default to it
     paymentStatus: rawStatus === "PAID" ? "paid" : "pending",
     status: STATUS_MAP[rawStatus] ?? "pending",
     subtotal: raw.basePrice ?? 0,
