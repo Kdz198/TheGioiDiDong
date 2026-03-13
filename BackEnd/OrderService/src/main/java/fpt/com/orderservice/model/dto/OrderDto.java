@@ -21,6 +21,7 @@ public class OrderDto {
 
     @Data
     public static class OrderDetailRequest{
+        int orderDetailId;
         int productId;
         String productName;
         String imgUrl;

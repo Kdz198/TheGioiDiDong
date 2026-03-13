@@ -100,6 +100,7 @@ public class OrderServiceImpl implements OrderService {
         for (OrderDetail detail : order.getOrderDetails()) {
             ProductResponse product = productClient.getProductById(detail.getProductId());
             OrderDto.OrderDetailRequest detailResponse = new OrderDto.OrderDetailRequest();
+            detailResponse.setOrderDetailId(detail.getId());
             detailResponse.setProductId(detail.getProductId());
             detailResponse.setProductName(product.getName());
             detailResponse.setImgUrl(product.getImgUrls().get(0));
