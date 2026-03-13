@@ -19,7 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Package, Upload, Wrench, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -75,7 +75,7 @@ export function ProductFormPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<CreateProductFormData>({
@@ -92,6 +92,8 @@ export function ProductFormPage() {
     },
   });
 
+  const activeValue = useWatch({ control, name: "active" });
+
   useEffect(() => {
     if (existingProduct) {
       setValue("name", existingProduct.name);
@@ -101,19 +103,21 @@ export function ProductFormPage() {
       const brand = brands?.find((b) => b.name === existingProduct.brandName);
       setValue("brandId", brand?.id ?? 0);
       const version = productVersions?.find((v) => v.versionName === existingProduct.versionName);
-      if (version?.id) setSelectedVersionId(version.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedVersionId(version?.id ?? 0);
       setValue("active", existingProduct.active);
       setValue("price", existingProduct.price ?? 0);
       setValue("stockQuantity", existingProduct.quantity ?? 0);
       const isServ = existingProduct.type === false;
       setIsService(isServ);
       setValue("type", !isServ);
+      const urls = existingProduct.imgUrls ?? [];
       setExistingImageUrls([
-        existingProduct.imgUrl ?? null,
-        existingProduct.imgUrl2 ?? null,
-        existingProduct.imgUrl3 ?? null,
-        existingProduct.imgUrl4 ?? null,
-        existingProduct.imgUrl5 ?? null,
+        urls[0] ?? null,
+        urls[1] ?? null,
+        urls[2] ?? null,
+        urls[3] ?? null,
+        urls[4] ?? null,
       ]);
     }
   }, [existingProduct, categories, brands, productVersions, setValue]);
@@ -325,7 +329,7 @@ export function ProductFormPage() {
             <div className="flex items-center gap-3">
               <Switch
                 id="active"
-                checked={watch("active") ?? true}
+                checked={activeValue ?? true}
                 onCheckedChange={(v) => setValue("active", v)}
               />
               <Label htmlFor="active">Hiển thị {isService ? "dịch vụ" : "sản phẩm"}</Label>

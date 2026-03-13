@@ -35,13 +35,7 @@ export function ProductDetailModal({ product, open, onClose }: ProductDetailModa
 
   if (!product) return null;
 
-  const images = [
-    product.imgUrl,
-    product.imgUrl2,
-    product.imgUrl3,
-    product.imgUrl4,
-    product.imgUrl5,
-  ].filter(Boolean) as string[];
+  const images = (product.imgUrls ?? []).filter(Boolean) as string[];
 
   const isService = product.type === false;
 

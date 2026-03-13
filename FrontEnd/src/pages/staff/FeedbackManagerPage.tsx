@@ -1,13 +1,16 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePagination } from "@/hooks/usePagination";
 import type { BackendFeedback } from "@/services/feedbackService";
 import { feedbackService } from "@/services/feedbackService";
 import { formatDate } from "@/utils/formatDate";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, MessageSquare, Star } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function FeedbackManagerPage() {
@@ -18,9 +21,31 @@ export function FeedbackManagerPage() {
   } = useQuery({
     queryKey: ["staff", "feedbacks"],
     queryFn: feedbackService.getFeedbacks,
+    select: (data) =>
+      [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   });
 
   const [detailFeedback, setDetailFeedback] = useState<BackendFeedback | null>(null);
+
+  const [sortField, setSortField] = useState<"date" | "rating">("date");
+  const [sortDir, setSortDir] = useState<SortDirection>("none");
+  const [pageSize, setPageSize] = useState(10);
+
+  const sortedFeedbacks = useMemo(() => {
+    if (sortDir === "none") return [...(feedbacks ?? [])];
+    return [...(feedbacks ?? [])].sort((a, b) => {
+      if (sortField === "date") {
+        const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return sortDir === "asc" ? diff : -diff;
+      } else {
+        const diff = a.rating - b.rating;
+        return sortDir === "asc" ? diff : -diff;
+      }
+    });
+  }, [feedbacks, sortField, sortDir]);
+
+  const pagination = usePagination({ totalCount: sortedFeedbacks.length, pageSize });
+  const pageFeedbacks = sortedFeedbacks.slice(pagination.startIndex, pagination.endIndex + 1);
 
   const handleDelete = async (id: number) => {
     try {
@@ -42,7 +67,28 @@ export function FeedbackManagerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-zinc-900">Quản lý phản hồi</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-zinc-900">Quản lý phản hồi</h1>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">Sắp xếp:</span>
+          <SortButton
+            direction={sortField === "date" ? sortDir : "none"}
+            onChange={(dir) => {
+              setSortField("date");
+              setSortDir(dir);
+            }}>
+            Ngày
+          </SortButton>
+          <SortButton
+            direction={sortField === "rating" ? sortDir : "none"}
+            onChange={(dir) => {
+              setSortField("rating");
+              setSortDir(dir);
+            }}>
+            Đánh giá
+          </SortButton>
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="space-y-4">
@@ -52,7 +98,7 @@ export function FeedbackManagerPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {feedbacks?.map((fb: BackendFeedback) => (
+          {pageFeedbacks.map((fb: BackendFeedback) => (
             <Card key={fb.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -86,7 +132,7 @@ export function FeedbackManagerPage() {
                     variant="outline"
                     size="sm"
                     className="text-red-500"
-                    onClick={() => handleDelete(fb.id)}>
+                    onClick={() => fb.id !== undefined && handleDelete(fb.id)}>
                     Xóa
                   </Button>
                 </div>
@@ -95,6 +141,13 @@ export function FeedbackManagerPage() {
           ))}
         </div>
       )}
+      <PaginationControl
+        pagination={pagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          pagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={!!detailFeedback} onOpenChange={(open) => !open && setDetailFeedback(null)}>
         <DialogContent className="max-w-md">

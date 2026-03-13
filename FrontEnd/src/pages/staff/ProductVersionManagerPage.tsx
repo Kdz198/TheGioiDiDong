@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePagination } from "@/hooks/usePagination";
 import type { ProductVersion } from "@/interfaces/product.types";
 import { productService } from "@/services/productService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function ProductVersionManagerPage() {
@@ -37,6 +40,20 @@ export function ProductVersionManagerPage() {
     queryKey: ["product-versions"],
     queryFn: productService.getProductVersions,
   });
+
+  const [sortDir, setSortDir] = useState<SortDirection>("none");
+
+  const sortedVersions = useMemo(() => {
+    if (sortDir === "none") return [...(versions ?? [])];
+    return [...(versions ?? [])].sort((a, b) =>
+      sortDir === "asc"
+        ? a.versionName.localeCompare(b.versionName)
+        : b.versionName.localeCompare(a.versionName)
+    );
+  }, [versions, sortDir]);
+
+  const pagination = usePagination({ totalCount: sortedVersions.length, pageSize: 10 });
+  const pageVersions = sortedVersions.slice(pagination.startIndex, pagination.endIndex + 1);
 
   const openCreate = () => {
     setEditing(null);
@@ -91,7 +108,11 @@ export function ProductVersionManagerPage() {
               <thead>
                 <tr className="border-b text-left">
                   <th className="px-4 py-3 font-medium text-gray-500">ID</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Tên phiên bản</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton direction={sortDir} onChange={setSortDir}>
+                      Tên phiên bản
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -111,7 +132,7 @@ export function ProductVersionManagerPage() {
                     </td>
                   </tr>
                 ) : (
-                  versions?.map((v) => (
+                  pageVersions.map((v) => (
                     <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-500">{v.id}</td>
                       <td className="px-4 py-3">
@@ -146,6 +167,7 @@ export function ProductVersionManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl pagination={pagination} showPageSizeSelector={false} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

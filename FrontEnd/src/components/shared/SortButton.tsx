@@ -13,13 +13,26 @@ interface SortButtonProps extends Omit<React.ComponentProps<typeof Button>, "onC
 }
 
 const CustomSortIcon = ({ direction }: { direction?: SortDirection }) => {
-  const opacityUp = direction === "desc" ? 0.3 : 1;
-  const opacityDown = direction === "asc" ? 0.3 : 1;
+  const isActive = direction !== "none" && direction !== undefined;
+  const upActive = direction === "asc";
+  const downActive = direction === "desc";
 
   return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
-      <path d="M5 6 L8 2 L11 6 Z" opacity={opacityUp} />
-      <path d="M5 10 L8 14 L11 10 Z" opacity={opacityDown} />
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0" fill="currentColor">
+      <path
+        d="M5 7 L8 3 L11 7 Z"
+        className={cn(
+          "transition-opacity",
+          upActive ? "opacity-100" : isActive ? "opacity-25" : "opacity-40"
+        )}
+      />
+      <path
+        d="M5 9 L8 13 L11 9 Z"
+        className={cn(
+          "transition-opacity",
+          downActive ? "opacity-100" : isActive ? "opacity-25" : "opacity-40"
+        )}
+      />
     </svg>
   );
 };
@@ -37,22 +50,28 @@ export function SortButton({
   className,
   ...props
 }: SortButtonProps) {
+  const isActive = direction !== "none";
+
   const handleClick = () => {
     const newDirection = getNextDirection(direction);
     onChange?.(newDirection);
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <span className="whitespace-nowrap">{children}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn("h-6 w-6 p-0", className)}
-        onClick={handleClick}
-        {...props}>
-        <CustomSortIcon direction={direction} />
-      </Button>
-    </div>
+    <Button
+      variant={isActive ? "secondary" : "ghost"}
+      size="sm"
+      className={cn(
+        "h-8 gap-1.5 px-2 font-medium whitespace-nowrap",
+        isActive
+          ? "bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
+          : "text-gray-500 hover:text-zinc-700 hover:bg-gray-100",
+        className
+      )}
+      onClick={handleClick}
+      {...props}>
+      <span>{children}</span>
+      <CustomSortIcon direction={direction} />
+    </Button>
   );
 }

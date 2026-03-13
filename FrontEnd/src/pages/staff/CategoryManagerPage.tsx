@@ -1,3 +1,5 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
+import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +22,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { usePagination } from "@/hooks/usePagination";
 import type { Category } from "@/interfaces/product.types";
 import { categoryService } from "@/services/categoryService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderTree, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export function CategoryManagerPage() {
@@ -38,6 +41,20 @@ export function CategoryManagerPage() {
     queryKey: ["categories"],
     queryFn: categoryService.getCategories,
   });
+
+  const [sortDir, setSortDir] = useState<SortDirection>("none");
+
+  const sortedCategories = useMemo(() => {
+    const items = [...(categories ?? [])];
+    if (sortDir === "none") return items;
+    return items.sort((a, b) =>
+      sortDir === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+    );
+  }, [categories, sortDir]);
+
+  const [pageSize, setPageSize] = useState(10);
+  const pagination = usePagination({ totalCount: sortedCategories.length, pageSize });
+  const pageCategories = sortedCategories.slice(pagination.startIndex, pagination.endIndex + 1);
 
   const openCreate = () => {
     setEditing(null);
@@ -96,7 +113,11 @@ export function CategoryManagerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium text-gray-500">Tên danh mục</th>
+                  <th className="px-4 py-3 font-medium text-gray-500">
+                    <SortButton direction={sortDir} onChange={setSortDir}>
+                      Tên danh mục
+                    </SortButton>
+                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Mô tả</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
@@ -110,7 +131,7 @@ export function CategoryManagerPage() {
                         </td>
                       </tr>
                     ))
-                  : categories?.map((cat) => (
+                  : pageCategories.map((cat) => (
                       <tr key={cat.id} className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -144,6 +165,13 @@ export function CategoryManagerPage() {
           </div>
         </CardContent>
       </Card>
+      <PaginationControl
+        pagination={pagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          pagination.goToFirstPage();
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

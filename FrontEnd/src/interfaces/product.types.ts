@@ -1,11 +1,11 @@
 export interface Category {
   id: number;
   name: string;
-  slug: string;
-  icon: string;
+  slug: string; // Frontend-only
+  icon: string; // Frontend-only
   description?: string;
   parentId?: number;
-  productCount: number;
+  productCount: number; // Frontend-only
 }
 
 export interface Brand {
@@ -15,11 +15,13 @@ export interface Brand {
   logoUrl?: string;
 }
 
+// Frontend-only
 export interface ProductVersion {
   id: number;
   versionName: string;
 }
 
+// Frontend-only
 export interface ProductImage {
   id: number;
   url: string;
@@ -27,6 +29,7 @@ export interface ProductImage {
   order: number;
 }
 
+// Frontend-only
 export interface ProductVariant {
   id: number;
   sku: string;
@@ -51,7 +54,7 @@ export interface Product {
   defaultPrice: number;
   defaultOriginalPrice: number;
   thumbnailUrl: string;
-  /** Additional images (imgUrl2–imgUrl5) */
+  /** Additional images from imgUrls array */
   extraImages?: string[];
   rating: number;
   reviewCount: number;
@@ -88,6 +91,7 @@ export interface AppProduct {
   versionName: string;
   brandName: string;
   categoryName: string;
+  type?: boolean;
 }
 
 export interface AppProductListResponse {
@@ -113,11 +117,8 @@ export interface BackendProduct {
   price: number;
   quantity: number;
   reserve: number;
-  imgUrl: string;
-  imgUrl2?: string;
-  imgUrl3?: string;
-  imgUrl4?: string;
-  imgUrl5?: string;
+  /** Array of up to 5 image URLs; entries may be null when no image was uploaded for that slot */
+  imgUrls?: (string | null)[];
   active: boolean;
   /** true = product bình thường, false = dịch vụ */
   type?: boolean;
@@ -128,6 +129,7 @@ export interface BackendProduct {
 
 /** Map BackendProduct to the FE Product interface for display */
 export function mapBackendProduct(p: BackendProduct): Product {
+  const urls = p.imgUrls ?? [];
   return {
     id: p.id,
     name: p.name,
@@ -140,8 +142,8 @@ export function mapBackendProduct(p: BackendProduct): Product {
     variants: [],
     defaultPrice: p.price,
     defaultOriginalPrice: p.price,
-    thumbnailUrl: p.imgUrl,
-    extraImages: [p.imgUrl2, p.imgUrl3, p.imgUrl4, p.imgUrl5].filter(Boolean) as string[],
+    thumbnailUrl: urls.find((u) => u != null) ?? "",
+    extraImages: urls.filter(Boolean) as string[],
     rating: 0,
     reviewCount: 0,
     soldCount: 0,

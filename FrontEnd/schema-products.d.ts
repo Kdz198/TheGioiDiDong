@@ -276,11 +276,7 @@ export interface components {
             quantity?: number;
             /** Format: int32 */
             reserve?: number;
-            imgUrl?: string;
-            imgUrl2?: string;
-            imgUrl3?: string;
-            imgUrl4?: string;
-            imgUrl5?: string;
+            imgUrls?: string[];
             active?: boolean;
             versionName?: string;
             brandName?: string;

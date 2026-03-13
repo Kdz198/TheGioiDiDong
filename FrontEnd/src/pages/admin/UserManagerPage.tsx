@@ -1,3 +1,4 @@
+import { PaginationControl } from "@/components/shared/PaginationControl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
 import type { CreateAccountRequest, User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
 import { formatDate } from "@/utils/formatDate";
@@ -57,12 +59,12 @@ const PERMISSION_LABELS: Record<string, string> = {
 };
 
 const emptyForm: UserFormState = { email: "", fullName: "", roleId: 0 };
-const PAGE_SIZE = 10;
 
 export function UserManagerPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -73,8 +75,9 @@ export function UserManagerPage() {
   const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
 
   const { data: pagedData, isLoading } = useQuery({
-    queryKey: ["admin", "users", page, roleFilter],
-    queryFn: () => userService.getUsers(page, PAGE_SIZE, [roleFilter]),
+    queryKey: ["admin", "users", page, pageSize, roleFilter],
+    queryFn: () => userService.getUsers(page, pageSize, [roleFilter]),
+    select: (d) => ({ ...d, content: [...d.content].sort((a, b) => b.id - a.id) }),
   });
 
   const { data: roles } = useQuery({
@@ -89,7 +92,7 @@ export function UserManagerPage() {
     queryFn: userService.getPermissions,
   });
 
-  // Server already filters to USER role — no client-side role filter needed
+  // Server already filters by role — client-side search within current page only
   const users = pagedData?.content ?? [];
 
   const filtered = users.filter(
@@ -98,6 +101,13 @@ export function UserManagerPage() {
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const serverPagination = usePagination({
+    totalCount: pagedData?.totalElements ?? 0,
+    pageSize,
+    initialPage: page + 1,
+    onPageChange: (p) => setPage(p - 1),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAccountRequest) => userService.createUser(data),
@@ -183,7 +193,6 @@ export function UserManagerPage() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  const totalPages = pagedData?.totalPages ?? 1;
 
   return (
     <div className="space-y-6">
@@ -312,27 +321,13 @@ export function UserManagerPage() {
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0}
-            onClick={() => setPage((p) => p - 1)}>
-            Trước
-          </Button>
-          <span className="text-sm text-gray-600">
-            Trang {page + 1}/{totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}>
-            Sau
-          </Button>
-        </div>
-      )}
+      <PaginationControl
+        pagination={serverPagination}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(0);
+        }}
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
