@@ -53,5 +53,9 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbackService.findByProductId(productId));
     }
 
+    @GetMapping("/order-detail/{orderDetailId}")
+    public ResponseEntity<Feedback> getByOrderDetail(@PathVariable int orderDetailId) {
+        return ResponseEntity.ok(feedbackService.findByOrderDetail(orderDetailId));}
+
 }
 
