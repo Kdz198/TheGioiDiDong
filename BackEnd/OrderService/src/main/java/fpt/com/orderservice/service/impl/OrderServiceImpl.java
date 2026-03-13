@@ -1,5 +1,6 @@
 package fpt.com.orderservice.service.impl;
 
+import fpt.com.orderservice.config.Producer;
 import fpt.com.orderservice.feignclient.ProductClient;
 import fpt.com.orderservice.feignclient.UserClient;
 import fpt.com.orderservice.model.Order;
@@ -36,6 +37,8 @@ public class OrderServiceImpl implements OrderService {
     private UserClient userClient;
     @Autowired
     private ProductClient productClient;
+    @Autowired
+    private Producer producer;
 
     @Override
     public List<OrderDto> findAll() {
@@ -126,10 +129,11 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder() {
         System.out.println("Running cancelOrder ");
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
-        List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, Timestamp.valueOf(times));
+        List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, times);
         for (Order order : orders) {
             System.out.println("Canceling order with id: " + order.getId());
             order.setStatus(OrderStatus.CANCELED);
+            producer.publishPaymentCancel(order.getOrderCode());
         }
         orderRepo.saveAll(orders);
     }

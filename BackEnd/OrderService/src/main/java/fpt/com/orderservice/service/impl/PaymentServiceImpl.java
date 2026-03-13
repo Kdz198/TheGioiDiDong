@@ -207,14 +207,18 @@ public class PaymentServiceImpl implements PaymentService {
                 );
 
                 if (response.getBody() != null) {
-                    String status = response.getBody().getData().getStatus();
-                    if ("CANCELLED".equals(status)) {
-                        payment.setStatus(PaymentStatus.FAILED);
-                        paymentRepo.save(payment);
+                    Order order = null;
+                    if (payment != null) {
+                        order = payment.getOrder();
+
                     }
-                    else if ("EXPIRED".equals(status)) {
+                    String status = response.getBody().getData().getStatus();
+                    if ("CANCELLED".equals(status) ||"EXPIRED".equals(status)) {
+                        order.setStatus(OrderStatus.CANCELED);
                         payment.setStatus(PaymentStatus.FAILED);
+                        orderRepo.save(order);
                         paymentRepo.save(payment);
+                        producer.publishPaymentCancel(order.getOrderCode());
                     }
                 }
             } catch (Exception e) {

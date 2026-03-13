@@ -5,6 +5,7 @@ import fpt.com.orderservice.model.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderRepo extends JpaRepository<Order, Integer> {
@@ -13,6 +14,6 @@ public interface OrderRepo extends JpaRepository<Order, Integer> {
 
     Order findByOrderCode(String orderCode);
 
-    List<Order> findByStatusAndOrderDateBefore(OrderStatus status, Timestamp orderDateBefore);
+    List<Order> findByStatusAndOrderDateBefore(OrderStatus status, LocalDateTime orderDateBefore);
 }
 
