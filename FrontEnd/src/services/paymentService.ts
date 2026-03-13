@@ -1,6 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
-import type { PaymentMethod } from "@/interfaces/order.types";
 import type {
   ApiPayment,
   ApiPaymentStatus,
@@ -37,21 +36,22 @@ const mockApiPayments: ApiPayment[] = [
 
 export const paymentService = {
   initiatePayment: async (
-    orderId: number,
-    method: PaymentMethod
+    orderCode: string,
+    promotionCode?: string
   ): Promise<PaymentInitiateResponse> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 800));
-      if (method === "cod") {
-        return { transactionId: `COD-${orderId}` };
-      }
       return {
-        paymentUrl: `https://sandbox.${method}.vn/pay?orderId=${orderId}`,
-        transactionId: `${method.toUpperCase()}-${orderId}-${Date.now()}`,
+        paymentUrl: `https://sandbox.payos.vn/pay?orderCode=${orderCode}`,
+        transactionId: `${orderCode}-${Date.now()}`,
       };
     }
+    const params: Record<string, string> = { orderCode };
+    if (promotionCode) {
+      params.promotionCode = promotionCode;
+    }
     const response = await apiClient.post(API_ENDPOINTS.PAYMENTS.MAKE_PAYMENT, null, {
-      params: { orderCode: String(orderId) },
+      params,
     });
     return { transactionId: String(response.data), paymentUrl: String(response.data) };
   },
