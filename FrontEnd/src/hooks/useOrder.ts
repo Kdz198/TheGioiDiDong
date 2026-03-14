@@ -1,7 +1,7 @@
 import { useMutationHandler } from "@/hooks/useMutationHandler";
 import type { PaginatedResponse } from "@/interfaces/api.types";
-import type { Order, PaymentMethod, ShippingInfo } from "@/interfaces/order.types";
-import { orderService } from "@/services/orderService";
+import type { Order } from "@/interfaces/order.types";
+import { orderService, type CreateOrderRequest } from "@/services/orderService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface UseOrdersParams {
@@ -25,13 +25,7 @@ export function useOrderDetail(orderId: number) {
   });
 }
 
-interface CreateOrderData {
-  shippingInfo: ShippingInfo;
-  paymentMethod: PaymentMethod;
-  voucherCode?: string;
-  pointsUsed?: number;
-  notes?: string;
-}
+type CreateOrderData = CreateOrderRequest;
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();

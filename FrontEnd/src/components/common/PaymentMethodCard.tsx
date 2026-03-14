@@ -26,6 +26,11 @@ const methodConfig: Record<
     description: "Thanh toán bằng tiền mặt khi nhận hàng (COD)",
     icon: <Banknote className="h-5 w-5 text-green-600" />,
   },
+  payos: {
+    label: "PayOS",
+    description: "Chuyển đến cổng thanh toán PayOS",
+    icon: <CreditCard className="h-5 w-5 text-teal-600" />,
+  },
 };
 
 export function PaymentMethodCard({ method, selected, onSelect }: PaymentMethodCardProps) {
