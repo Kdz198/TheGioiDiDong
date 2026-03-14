@@ -9,6 +9,7 @@ import tgdd.org.productservice.model.Product;
 import tgdd.org.productservice.model.dto.ProductEventDto;
 import tgdd.org.productservice.repo.ProductRepo;
 import tgdd.org.productservice.service.impl.CloudinaryService;
+import tgdd.org.productservice.util.ProductAuditLogUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,6 +22,8 @@ public class EventListenerHandle {
     private ProductRepo productRepo;
     @Autowired
     private CloudinaryService cloudinaryService;
+    @Autowired
+    private ProductAuditLogUtil productAuditLogUtil;
 
 
     @EventListener
@@ -49,6 +52,7 @@ public class EventListenerHandle {
             }
         }
         productRepo.save(product);
+        productAuditLogUtil.logProductUpdate( dto.getOldProductSnapshot(), product, dto.getMessage());
 
     }
 }

@@ -1,7 +1,7 @@
 package tgdd.org.productservice.service.impl;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,39 +14,22 @@ import tgdd.org.productservice.model.*;
 import tgdd.org.productservice.model.dto.*;
 import tgdd.org.productservice.repo.*;
 import tgdd.org.productservice.service.ProductService;
-import tgdd.org.productservice.util.FileUtil;
-
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    @Autowired
-    private ProductRepo productRepo;
 
-    @Autowired
-    private BrandRepo brandRepo;
-
-    @Autowired
-    private CategoryRepo categoryRepo;
-
-    @Autowired
-    private ProductVersionRepo productVersionRepo;
-
-    @Autowired
-    private CloudinaryService cloudinaryService;
-
-    @Autowired
-    private ProductMapper productMapper;
-
-    @Autowired
-    private Producer producer;
-    @Autowired
-    private OrderReserveRepo orderReserveRepo;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
+    private final ProductRepo productRepo;
+    private final BrandRepo brandRepo;
+    private final CategoryRepo categoryRepo;
+    private final ProductVersionRepo productVersionRepo;
+    private final ProductMapper productMapper;
+    private final Producer producer;
+    private final OrderReserveRepo orderReserveRepo;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public List<ProductResponse> findAll() {
@@ -63,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse save(ProductRequest productRequest, MultipartFile img, MultipartFile img2, MultipartFile img3, MultipartFile img4, MultipartFile img5) throws IOException {
         Brand brand = brandRepo.findById(productRequest.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found with id: " + productRequest.getBrandId()));
@@ -78,26 +62,26 @@ public class ProductServiceImpl implements ProductService {
         Product saved = productRepo.save(product);
         MultipartFile[] files = {img, img2, img3, img4, img5};
         List<MultipartFile> multipartFiles = new ArrayList<>();
-        for(MultipartFile file : files){
-            if(file != null && !file.isEmpty()){
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
                 multipartFiles.add(file);
-            }
-            else{
+            } else {
                 multipartFiles.add(null);
             }
         }
-        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, saved.getId(), "CREATE"));
+        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, saved.getId(), "CREATE", null));
         return productMapper.toProductResponse(saved);
     }
 
 
     @Override
+    @Transactional
     public ProductResponse update(ProductUpdateRequest request, MultipartFile img, MultipartFile img2, MultipartFile img3, MultipartFile img4, MultipartFile img5) throws IOException {
         Product existingProduct = productRepo.findById(request.getId());
         if (existingProduct == null) {
             throw new CustomException("Product not found ", HttpStatus.NOT_FOUND);
         }
-
+        Product oldProductSnapshot = productMapper.cloneProduct(existingProduct);
         Brand brand = brandRepo.findById(request.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Brand not found with id: " + request.getBrandId()));
         Category category = categoryRepo.findById(request.getCategoryId())
@@ -116,16 +100,14 @@ public class ProductServiceImpl implements ProductService {
 
         MultipartFile[] files = {img, img2, img3, img4, img5};
         List<MultipartFile> multipartFiles = new ArrayList<>();
-        for(MultipartFile file : files){
-            if(file != null && !file.isEmpty()){
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
                 multipartFiles.add(file);
-            }
-            else{
+            } else {
                 multipartFiles.add(null);
             }
         }
-        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, updated.getId(), "UPDATE"));
-
+        applicationEventPublisher.publishEvent(new ProductEventDto(multipartFiles, updated.getId(), "UPDATE", oldProductSnapshot));
         return productMapper.toProductResponse(updated);
     }
 
