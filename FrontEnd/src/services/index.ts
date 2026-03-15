@@ -2,6 +2,7 @@ export { authManager } from "./auth.manager";
 export { authService } from "./authService";
 export { cartService } from "./cartService";
 export { categoryService } from "./categoryService";
+export { checkoutService } from "./checkoutService";
 export { feedbackService } from "./feedbackService";
 export { membershipService } from "./membershipService";
 export { orderService } from "./orderService";

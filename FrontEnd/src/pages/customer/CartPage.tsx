@@ -1,38 +1,27 @@
 import { CartItemRow } from "@/components/common/CartItem";
-import { VoucherInput } from "@/components/common/VoucherInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ROUTES } from "@/router/routes.const";
-import { cartService } from "@/services/cartService";
 import { useAuthStore } from "@/stores/authStore";
-import { useCartStore, useCartTotals } from "@/stores/cartStore";
+import { useCartStore } from "@/stores/cartStore";
 import { formatVND } from "@/utils/formatPrice";
 import { ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 export function CartPage() {
-  const { items, removeItem, updateQuantity, applyVoucher, removeVoucher, appliedVoucher } =
-    useCartStore();
-  const { totalItems, subtotal, discountAmount, total } = useCartTotals();
+  const { items, removeItem, updateQuantity, removeVoucher } = useCartStore();
   const { isLoggedIn } = useAuthStore();
   const navigate = useNavigate();
-  const [voucherLoading, setVoucherLoading] = useState(false);
 
-  const handleApplyVoucher = async (code: string) => {
-    try {
-      setVoucherLoading(true);
-      const voucher = await cartService.applyVoucher(code);
-      applyVoucher(voucher);
-      toast.success("Áp dụng mã giảm giá thành công!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Mã giảm giá không hợp lệ");
-    } finally {
-      setVoucherLoading(false);
-    }
-  };
+  // Voucher is only supported at checkout.
+  useEffect(() => {
+    removeVoucher();
+  }, [removeVoucher]);
+
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleCheckout = () => {
     if (!isLoggedIn) {
@@ -57,7 +46,7 @@ export function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-zinc-900">Giỏ Hàng ({totalItems} sản phẩm)</h1>
+      <h1 className="mb-6 text-2xl font-bold text-zinc-900">Giỏ hàng ({totalItems} sản phẩm)</h1>
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -77,24 +66,11 @@ export function CartPage() {
               <CardTitle className="text-lg">Tóm tắt đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <VoucherInput
-                onApply={handleApplyVoucher}
-                isLoading={voucherLoading}
-                appliedVoucher={appliedVoucher}
-                onRemove={removeVoucher}
-              />
-              <Separator />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Tạm tính</span>
                   <span>{formatVND(subtotal)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Giảm giá</span>
-                    <span>-{formatVND(discountAmount)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Phí vận chuyển</span>
                   <span className="text-green-600">Miễn phí</span>
@@ -103,7 +79,7 @@ export function CartPage() {
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Tổng cộng</span>
-                <span className="text-red-400">{formatVND(total)}</span>
+                <span className="text-red-400">{formatVND(subtotal)}</span>
               </div>
               <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={handleCheckout}>
                 Tiến hành thanh toán

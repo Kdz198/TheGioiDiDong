@@ -2,6 +2,7 @@ import { API_ENDPOINTS } from "@/constants/api.config";
 import type { User } from "@/interfaces/user.types";
 import { mapRoleName } from "@/interfaces/user.types";
 import { apiClient } from "@/lib/api";
+import { extractAccountIdFromToken } from "@/utils/authToken";
 
 interface LoginRequest {
   email: string;
@@ -30,9 +31,10 @@ export const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const loginRes = await apiClient.post<BackendLoginResponse>(API_ENDPOINTS.AUTH.LOGIN, data);
     const { token = "", expiresIn = 0, role = "" } = loginRes.data;
+    const accountId = extractAccountIdFromToken(token) ?? 0;
 
     const user: User = {
-      id: 0,
+      id: accountId,
       email: data.email,
       fullName: data.email,
       role: mapRoleName(role),
