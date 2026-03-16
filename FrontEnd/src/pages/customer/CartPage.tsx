@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ROUTES } from "@/router/routes.const";
+import { checkoutService } from "@/services";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
 import { formatVND } from "@/utils/formatPrice";
@@ -25,10 +26,29 @@ export function CartPage() {
 
   const handleCheckout = () => {
     if (!isLoggedIn) {
-      navigate(`${ROUTES.LOGIN}?returnUrl=${encodeURIComponent(ROUTES.CHECKOUT)}`);
+      navigate(`${ROUTES.LOGIN}?returnUrl=${encodeURIComponent(ROUTES.CART)}`);
       return;
     }
-    navigate(ROUTES.CHECKOUT);
+
+    checkoutService.checkAvailable(
+      {
+        userId: 0, // Server will get userId from session, so this field is ignored.
+        totalPrice: subtotal,
+        basePrice: subtotal,
+        orderDetails: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          subtotal: item.subtotal,
+          type: item.type,
+        })),
+      }
+    ).then((available) => {
+      if (available) {
+        navigate(ROUTES.CHECKOUT);
+      } else {
+        alert("Hiện tại không thể tiến hành thanh toán. Vui lòng thử lại sau.");
+      }
+    });
   };
 
   if (items.length === 0) {
