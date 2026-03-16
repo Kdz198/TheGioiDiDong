@@ -6,7 +6,7 @@ export interface CartItem {
   productId: number;
   variantId: number;
   product: Pick<Product, "id" | "slug" | "name" | "thumbnailUrl">;
-  appProduct: Pick<AppProduct, "id" | "name" | "imgUrl">;
+  appProduct: Pick<AppProduct, "id" | "name" | "imgUrls">;
   variant: Pick<
     ProductVariant,
     "id" | "sku" | "color" | "size" | "price" | "originalPrice" | "stockQuantity"

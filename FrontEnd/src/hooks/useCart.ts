@@ -30,7 +30,7 @@ export function useCart() {
         appProduct: {
           id: product.id,
           name: product.name,
-          imgUrl: product.thumbnailUrl,
+          imgUrls: [product.thumbnailUrl],
         },
         variant: {
           id: variant.id,

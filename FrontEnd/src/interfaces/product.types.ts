@@ -86,12 +86,12 @@ export interface AppProduct {
   price: number;
   quantity: number;
   reserve: number;
-  imgUrl: string;
+  imgUrls: string[]; // <-- Đổi thành mảng imgUrls
   active: boolean;
   versionName: string;
   brandName: string;
   categoryName: string;
-  type?: boolean;
+  type: boolean;
 }
 
 export interface AppProductListResponse {

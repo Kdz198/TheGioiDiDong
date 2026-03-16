@@ -450,6 +450,6 @@ export const productService = {
     if (USE_MOCK_API) return [];
     // Tạm gọi API lấy danh sách active làm featured
     const response = await apiClient.get<AppProduct[]>("/api/products/product/active");
-    return response.data.slice(0, 8); // Lấy 8 cái đầu
+    return response.data;
   },
 };
