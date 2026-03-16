@@ -184,7 +184,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Scheduled(fixedDelay = 300000)
     public void cancelPayment(){
-        LocalDateTime times = LocalDateTime.now().minusMinutes(10);
+        LocalDateTime times = LocalDateTime.now().minusMinutes(5);
         List<Payment> payments = paymentRepo.findByStatusAndDate(PaymentStatus.PENDING, times);
 
         for(Payment payment : payments) {
