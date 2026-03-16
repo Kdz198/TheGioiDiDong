@@ -41,5 +41,6 @@ public interface ProductMapper {
     ProductResponse toProductResponse(Product product);
 
     List<ProductResponse> toProductResponseList(List<Product> products);
+    Product cloneProduct(Product source);
 }
 

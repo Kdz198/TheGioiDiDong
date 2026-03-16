@@ -1,5 +1,9 @@
 import { z } from "zod/v4";
 
+/**
+ * Schema validation for checkout form, including shipping information and payment method.
+ * @deprecated since backend is currently hardcoded to "payos" and does not support other payment methods. We can re-enable this validation and adjust the payment method options once backend supports more methods.
+ */
 export const shippingInfoSchema = z.object({
   recipientName: z.string().min(1, "Vui lòng nhập họ tên người nhận"),
   phone: z
@@ -13,9 +17,13 @@ export const shippingInfoSchema = z.object({
   deliveryNote: z.string().optional(),
 });
 
+/**
+ * Schema for validating the entire checkout form, including shipping information and payment method.
+ * @deprecated since backend is currently hardcoded to "payos" and does not support other payment methods. We can re-enable this validation and adjust the payment method options once backend supports more methods.
+ */
 export const checkoutSchema = z.object({
   shippingInfo: shippingInfoSchema,
-  paymentMethod: z.enum(["momo", "vnpay", "cod"], {
+  paymentMethod: z.enum(["momo", "vnpay", "cod", "payos"], {
     error: "Vui lòng chọn phương thức thanh toán",
   }),
   notes: z.string().optional(),

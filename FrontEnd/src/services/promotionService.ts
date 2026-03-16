@@ -26,7 +26,7 @@ const mockApiPromotions: ApiPromotion[] = [
   {
     id: 2,
     code: "FLAT50K",
-    description: "Giảm thẳng 50,000 VNĐ",
+    description: "Giảm thẳng 50,000 VND",
     type: "MONEY",
     discountValue: 50000,
     minOrderAmount: 300000,
@@ -57,20 +57,64 @@ export function mapApiPromotionToVoucher(promo: ApiPromotion): Voucher {
   };
 }
 
+export function calculatePromotionDiscount(promo: ApiPromotion, basePrice: number): number {
+  if (basePrice <= 0) return 0;
+
+  // Keep estimate aligned with current backend PaymentServiceImpl:
+  // percentage => totalPrice * discountValue / 100, no maxDiscountValue cap at make-payment.
+  if (promo.type === "PERCENTAGE") {
+    return Math.max(0, Math.floor((basePrice * promo.discountValue) / 100));
+  }
+
+  return Math.max(0, promo.discountValue);
+}
+
+export function validatePromotionForCheckout(
+  promo: ApiPromotion,
+  basePrice: number,
+  now: Date = new Date()
+): string | null {
+  if (!promo.active) return "Mã giảm giá đã hết hạn hoặc không hoạt động";
+  if ((promo.quantity ?? 0) <= 0) return "Mã giảm giá đã hết lượt sử dụng";
+
+  const start = promo.startDate ? new Date(promo.startDate) : null;
+  if (start && !Number.isNaN(start.getTime()) && now < start) {
+    return "Mã giảm giá chưa đến thời gian áp dụng";
+  }
+
+  const end = promo.endDate ? new Date(promo.endDate) : null;
+  if (end && !Number.isNaN(end.getTime()) && now > end) {
+    return "Mã giảm giá đã hết hạn";
+  }
+
+  if (basePrice < (promo.minOrderAmount ?? 0)) {
+    return "Đơn hàng chưa đạt giá trị tối thiểu để áp mã";
+  }
+
+  return null;
+}
+
+async function getPromotionByCode(code: string): Promise<ApiPromotion> {
+  if (USE_MOCK_API) {
+    await new Promise((r) => setTimeout(r, 500));
+    const promo = mockApiPromotions.find((p) => p.code.toUpperCase() === code.toUpperCase());
+    if (!promo) throw new Error("Mã giảm giá không tồn tại");
+    return promo;
+  }
+
+  const response = await apiClient.get<ApiPromotion>(API_ENDPOINTS.PROMOTIONS.BY_CODE(code));
+  if (!response.data) throw new Error("Mã giảm giá không tồn tại");
+  return response.data;
+}
+
 export const promotionService = {
-  /** Look up a promotion by code and return it as a Voucher */
+  getPromotionByCode,
+
+  // Legacy helper kept for existing hooks.
   validateVoucher: async (code: string): Promise<Voucher> => {
-    if (USE_MOCK_API) {
-      await new Promise((r) => setTimeout(r, 500));
-      const promo = mockApiPromotions.find(
-        (p) => p.code.toUpperCase() === code.toUpperCase() && p.active
-      );
-      if (!promo) throw new Error("Mã giảm giá không hợp lệ");
-      return mapApiPromotionToVoucher(promo);
-    }
-    const response = await apiClient.get<ApiPromotion>(API_ENDPOINTS.PROMOTIONS.BY_CODE(code));
-    const promo = response.data;
-    if (!promo.active) throw new Error("Mã giảm giá đã hết hạn hoặc không hoạt động");
+    const promo = await getPromotionByCode(code);
+    const validationError = validatePromotionForCheckout(promo, promo.minOrderAmount ?? 0);
+    if (validationError) throw new Error(validationError);
     return mapApiPromotionToVoucher(promo);
   },
 
@@ -94,7 +138,7 @@ export const promotionService = {
   },
 
   getFlashSales: async () => {
-    // No flash-sale endpoint in schema — return empty array
+    // No flash-sale endpoint in schema.
     return [] as import("@/interfaces/promotion.types").FlashSale[];
   },
 
