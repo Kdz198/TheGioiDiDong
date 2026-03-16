@@ -119,7 +119,13 @@ public class OrderServiceImpl implements OrderService {
             detailResponse.setType(detail.getType());
             orderDetails.add(detailResponse);
         }
-        String userName = userClient.getNameAccount(order.getUserId());
+        String userName = "Unknown User";
+        try {
+             userName = userClient.getNameAccount(order.getUserId());
+        }
+        catch (Exception e) {
+            System.out.println("Error fetching user name for userId: " + order.getUserId() + ", error: " + e.getMessage());
+        }
         return OrderDto.builder()
                 .id(order.getId())
                 .userName(userName)
@@ -132,10 +138,10 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    @Scheduled(fixedDelay = 600000)
+    @Scheduled(fixedDelay = 300000)
     public void cancelOrder() {
         System.out.println("Running cancelOrder ");
-        LocalDateTime times = LocalDateTime.now().minusMinutes(10);
+        LocalDateTime times = LocalDateTime.now().minusMinutes(5);
         List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, times);
         for (Order order : orders) {
             System.out.println("Canceling order with id: " + order.getId());

@@ -15,4 +15,5 @@ public class ProductEventDto {
     List<MultipartFile> multipartFiles;
     int productId;
     String message;
+    Product oldProductSnapshot;
 }
