@@ -27,7 +27,7 @@ public class Blog {
     @Column(length = 500)
     private String summary;
 
-    @Column(length = 500)
+    @Column( columnDefinition = "TEXT")
     private String thumbnailUrl;
 
     @Column(nullable = false, columnDefinition = "TEXT")

@@ -31,8 +31,4 @@ public class BlogController {
         blogService.updateBlog(id, request);
     }
 
-    @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    public String uploadImg(@RequestParam("file") MultipartFile file) {
-        return blogService.uploadImg(file);
-     }
 }

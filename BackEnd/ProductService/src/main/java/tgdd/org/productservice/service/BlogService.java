@@ -14,5 +14,4 @@ public interface BlogService {
 
     Page<RetrieveBlogResponse> getBlogs(Pageable pageable);
 
-    String uploadImg ( MultipartFile file);
 }

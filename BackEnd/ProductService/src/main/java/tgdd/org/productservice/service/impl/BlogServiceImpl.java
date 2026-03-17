@@ -71,10 +71,4 @@ public class BlogServiceImpl implements BlogService {
 
     }
 
-    @SneakyThrows
-    @Override
-    public String uploadImg(MultipartFile file) {
-        Map<String, String> map = cloudinaryService.uploadImg(file);
-        return map.get("secure_url");
-    }
 }
