@@ -64,8 +64,8 @@ export function SortButton({
       className={cn(
         "h-8 gap-1.5 px-2 font-medium whitespace-nowrap",
         isActive
-          ? "bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
-          : "text-gray-500 hover:text-zinc-700 hover:bg-gray-100",
+          ? "border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100"
+          : "text-gray-500 hover:bg-gray-100 hover:text-zinc-700",
         className
       )}
       onClick={handleClick}

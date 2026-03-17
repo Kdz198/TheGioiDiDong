@@ -197,6 +197,11 @@ const AdminProductVersionManagerPage = lazy(() =>
     default: m.ProductVersionManagerPage,
   }))
 );
+const AdminAuditLogPage = lazy(() =>
+  import("@/pages/admin/AdminAuditLogPage").then((m) => ({
+    default: m.AdminAuditLogPage,
+  }))
+);
 
 function PageLoader() {
   return (
@@ -327,6 +332,7 @@ function App() {
                   path={ROUTES.ADMIN_PRODUCT_VERSIONS}
                   element={<AdminProductVersionManagerPage />}
                 />
+                <Route path={ROUTES.ADMIN_AUDIT_LOGS} element={<AdminAuditLogPage />} />
               </Route>
 
               {/* Staff Routes — DashboardLayout + ProtectedRoute */}

@@ -1,3 +1,4 @@
+import { ProductAuditLogModal } from "@/components/common/ProductAuditLogModal";
 import { ProductDetailModal } from "@/components/common/ProductDetailModal";
 import { PaginationControl } from "@/components/shared/PaginationControl";
 import { SortButton, type SortDirection } from "@/components/shared/SortButton";
@@ -32,7 +33,7 @@ import { feedbackService } from "@/services/feedbackService";
 import { productService } from "@/services/productService";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Info, Pencil, Plus, Search, Star, Trash2, Wrench } from "lucide-react";
+import { History, Info, Pencil, Plus, Search, Star, Trash2, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ export function AdminProductManagerPage() {
   const [typeFilter, setTypeFilter] = useState<"product" | "service">("product");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [viewingProduct, setViewingProduct] = useState<BackendProduct | null>(null);
+  const [auditLogProduct, setAuditLogProduct] = useState<BackendProduct | null>(null);
   const queryClient = useQueryClient();
 
   const { data: rawProducts, isLoading } = useQuery({
@@ -287,6 +289,14 @@ export function AdminProductManagerPage() {
                                 onClick={() => setViewingProduct(product)}>
                                 <Info className="h-3.5 w-3.5" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-orange-500"
+                                title="Lịch sử thay đổi"
+                                onClick={() => setAuditLogProduct(product)}>
+                                <History className="h-3.5 w-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                                 <Link
                                   to={ROUTES.ADMIN_PRODUCT_EDIT.replace(":id", String(product.id))}>
@@ -323,6 +333,13 @@ export function AdminProductManagerPage() {
         open={viewingProduct !== null}
         onClose={() => setViewingProduct(null)}
         allFeedbacks={allFeedbacks}
+      />
+
+      <ProductAuditLogModal
+        productId={auditLogProduct?.id ?? null}
+        productName={auditLogProduct?.name}
+        open={auditLogProduct !== null}
+        onClose={() => setAuditLogProduct(null)}
       />
 
       <AlertDialog open={deletingId !== null} onOpenChange={() => setDeletingId(null)}>
