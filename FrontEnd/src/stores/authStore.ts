@@ -1,5 +1,6 @@
 import type { Permission, User } from "@/interfaces/user.types";
 import { create } from "zustand";
+import { useCartStore } from "@/stores/cartStore.ts";
 
 const TOKEN_KEY = "auth-token";
 const USER_KEY = "auth-user";
@@ -60,6 +61,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(EXPIRES_KEY);
     set({ user: null, token: null, expiresIn: null, isLoggedIn: false });
+    useCartStore.getState().clearCart();
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
