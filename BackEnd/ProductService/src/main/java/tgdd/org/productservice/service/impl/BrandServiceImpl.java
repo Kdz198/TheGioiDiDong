@@ -1,10 +1,9 @@
 package tgdd.org.productservice.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tgdd.org.productservice.model.Brand;
-import tgdd.org.productservice.model.dto.BrandRequest;
+import tgdd.org.productservice.model.dto.request.BrandRequest;
 import tgdd.org.productservice.repo.BrandRepo;
 import tgdd.org.productservice.service.BrandService;
 

@@ -18,7 +18,8 @@ public class CorsGlobalConfiguration {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "https://the-gioi-di-dong-alpha.vercel.app",prodUrl));
+        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "https://the-gioi-di-dong-alpha.vercel.app",prodUrl,"http://localhost:63342","null"));
+
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);

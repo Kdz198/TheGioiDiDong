@@ -1,7 +1,7 @@
 package tgdd.org.productservice.service;
 
 import tgdd.org.productservice.model.Brand;
-import tgdd.org.productservice.model.dto.BrandRequest;
+import tgdd.org.productservice.model.dto.request.BrandRequest;
 
 import java.io.IOException;
 import java.util.List;

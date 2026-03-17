@@ -5,7 +5,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import tgdd.org.productservice.model.dto.OrderRequest;
+import tgdd.org.productservice.model.dto.request.OrderRequest;
 
 @Service
 public class Producer {
