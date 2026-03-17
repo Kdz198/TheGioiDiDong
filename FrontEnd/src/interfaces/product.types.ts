@@ -127,6 +127,30 @@ export interface BackendProduct {
   categoryName: string;
 }
 
+/** Audit log entry for a product change event */
+export interface ProductAuditLog {
+  id: number;
+  productId: number;
+  action: string;
+  accountId: number;
+  actorEmail: string;
+  changes: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** Paginated wrapper for ProductAuditLog */
+export interface PageProductAuditLog {
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  size: number;
+  content: ProductAuditLog[];
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
 /** Map BackendProduct to the FE Product interface for display */
 export function mapBackendProduct(p: BackendProduct): Product {
   const urls = p.imgUrls ?? [];

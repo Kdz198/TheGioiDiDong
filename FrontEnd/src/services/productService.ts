@@ -5,6 +5,7 @@ import type {
   AppProductListResponse,
   BackendProduct,
   Brand,
+  PageProductAuditLog,
   Product,
   ProductListResponse,
   ProductVersion,
@@ -451,5 +452,41 @@ export const productService = {
     // Tạm gọi API lấy danh sách active làm featured
     const response = await apiClient.get<AppProduct[]>("/api/products/product/active");
     return response.data.slice(0, 8); // Lấy 8 cái đầu
+  },
+
+  // Audit Log methods
+  getProductAuditLogs: async (
+    productId: number,
+    params: { page?: number; size?: number } = {}
+  ): Promise<PageProductAuditLog> => {
+    const { page = 0, size = 10 } = params;
+    const response = await apiClient.get<PageProductAuditLog>(
+      API_ENDPOINTS.AUDIT_LOGS.BY_PRODUCT(productId),
+      { params: { page, size, sort: "createdAt,desc" } }
+    );
+    return response.data;
+  },
+
+  getMasterAuditLogs: async (
+    filters: {
+      productId?: number;
+      accountId?: string;
+      action?: string;
+      fromDate?: string;
+      toDate?: string;
+    } = {},
+    params: { page?: number; size?: number } = {}
+  ): Promise<PageProductAuditLog> => {
+    const { page = 0, size = 20 } = params;
+    const queryParams: Record<string, unknown> = { page, size, sort: "createdAt,desc" };
+    if (filters.productId !== undefined) queryParams["productId"] = filters.productId;
+    if (filters.accountId) queryParams["accountId"] = filters.accountId;
+    if (filters.action) queryParams["action"] = filters.action;
+    if (filters.fromDate) queryParams["fromDate"] = filters.fromDate;
+    if (filters.toDate) queryParams["toDate"] = filters.toDate;
+    const response = await apiClient.get<PageProductAuditLog>(API_ENDPOINTS.AUDIT_LOGS.MASTER, {
+      params: queryParams,
+    });
+    return response.data;
   },
 };

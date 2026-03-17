@@ -11,6 +11,7 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   FolderTree,
   LayoutDashboard,
   LogOut,
@@ -40,6 +41,7 @@ const adminItems: SidebarItem[] = [
   { label: "Khuyến mãi", href: ROUTES.ADMIN_PROMOTIONS, icon: Tag },
   { label: "Người dùng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
+  { label: "Nhật ký SP", href: ROUTES.ADMIN_AUDIT_LOGS, icon: ClipboardList },
 ];
 
 const staffItems: SidebarItem[] = [
