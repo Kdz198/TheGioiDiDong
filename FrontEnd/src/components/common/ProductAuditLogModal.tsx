@@ -8,8 +8,42 @@ import { productService } from "@/services/productService";
 import { formatDateTime } from "@/utils/formatDate";
 import { formatValue } from "@/utils/formatValue";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ClipboardList, Eye } from "lucide-react";
+import { ClipboardList, Eye } from "lucide-react";
 import { useState } from "react";
+
+// Map English field names to Vietnamese (synchronized with Product Management page)
+const FIELD_NAME_MAP: Record<string, string> = {
+  // Basic info
+  name: "Tên sản phẩm",
+  description: "Mô tả",
+  price: "Giá bán",
+  stockQuantity: "Số lượng tồn kho",
+  quantity: "Số lượng tồn kho",
+  reserve: "Số lượng dự trữ",
+  active: "Trạng thái hiển thị",
+  type: "Loại",
+
+  // Relations
+  categoryId: "Danh mục",
+  categoryName: "Tên danh mục",
+  brandId: "Thương hiệu",
+  brandName: "Tên thương hiệu",
+  versionId: "Phiên bản",
+  versionName: "Tên phiên bản",
+
+  // Images
+  imgUrl: "Ảnh chính",
+  imgUrl2: "Ảnh 2",
+  imgUrl3: "Ảnh 3",
+  imgUrl4: "Ảnh 4",
+  imgUrl5: "Ảnh 5",
+  imgUrls: "Hình ảnh",
+
+  // Metadata
+  id: "Mã sản phẩm",
+  createdAt: "Ngày tạo",
+  updatedAt: "Ngày cập nhật",
+};
 
 interface ProductAuditLogModalProps {
   productId: number | null;
@@ -44,103 +78,132 @@ interface ChangeDetailsPanelProps {
 
 function ChangeDetailsPanel({ log, open, onClose }: ChangeDetailsPanelProps) {
   const entries = Object.entries(log.changes ?? {});
+  const formattedEntries = entries.map(([key, val]) => {
+    const fieldLabel = FIELD_NAME_MAP[key] || key;
+
+    if (val !== null && typeof val === "object") {
+      const row = val as { before?: unknown; after?: unknown; old?: unknown; new?: unknown };
+      const beforeValue = row.before ?? row.old ?? null;
+      const afterValue = row.after ?? row.new ?? null;
+
+      return {
+        key,
+        fieldLabel,
+        before: beforeValue === null ? "—" : formatValue(beforeValue),
+        after: afterValue === null ? "—" : formatValue(afterValue),
+      };
+    }
+
+    return {
+      key,
+      fieldLabel,
+      before: "—",
+      after: formatValue(val),
+    };
+  });
   const actionLabel = ACTION_LABELS[log.action] ?? log.action;
   const actionColor = ACTION_COLORS[log.action] ?? "bg-gray-100 text-gray-600";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[88vh] w-[96vw] max-w-6xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base font-semibold text-zinc-900">
-            <ClipboardList className="h-4 w-4 text-teal-500" />
+          <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
+            <ClipboardList className="h-5 w-5 text-teal-500" />
             Chi tiết thay đổi
           </DialogTitle>
         </DialogHeader>
 
         {/* Meta */}
-        <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-xs">
+        <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-4 text-sm">
           <div>
-            <span className="text-gray-400">Hành động</span>
-            <p className="mt-0.5">
+            <span className="text-gray-500">Hành động</span>
+            <p className="mt-1">
               <Badge className={actionColor}>{actionLabel}</Badge>
             </p>
           </div>
           <div>
-            <span className="text-gray-400">Thời gian</span>
-            <p className="mt-0.5 font-medium text-zinc-700">{formatDateTime(log.createdAt)}</p>
+            <span className="text-gray-500">Thời gian</span>
+            <p className="mt-1 font-medium text-zinc-700">{formatDateTime(log.createdAt)}</p>
           </div>
           <div className="col-span-2">
-            <span className="text-gray-400">Người thực hiện</span>
-            <p className="mt-0.5 font-medium text-zinc-700">{log.actorEmail || "—"}</p>
+            <span className="text-gray-500">Người thực hiện</span>
+            <p className="mt-1 font-medium text-zinc-700">{log.actorEmail || "—"}</p>
           </div>
         </div>
 
         <Separator />
 
-        {entries.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-400">Không có dữ liệu thay đổi.</p>
+        {formattedEntries.length === 0 ? (
+          <p className="py-6 text-center text-sm text-gray-400">Không có dữ liệu thay đổi.</p>
         ) : (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-gray-500">{entries.length} trường thay đổi</p>
-            {entries.map(([key, val]) => {
-              if (val !== null && typeof val === "object" && "before" in val && "after" in val) {
-                const before = formatValue((val as { before: unknown }).before);
-                const after = formatValue((val as { after: unknown }).after);
-                return (
-                  <div
-                    key={key}
-                    className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                    <div className="border-b bg-gray-50 px-3 py-2">
-                      <span className="text-xs font-semibold text-zinc-700">{key}</span>
-                    </div>
-                    <div className="grid grid-cols-[1fr,auto,1fr]">
-                      <div className="bg-red-50/50 p-3">
-                        <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
-                          Trước
-                        </p>
-                        <p className="text-xs break-words whitespace-pre-wrap text-red-600 line-through">
-                          {before}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-center border-x border-gray-200 bg-white px-2">
-                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      </div>
-                      <div className="bg-green-50/50 p-3">
-                        <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-green-500 uppercase">
-                          Sau
-                        </p>
-                        <p className="text-xs font-medium break-words whitespace-pre-wrap text-green-700">
-                          {after}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div
-                  key={key}
-                  className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                  <span className="min-w-[6rem] shrink-0 text-xs font-semibold text-zinc-600">
-                    {key}
-                  </span>
-                  <span className="text-xs break-words whitespace-pre-wrap text-gray-600">
-                    {formatValue(val)}
-                  </span>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-gray-700">
+              {formattedEntries.length} trường đã thay đổi
+            </p>
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div className="grid grid-cols-[minmax(160px,0.9fr)_1fr_1fr] border-b bg-zinc-50 text-xs font-semibold tracking-wide text-zinc-600 uppercase">
+                <div className="px-3 py-2.5">Trường thay đổi</div>
+                <div className="border-l border-gray-200 px-3 py-2.5 text-red-700">Giá trị cũ</div>
+                <div className="border-l border-gray-200 px-3 py-2.5 text-green-700">
+                  Giá trị mới
                 </div>
-              );
-            })}
+              </div>
+
+              {formattedEntries.map((entry) => (
+                <div
+                  key={entry.key}
+                  className="grid grid-cols-[minmax(160px,0.9fr)_1fr_1fr] border-b border-gray-100 text-sm last:border-0">
+                  <div className="min-w-0 bg-zinc-50/70 px-3 py-3 font-semibold wrap-break-word text-zinc-800">
+                    {entry.fieldLabel}
+                  </div>
+
+                  <div className="min-w-0 border-l border-gray-100 bg-red-50/60 px-3 py-3">
+                    <span className="mb-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                      Cũ
+                    </span>
+                    <p className="break-all whitespace-pre-wrap text-red-700 line-through decoration-1">
+                      {entry.before}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0 border-l border-gray-100 bg-green-50/60 px-3 py-3">
+                    <span className="mb-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
+                      Mới
+                    </span>
+                    <p className="font-medium break-all whitespace-pre-wrap text-green-800">
+                      {entry.after}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="flex justify-end pt-1">
-          <Button variant="outline" size="sm" onClick={onClose}>
+        <div className="flex justify-end gap-2 border-t pt-3">
+          <Button variant="outline" onClick={onClose}>
             Đóng
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
+}
+
+interface ProductAuditChangeDetailsModalProps {
+  log: ProductAuditLog | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+export function ProductAuditChangeDetailsModal({
+  log,
+  open,
+  onClose,
+}: ProductAuditChangeDetailsModalProps) {
+  if (!log) return null;
+  return <ChangeDetailsPanel log={log} open={open} onClose={onClose} />;
 }
 
 // ── Row ────────────────────────────────────────────────────────────────────
@@ -238,7 +301,7 @@ export function ProductAuditLogModal({
           onClose();
         }
       }}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[92vh] w-[60vw] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-zinc-900">
             <ClipboardList className="h-4 w-4 text-teal-500" />
@@ -273,8 +336,8 @@ export function ProductAuditLogModal({
             <p className="text-xs text-gray-500">
               Tổng cộng <span className="font-semibold text-zinc-700">{totalElements}</span> bản ghi
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto pb-1">
+              <table className="w-full min-w-190 table-fixed text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50/50 text-left">
                     <th className="px-4 py-2 font-medium text-gray-500">Thời gian</th>
