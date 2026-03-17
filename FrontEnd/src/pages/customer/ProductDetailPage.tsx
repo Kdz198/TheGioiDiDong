@@ -94,6 +94,7 @@ export function ProductDetailPage() {
       },
       quantity,
       subtotal: product.price * quantity, // ĐÃ SỬA
+      type: product.type ? "gift" : "buy", // ĐÃ SỬA
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };

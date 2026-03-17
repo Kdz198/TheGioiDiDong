@@ -49,6 +49,7 @@ export function WishlistPage() {
       },
       quantity: 1,
       subtotal: variant.price,
+      type: product.isService ? "gift" : "buy",
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };

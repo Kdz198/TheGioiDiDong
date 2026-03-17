@@ -131,6 +131,7 @@ export function HomePage() {
       },
       quantity: 1,
       subtotal: product.price,
+      type: product.type ? "gift" : "buy",
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };

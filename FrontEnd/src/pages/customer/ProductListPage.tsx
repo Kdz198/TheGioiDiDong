@@ -87,6 +87,7 @@ export function ProductListPage() {
       },
       quantity: 1,
       subtotal: product.price,
+      type: product.type ? "gift" : "buy", // Đã sửa
     });
     toast.success("Đã thêm vào giỏ hàng!");
   };

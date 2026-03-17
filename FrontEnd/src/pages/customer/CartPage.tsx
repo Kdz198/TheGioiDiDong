@@ -13,7 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 export function CartPage() {
   const { items, removeItem, updateQuantity, removeVoucher } = useCartStore();
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, user } = useAuthStore();
   const navigate = useNavigate();
 
   // Voucher is only supported at checkout.
@@ -22,7 +22,9 @@ export function CartPage() {
   }, [removeVoucher]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const totalPrice = items.reduce((sum, item) => sum + item.subtotal, 0);
+  // Only use subtotal for now, we will implement original price in the future
+  // const basePrice = items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
 
   const handleCheckout = () => {
     if (!isLoggedIn) {
@@ -32,9 +34,10 @@ export function CartPage() {
 
     checkoutService.checkAvailable(
       {
-        userId: 0, // Server will get userId from session, so this field is ignored.
-        totalPrice: subtotal,
-        basePrice: subtotal,
+        userId: user?.id ?? 0,
+        status: "PENDING",
+        totalPrice: totalPrice,
+        basePrice: totalPrice, //basePrice
         orderDetails: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -44,7 +47,7 @@ export function CartPage() {
       }
     ).then((available) => {
       if (available) {
-        navigate(ROUTES.CHECKOUT);
+        navigate(`${ROUTES.CHECKOUT}?orderCode=${available.orderCode}`);
       } else {
         alert("Hiện tại không thể tiến hành thanh toán. Vui lòng thử lại sau.");
       }
@@ -89,7 +92,7 @@ export function CartPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Tạm tính</span>
-                  <span>{formatVND(subtotal)}</span>
+                  <span>{formatVND(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Phí vận chuyển</span>
@@ -99,7 +102,7 @@ export function CartPage() {
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Tổng cộng</span>
-                <span className="text-red-400">{formatVND(subtotal)}</span>
+                <span className="text-red-400">{formatVND(totalPrice)}</span>
               </div>
               <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={handleCheckout}>
                 Tiến hành thanh toán

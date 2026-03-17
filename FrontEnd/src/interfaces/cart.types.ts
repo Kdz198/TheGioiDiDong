@@ -13,7 +13,11 @@ export interface CartItem {
   >;
   quantity: number;
   subtotal: number;
-  type: "gift" | "purchase";
+  /**
+   * Inside Product interface, we have isService field to indicate if the product is a service 
+   * If it is a service, then when adding to cart, we will set type to "gift", otherwise it is "buy".
+   */
+  type: "gift" | "buy";
 }
 
 export interface Cart {
