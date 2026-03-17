@@ -1,10 +1,10 @@
+import { ProductAuditChangeDetailsModal } from "@/components/common/ProductAuditLogModal";
 import { PaginationControl } from "@/components/shared/PaginationControl";
 import { SortButton, type SortDirection } from "@/components/shared/SortButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,18 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePagination } from "@/hooks/usePagination";
 import type { ProductAuditLog } from "@/interfaces/product.types";
 import { productService } from "@/services/productService";
 import { formatDateTime } from "@/utils/formatDate";
-import { formatValue } from "@/utils/formatValue";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   ArrowDownUp,
-  ArrowRight,
   ClipboardList,
   Eye,
   Filter,
@@ -55,123 +52,13 @@ const ACTION_COLORS: Record<string, string> = {
 const ALL_ACTIONS_VALUE = "ALL";
 const ACTION_OPTIONS = [ALL_ACTIONS_VALUE, "CREATE", "UPDATE", "DELETE", "ACTIVATE", "DEACTIVATE"];
 
-// ── Change Details Dialog ──────────────────────────────────────────────────
-
-interface ChangeDetailsDialogProps {
-  log: ProductAuditLog;
-  open: boolean;
-  onClose: () => void;
-}
-
-function ChangeDetailsDialog({ log, open, onClose }: ChangeDetailsDialogProps) {
-  const entries = Object.entries(log.changes ?? {});
-  const actionLabel = ACTION_LABELS[log.action] ?? log.action;
-  const actionColor = ACTION_COLORS[log.action] ?? "bg-gray-100 text-gray-600";
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base font-semibold text-zinc-900">
-            <ClipboardList className="h-4 w-4 text-teal-500" />
-            Chi tiết thay đổi
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Meta info */}
-        <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-xs">
-          <div>
-            <span className="text-gray-400">Mã sản phẩm</span>
-            <p className="mt-0.5 font-semibold text-zinc-700">#{log.productId}</p>
-          </div>
-          <div>
-            <span className="text-gray-400">Hành động</span>
-            <p className="mt-0.5">
-              <Badge className={actionColor}>{actionLabel}</Badge>
-            </p>
-          </div>
-          <div>
-            <span className="text-gray-400">Người thực hiện</span>
-            <p className="mt-0.5 font-medium text-zinc-700">{log.actorEmail || "—"}</p>
-          </div>
-          <div>
-            <span className="text-gray-400">Thời gian</span>
-            <p className="mt-0.5 font-medium text-zinc-700">{formatDateTime(log.createdAt)}</p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Change entries */}
-        {entries.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-400">Không có dữ liệu thay đổi.</p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-gray-500">{entries.length} trường thay đổi</p>
-            {entries.map(([key, val]) => {
-              if (val !== null && typeof val === "object" && "before" in val && "after" in val) {
-                const before = formatValue((val as { before: unknown }).before);
-                const after = formatValue((val as { after: unknown }).after);
-                return (
-                  <div
-                    key={key}
-                    className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                    <div className="border-b bg-gray-50 px-3 py-2">
-                      <span className="text-xs font-semibold text-zinc-700">{key}</span>
-                    </div>
-                    <div className="grid grid-cols-[1fr,auto,1fr]">
-                      <div className="bg-red-50/50 p-3">
-                        <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
-                          Trước
-                        </p>
-                        <p className="text-xs break-words whitespace-pre-wrap text-red-600 line-through">
-                          {before}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-center border-x border-gray-200 bg-white px-2">
-                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      </div>
-                      <div className="bg-green-50/50 p-3">
-                        <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-green-500 uppercase">
-                          Sau
-                        </p>
-                        <p className="text-xs font-medium break-words whitespace-pre-wrap text-green-700">
-                          {after}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div
-                  key={key}
-                  className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                  <span className="min-w-[6rem] shrink-0 text-xs font-semibold text-zinc-600">
-                    {key}
-                  </span>
-                  <span className="text-xs break-words whitespace-pre-wrap text-gray-600">
-                    {formatValue(val)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex justify-end pt-1">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Đóng
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Table Row ──────────────────────────────────────────────────────────────
 
-function AuditTableRow({ log }: { log: ProductAuditLog }) {
+interface AuditTableRowProps {
+  log: ProductAuditLog;
+}
+
+function AuditTableRow({ log }: AuditTableRowProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const actionLabel = ACTION_LABELS[log.action] ?? log.action;
   const actionColor = ACTION_COLORS[log.action] ?? "bg-gray-100 text-gray-600";
@@ -204,7 +91,11 @@ function AuditTableRow({ log }: { log: ProductAuditLog }) {
         </td>
       </tr>
       {hasChanges && (
-        <ChangeDetailsDialog log={log} open={dialogOpen} onClose={() => setDialogOpen(false)} />
+        <ProductAuditChangeDetailsModal
+          log={log}
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+        />
       )}
     </>
   );
