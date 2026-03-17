@@ -12,6 +12,8 @@ public class OrderRequest {
     int basePrice;
     String orderCode;
     List<OrderDetailRequest> orderDetails;
+    List<OrderInfo> orderInfo ;
+    String note;
 
     @Data
     public static class OrderDetailRequest{
@@ -25,6 +27,12 @@ public class OrderRequest {
         PENDING,
         PAID,
         CANCELED,
+    }
+    @Data
+    public static class OrderInfo {
+        String phoneNumber;
+        String address;
+        String recipientName;
     }
 }
 
