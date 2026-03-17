@@ -356,11 +356,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/feedbacks/order-detail/{orderDetailId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getByOrderDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         OrderDetailRequest: {
+            /** Format: int32 */
+            orderDetailId?: number;
             /** Format: int32 */
             productId?: number;
             productName?: string;
@@ -1248,6 +1266,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FeedbackResponse"][];
+                };
+            };
+        };
+    };
+    getByOrderDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderDetailId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Feedback"];
                 };
             };
         };

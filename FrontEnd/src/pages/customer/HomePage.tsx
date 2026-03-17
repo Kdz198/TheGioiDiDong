@@ -1,125 +1,190 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowRight, ArrowUp, Filter, Star, X, Zap } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Battery,
+  BatteryCharging,
+  Bluetooth,
+  Box,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  ChevronRightCircle,
+  Filter,
+  Headphones,
+  LayoutGrid,
+  Mouse,
+  Phone,
+  Star,
+  Ticket,
+  Watch,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import { ROUTES } from "@/router/routes.const";
+import { categoryService } from "@/services/categoryService";
 import { productService } from "@/services/productService";
+import { promotionService } from "@/services/promotionService"; // Gọi API Khuyến mãi chuẩn
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 
 import { ProductCard } from "@/components/common/ProductCard";
 import { ProductCardSkeleton } from "@/components/common/ProductCardSkeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AppProduct } from "@/interfaces/product.types.ts";
 
-// --- COMPONENT ĐẾM NGƯỢC GIỮ NGUYÊN ---
-function CountdownTimer({ endAt }: { endAt: string }) {
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+// Lưu ý: Đảm bảo đường dẫn import formatVND đúng với dự án của bạn (format hoặc formatPrice)
+import { formatVND } from "@/utils/formatPrice";
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const end = new Date(endAt).getTime();
-      const diff = Math.max(0, end - now);
-      setTimeLeft({
-        hours: Math.floor(diff / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000),
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [endAt]);
+const BANNER_PAIRS = [
+  [
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/a3/79/a379154355efe99423b6d98c0726f3b8.png",
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/42/43/42434e6f2cb607843a7e1ade2cfbcc1d.png",
+  ],
+  [
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/be/4f/be4fd9af8e3c060d5204ae217d366064.png",
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/99/e0/99e0c4d15e6bc0d7c632326263b86f91.jpg",
+  ],
+  [
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/0d/01/0d01a110e0004a6bdd7a0e77db9e8344.png",
+    "https://cdnv2.tgdd.vn/mwg-static/tgdd/Banner/65/79/65793aa3501c282438704d55a085615d.png",
+  ],
+];
 
-  const pad = (n: number) => String(n).padStart(2, "0");
+const getCategoryIcon = (categoryName: string, isSelected: boolean) => {
+  const baseClassName = `w-7 h-7 mb-2 transition-colors ${
+    isSelected ? "text-teal-600" : "text-gray-400 group-hover:text-teal-500"
+  }`;
 
-  return (
-    <div className="flex gap-1">
-      {[pad(timeLeft.hours), pad(timeLeft.minutes), pad(timeLeft.seconds)].map((val, i) => (
-        <div key={i} className="flex items-center gap-1">
-          <span className="rounded bg-red-400 px-2 py-1 text-sm font-bold text-white">{val}</span>
-          {i < 2 && <span className="text-sm font-bold text-red-400">:</span>}
-        </div>
-      ))}
-    </div>
-  );
-}
+  switch (categoryName.trim()) {
+    case "Ốp lưng":
+      return <Phone className={`${baseClassName} text-sky-500`} />;
+    case "Sạc, cáp":
+      return <BatteryCharging className={`${baseClassName} text-orange-500`} />;
+    case "Tai nghe":
+      return <Headphones className={`${baseClassName} text-purple-500`} />;
+    case "Ốp tai nghe":
+      return <Box className={`${baseClassName} text-pink-500`} />;
+    case "Sạc dự phòng":
+      return <Battery className={`${baseClassName} text-green-500`} />;
+    case "Loa":
+      return <Bluetooth className={`${baseClassName} text-indigo-500`} />;
+    case "Chuột, bàn phím":
+      return <Mouse className={`${baseClassName} text-amber-500`} />;
+    case "Camera":
+      return <Camera className={`${baseClassName} text-red-500`} />;
+    case "Đồng hồ":
+      return <Watch className={`${baseClassName} text-rose-500`} />;
+    default:
+      return <LayoutGrid className={`${baseClassName} text-gray-400`} />;
+  }
+};
 
 export function HomePage() {
   const addItem = useCartStore((s) => s.addItem);
   const { isInWishlist, toggle: toggleWishlist } = useWishlistStore();
 
-  // --- STATE BỘ LỌC VÀ SẮP XẾP ---
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"hot" | "price_asc" | "price_desc">("hot");
 
-  // --- CALL API ---
-  const { data: flashSaleProducts, isLoading: flashSaleLoading } = useQuery({
-    queryKey: ["products", "flash-sale"],
-    queryFn: productService.getAppFlashSaleProducts,
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  const nextBanner = () => setCurrentBanner((prev) => (prev + 1) % BANNER_PAIRS.length);
+  const prevBanner = () =>
+    setCurrentBanner((prev) => (prev === 0 ? BANNER_PAIRS.length - 1 : prev - 1));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedBrand, selectedCategory, selectedVersion, sortBy]);
+
+  // --- 1. GỌI API LẤY DANH SÁCH KHUYẾN MÃI (BẰNG SERVICE) ---
+  const { data: promotions } = useQuery({
+    queryKey: ["promotions", "active"],
+    queryFn: promotionService.getActivePromotions,
   });
 
-  // Gọi API lấy toàn bộ sản phẩm active để xử lý lọc
+  // --- 2. TÌM MÃ BOGO VÀ GỌI API LẤY CHI TIẾT SẢN PHẨM MUA 1 TẶNG 1 ---
+  const bogoPromotion = promotions?.find((p) => p.code === "BOGO-1");
+  const bogoProductIds = bogoPromotion?.applicableProductIds?.filter((id) => id > 0) || [];
+
+  const { data: bogoProducts } = useQuery({
+    queryKey: ["bogo-products", bogoProductIds],
+    queryFn: async () => {
+      if (bogoProductIds.length === 0) return [];
+      const promises = bogoProductIds.map((id) => productService.getAppProductById(id));
+      const results = await Promise.allSettled(promises);
+      return results
+        .filter((res): res is PromiseFulfilledResult<AppProduct> => res.status === "fulfilled")
+        .map((res) => res.value);
+    },
+    enabled: bogoProductIds.length > 0,
+  });
+
+  // LOGIC CHUYỂN TRANG CHO MINI SLIDER MUA 1 TẶNG 1
+  const [bogoIdx, setBogoIdx] = useState(0);
+  const nextBogo = () =>
+    setBogoIdx((prev) => (bogoProducts && prev + 2 < bogoProducts.length ? prev + 2 : 0));
+  const prevBogo = () =>
+    setBogoIdx((prev) =>
+      bogoProducts && prev - 2 >= 0 ? prev - 2 : Math.max(0, (bogoProducts?.length || 0) - 2)
+    );
+
+  // --- CÁC API SẢN PHẨM & DANH MỤC ---
   const { data: allProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["products", "all-active"],
-    // Tạm dùng getProducts (nếu API này trả về nhiều) hoặc getFeaturedProducts tuỳ bạn
     queryFn: productService.getAppFeaturedProducts,
   });
 
-  // --- LOGIC TRÍCH XUẤT DANH SÁCH LỌC DUY NHẤT ---
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories,
+  });
+
   const filterOptions = useMemo(() => {
-    if (!allProducts) return { brands: [], categories: [], versions: [] };
+    if (!allProducts) return { brands: [], versions: [] };
+    const realProducts = allProducts.filter((p) => p.type === true);
     return {
-      brands: Array.from(new Set(allProducts.map((p) => p.brandName).filter(Boolean))),
-      categories: Array.from(new Set(allProducts.map((p) => p.categoryName).filter(Boolean))),
-      versions: Array.from(new Set(allProducts.map((p) => p.versionName).filter(Boolean))),
+      brands: Array.from(new Set(realProducts.map((p) => p.brandName).filter(Boolean))),
+      versions: Array.from(new Set(realProducts.map((p) => p.versionName).filter(Boolean))),
     };
   }, [allProducts]);
 
-  // --- LOGIC ÁP DỤNG BỘ LỌC & SẮP XẾP ---
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
-
-    // 1. Lọc (Filter)
     const result = allProducts.filter((p) => {
+      if (p.type === false) return false;
       const matchBrand = selectedBrand ? p.brandName === selectedBrand : true;
       const matchCategory = selectedCategory ? p.categoryName === selectedCategory : true;
       const matchVersion = selectedVersion ? p.versionName === selectedVersion : true;
       return matchBrand && matchCategory && matchVersion;
     });
 
-    // 2. Sắp xếp (Sort)
-    if (sortBy === "price_asc") {
-      result.sort((a, b) => a.price - b.price);
-    } else if (sortBy === "price_desc") {
-      result.sort((a, b) => b.price - a.price);
-    }
-    // "hot" thì giữ nguyên thứ tự gốc hoặc tự custom thêm
+    if (sortBy === "price_asc") result.sort((a, b) => a.price - b.price);
+    else if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price);
 
     return result;
   }, [allProducts, selectedBrand, selectedCategory, selectedVersion, sortBy]);
 
-  // --- THÊM GIỎ HÀNG ---
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const handleAddToCart = (product: AppProduct) => {
+    const firstImage = product.imgUrls?.[0] || "";
     addItem({
       id: Date.now(),
       productId: product.id,
       variantId: product.id,
-      product: {
-        id: product.id,
-        slug: product.name,
-        name: product.name,
-        thumbnailUrl: product.imgUrl,
-      },
-      appProduct: {
-        id: product.id,
-        name: product.name,
-        imgUrl: product.imgUrl,
-      },
+      product: { id: product.id, slug: product.name, name: product.name, thumbnailUrl: firstImage },
+      appProduct: { id: product.id, name: product.name, imgUrls: [firstImage] },
       variant: {
         id: product.id,
         sku: `SKU-${product.id}`,
@@ -136,212 +201,274 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen space-y-12 bg-gray-50 pb-12">
-      {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-teal-500 to-teal-600">
-        <div className="container mx-auto flex flex-col items-center gap-6 px-4 py-16 text-center text-white md:py-24">
-          <Badge className="bg-red-400 text-white">SIÊU SALE</Badge>
-          <h1 className="text-3xl font-bold md:text-5xl">Phụ Kiện Công Nghệ Chính Hãng</h1>
-          <p className="max-w-lg text-teal-100">
-            Giảm đến 50% cho hàng nghìn sản phẩm. Giao hàng nhanh toàn quốc.
-          </p>
-          <Button size="lg" className="bg-white text-teal-600 hover:bg-gray-100" asChild>
-            <Link to={ROUTES.PRODUCTS}>
-              Khám phá ngay <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* Flash Sale */}
-      <section className="container mx-auto px-4">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-red-100 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Zap className="h-6 w-6 fill-red-500 text-red-500" />
-            <h2 className="text-xl font-bold text-red-500 italic">SĂN SALE ONLINE</h2>
-            {flashSaleProducts?.[0]?.active && (
-              <CountdownTimer endAt={new Date(Date.now() + 86400000).toISOString()} /> // Giả lập đồng hồ 24h
-            )}
-          </div>
-          <Link
-            to={ROUTES.PRODUCTS}
-            className="flex items-center gap-1 text-sm text-red-500 hover:underline">
-            Xem tất cả <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {flashSaleLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-56 shrink-0">
-                  <ProductCardSkeleton />
-                </div>
-              ))
-            : flashSaleProducts?.map((product) => (
-                <div key={product.id} className="w-56 shrink-0">
-                  <ProductCard
-                    product={product}
-                    onAddToCart={() => handleAddToCart(product)}
-                    isWishlisted={isInWishlist(product.id)}
-                    onToggleWishlist={toggleWishlist}
-                  />
+    <div className="min-h-screen bg-[#f1f1f1] pb-12">
+      {/* HERO BANNER */}
+      <section className="bg-gradient-to-r from-teal-500 to-teal-600 pt-6 pb-20">
+        <div className="group relative container mx-auto px-4">
+          <div className="overflow-hidden rounded-xl">
+            <div
+              className="flex transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
+              {BANNER_PAIRS.map((pair, idx) => (
+                <div key={idx} className="flex w-full shrink-0 gap-2 sm:gap-4">
+                  <div className="w-1/2 overflow-hidden rounded-xl shadow-md">
+                    <img src={pair[0]} alt={`Banner left ${idx}`} className="block h-auto w-full" />
+                  </div>
+                  <div className="w-1/2 overflow-hidden rounded-xl shadow-md">
+                    <img
+                      src={pair[1]}
+                      alt={`Banner right ${idx}`}
+                      className="block h-auto w-full"
+                    />
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+          <button
+            onClick={prevBanner}
+            className="absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 opacity-0 shadow-md transition-all group-hover:opacity-100 hover:bg-white sm:-left-3 sm:p-3 lg:-left-5">
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+          <button
+            onClick={nextBanner}
+            className="absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 opacity-0 shadow-md transition-all group-hover:opacity-100 hover:bg-white sm:-right-3 sm:p-3 lg:-right-5">
+            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
+          <div className="absolute right-0 -bottom-6 left-0 flex justify-center gap-2">
+            {BANNER_PAIRS.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentBanner(idx)}
+                className={`h-2 rounded-full transition-all duration-300 ${currentBanner === idx ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"}`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* TẤT CẢ SẢN PHẨM & BỘ LỌC GIỐNG TGDD */}
-      <section className="container mx-auto px-4">
-        <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-          <h2 className="mb-4 text-xl font-bold text-zinc-900">Gợi ý cho bạn</h2>
-
-          <div className="space-y-4">
-            {/* ROW 1: BRAND (THƯƠNG HIỆU) */}
-            {filterOptions.brands.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-24 text-sm font-medium text-gray-500">Thương hiệu:</span>
-                {filterOptions.brands.map((brand) => (
-                  <button
-                    key={brand}
-                    onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
-                    className={`rounded-full border px-4 py-1.5 text-sm transition-all ${
-                      selectedBrand === brand
-                        ? "border-teal-500 bg-teal-50 font-semibold text-teal-700"
-                        : "border-gray-200 text-gray-600 hover:border-teal-300"
-                    }`}>
-                    {brand}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* ROW 2: CATEGORY (DANH MỤC) */}
-            {filterOptions.categories.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-24 text-sm font-medium text-gray-500">Danh mục:</span>
-                {filterOptions.categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                    className={`rounded-full border px-4 py-1.5 text-sm transition-all ${
-                      selectedCategory === cat
-                        ? "border-blue-500 bg-blue-50 font-semibold text-blue-700"
-                        : "border-gray-200 text-gray-600 hover:border-blue-300"
-                    }`}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* ROW 3: VERSION (PHIÊN BẢN) */}
-            {filterOptions.versions.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-24 text-sm font-medium text-gray-500">Dòng máy:</span>
-                {filterOptions.versions.map((ver) => (
-                  <button
-                    key={ver}
-                    onClick={() => setSelectedVersion(selectedVersion === ver ? null : ver)}
-                    className={`rounded-full border px-4 py-1.5 text-sm transition-all ${
-                      selectedVersion === ver
-                        ? "border-purple-500 bg-purple-50 font-semibold text-purple-700"
-                        : "border-gray-200 text-gray-600 hover:border-purple-300"
-                    }`}>
-                    {ver}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Xoá bộ lọc */}
-            {(selectedBrand || selectedCategory || selectedVersion) && (
-              <div className="flex pt-2">
-                <button
-                  onClick={() => {
-                    setSelectedBrand(null);
-                    setSelectedCategory(null);
-                    setSelectedVersion(null);
-                  }}
-                  className="flex items-center gap-1 rounded-full border border-red-200 px-4 py-1.5 text-sm text-red-500 hover:bg-red-50">
-                  <X className="h-4 w-4" /> Bỏ chọn tất cả
-                </button>
-              </div>
-            )}
-          </div>
-
-          <hr className="my-4 border-gray-100" />
-
-          {/* SẮP XẾP */}
-          <div className="flex items-center gap-4 text-sm">
-            <span className="flex items-center gap-1 text-gray-500">
-              <Filter className="h-4 w-4" /> Sắp xếp theo:
-            </span>
+      {/* THANH DANH MỤC */}
+      <section className="relative z-10 container mx-auto -mt-6 px-4">
+        <div className="scrollbar-hide flex gap-4 overflow-x-auto rounded-xl border border-gray-100 bg-white p-4 shadow-md">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === null ? "border-teal-500 bg-teal-50 font-semibold text-teal-700 shadow-inner" : "border-gray-100 text-gray-700 hover:border-teal-200 hover:bg-gray-50"}`}>
+            <LayoutGrid
+              className={`mb-2 h-7 w-7 ${selectedCategory === null ? "text-teal-600" : "text-gray-400 group-hover:text-teal-500"}`}
+            />
+            <span className="line-clamp-2 text-center text-xs">Tất cả</span>
+          </button>
+          {categories?.map((cat) => (
             <button
-              onClick={() => setSortBy("hot")}
-              className={`transition-colors ${sortBy === "hot" ? "font-bold text-teal-600" : "text-gray-600 hover:text-teal-600"}`}>
-              Nổi bật
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.name)}
+              className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === cat.name ? "border-teal-500 bg-teal-50 font-semibold text-teal-700 shadow-inner" : "border-gray-100 text-gray-700 hover:border-teal-200 hover:bg-gray-50"}`}>
+              {getCategoryIcon(cat.name, selectedCategory === cat.name)}
+              <span className="line-clamp-2 text-center text-xs">{cat.name}</span>
             </button>
-            <button
-              onClick={() => setSortBy("price_desc")}
-              className={`flex items-center gap-1 transition-colors ${sortBy === "price_desc" ? "font-bold text-teal-600" : "text-gray-600 hover:text-teal-600"}`}>
-              Giá cao <ArrowDown className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setSortBy("price_asc")}
-              className={`flex items-center gap-1 transition-colors ${sortBy === "price_asc" ? "font-bold text-teal-600" : "text-gray-600 hover:text-teal-600"}`}>
-              Giá thấp <ArrowUp className="h-4 w-4" />
-            </button>
-          </div>
+          ))}
         </div>
+      </section>
 
-        {/* LƯỚI SẢN PHẨM */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {productsLoading ? (
-            Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={i} />)
-          ) : filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={() => handleAddToCart(product)}
-                isWishlisted={isInWishlist(product.id)}
-                onToggleWishlist={toggleWishlist}
-              />
-            ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
-              <Star className="mb-4 h-12 w-12 text-gray-300" />
-              <p className="text-lg">Không tìm thấy sản phẩm nào phù hợp với bộ lọc!</p>
-              <Button
-                variant="outline"
-                className="mt-4"
+      <div className="container mx-auto mt-8 space-y-8 px-4">
+        {/* SECTION: MÃ TẶNG BẠN & MUA 1 TẶNG 1 */}
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* CỘT TRÁI: MÃ TẶNG BẠN */}
+          <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+            <h2 className="mb-4 text-lg font-bold text-zinc-900">Mã tặng bạn</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {promotions
+                ?.filter((p) => p.type !== "BOGO")
+                .map((promo) => (
+                  <div
+                    key={promo.id}
+                    className="flex overflow-hidden rounded-lg border border-yellow-300 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="flex w-[35%] flex-col items-center justify-center border-r border-dashed border-yellow-200 bg-yellow-400 p-2 text-white">
+                      <Ticket className="mb-1 h-6 w-6 drop-shadow-sm" />
+                      <span className="text-center text-[10px] font-bold tracking-wider uppercase">
+                        {promo.type}
+                      </span>
+                    </div>
+                    <div className="flex w-[65%] flex-col justify-between bg-yellow-50/50 p-2">
+                      <div>
+                        <h3 className="line-clamp-1 text-xs font-bold text-gray-800">
+                          Giảm{" "}
+                          {promo.type === "PERCENTAGE"
+                            ? `${promo.discountValue}%`
+                            : formatVND(promo.discountValue)}
+                        </h3>
+                        <p
+                          className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-gray-500"
+                          title={promo.description}>
+                          {promo.description}
+                        </p>
+                      </div>
+                      <button className="mt-2 w-max rounded-full bg-blue-600 px-3 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-blue-700">
+                        Lưu mã
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* CỘT PHẢI: DEAL MUA 1 TẶNG 1 */}
+          <div className="group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-zinc-900">Mua 1 Tặng 1</h2>
+              {bogoProducts && bogoProducts.length > 2 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={prevBogo}
+                    className="rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={nextBogo}
+                    className="rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 overflow-hidden">
+              {bogoProducts && bogoProducts.length > 0 ? (
+                bogoProducts.slice(bogoIdx, bogoIdx + 2).map((product) => (
+                  <Link
+                    to={`/products/${product.id}`}
+                    key={product.id}
+                    className="flex w-1/2 items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-2 transition-all hover:border-teal-300 hover:shadow-sm">
+                    <img
+                      src={product.imgUrls?.[0]}
+                      alt={product.name}
+                      className="h-16 w-16 rounded-md border border-gray-200 bg-white object-cover"
+                    />
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className="line-clamp-2 text-xs leading-tight font-medium text-gray-800 group-hover:text-teal-600">
+                        {product.name}
+                      </h4>
+                      <p className="mt-1 text-sm font-bold text-red-500">
+                        {formatVND(product.price)}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="py-4 text-sm text-gray-400">Đang tải deal hời...</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* SẢN PHẨM & BỘ LỌC */}
+        <section className="rounded-xl bg-white p-4 shadow-sm">
+          <div className="mb-6 flex flex-col justify-between gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
+            <h2 className="text-xl font-bold text-zinc-900 uppercase">Gợi ý sản phẩm</h2>
+            <Link
+              to="/services"
+              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg">
+              In ấn, Thiết kế, Dịch vụ cá nhân hóa
+              <ChevronRightCircle className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mr-2 flex items-center gap-1 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700">
+              <Filter className="h-4 w-4" /> Lọc
+            </div>
+            {filterOptions.brands.map((brand) => (
+              <button
+                key={brand}
+                onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedBrand === brand ? "border-teal-500 bg-teal-50 font-semibold text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-500"}`}>
+                {brand}
+              </button>
+            ))}
+            {filterOptions.versions.map((ver) => (
+              <button
+                key={ver}
+                onClick={() => setSelectedVersion(selectedVersion === ver ? null : ver)}
+                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedVersion === ver ? "border-blue-500 bg-blue-50 font-semibold text-blue-700" : "border-gray-200 text-gray-600 hover:border-blue-500"}`}>
+                {ver}
+              </button>
+            ))}
+            {(selectedBrand || selectedCategory || selectedVersion) && (
+              <button
                 onClick={() => {
                   setSelectedBrand(null);
                   setSelectedCategory(null);
                   setSelectedVersion(null);
-                }}>
-                Xóa bộ lọc
+                }}
+                className="flex items-center gap-1 rounded-full px-4 py-1.5 text-sm text-red-500 hover:bg-red-50">
+                <X className="h-4 w-4" /> Bỏ chọn
+              </button>
+            )}
+          </div>
+
+          <div className="mb-6 flex items-center gap-4 border-b border-gray-100 pb-4 text-sm">
+            <span className="text-gray-500">Xếp theo:</span>
+            <button
+              onClick={() => setSortBy("hot")}
+              className={`${sortBy === "hot" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              Nổi bật
+            </button>
+            <button
+              onClick={() => setSortBy("price_desc")}
+              className={`flex items-center ${sortBy === "price_desc" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              Giá cao <ArrowDown className="ml-1 h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setSortBy("price_asc")}
+              className={`flex items-center ${sortBy === "price_asc" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              Giá thấp <ArrowUp className="ml-1 h-3 w-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {productsLoading ? (
+              Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={i} />)
+            ) : paginatedProducts.length > 0 ? (
+              paginatedProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={() => handleAddToCart(product)}
+                  isWishlisted={isInWishlist(product.id)}
+                  onToggleWishlist={toggleWishlist}
+                />
+              ))
+            ) : (
+              <div className="col-span-full py-16 text-center">
+                <Star className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+                <p className="text-gray-500">Không tìm thấy sản phẩm phù hợp</p>
+              </div>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4 border-t border-gray-100 pt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="gap-1 bg-white hover:bg-teal-50">
+                <ChevronLeft className="h-4 w-4" /> Trước
+              </Button>
+              <span className="text-sm font-medium text-gray-600">
+                Trang {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="gap-1 bg-white hover:bg-teal-50">
+                Sau <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="bg-teal-600">
-        <div className="container mx-auto px-4 py-12 text-center text-white">
-          <h2 className="text-2xl font-bold">Đăng ký nhận tin</h2>
-          <p className="mt-2 text-teal-100">Nhận thông tin khuyến mãi và sản phẩm mới nhất</p>
-          <div className="mx-auto mt-6 flex max-w-md gap-2">
-            <input
-              type="email"
-              placeholder="Email của bạn"
-              className="flex-1 rounded-lg border-0 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-gray-400"
-            />
-            <Button className="bg-white text-teal-600 hover:bg-gray-100">Đăng ký</Button>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

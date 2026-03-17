@@ -86,12 +86,12 @@ export interface AppProduct {
   price: number;
   quantity: number;
   reserve: number;
-  imgUrl: string;
+  imgUrls: string[]; // <-- Đổi thành mảng imgUrls
   active: boolean;
   versionName: string;
   brandName: string;
   categoryName: string;
-  type?: boolean;
+  type: boolean;
 }
 
 export interface AppProductListResponse {
@@ -125,6 +125,30 @@ export interface BackendProduct {
   versionName: string;
   brandName: string;
   categoryName: string;
+}
+
+/** Audit log entry for a product change event */
+export interface ProductAuditLog {
+  id: number;
+  productId: number;
+  action: string;
+  accountId: number;
+  actorEmail: string;
+  changes: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** Paginated wrapper for ProductAuditLog */
+export interface PageProductAuditLog {
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  size: number;
+  content: ProductAuditLog[];
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
 }
 
 /** Map BackendProduct to the FE Product interface for display */

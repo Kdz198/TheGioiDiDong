@@ -11,8 +11,10 @@ export function useMediaQuery(query: string): boolean {
     const mql = window.matchMedia(query);
     const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
     mql.addEventListener("change", handler);
-    setMatches(mql.matches);
+    // Sync with current state without triggering cascading renders
+    if (mql.matches !== matches) setMatches(mql.matches);
     return () => mql.removeEventListener("change", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   return matches;
