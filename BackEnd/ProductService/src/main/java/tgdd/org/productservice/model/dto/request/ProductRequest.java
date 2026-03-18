@@ -1,4 +1,4 @@
-package tgdd.org.productservice.model.dto;
+package tgdd.org.productservice.model.dto.request;
 
 import lombok.Data;
 

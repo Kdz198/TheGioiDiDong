@@ -1,12 +1,11 @@
 package tgdd.org.productservice.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tgdd.org.productservice.model.Brand;
-import tgdd.org.productservice.model.dto.BrandRequest;
+import tgdd.org.productservice.model.dto.request.BrandRequest;
 import tgdd.org.productservice.service.BrandService;
 
 import java.io.IOException;

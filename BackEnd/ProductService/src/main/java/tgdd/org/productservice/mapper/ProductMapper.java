@@ -4,9 +4,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import tgdd.org.productservice.model.Product;
-import tgdd.org.productservice.model.dto.ProductRequest;
-import tgdd.org.productservice.model.dto.ProductResponse;
-import tgdd.org.productservice.model.dto.ProductUpdateRequest;
+import tgdd.org.productservice.model.dto.request.ProductRequest;
+import tgdd.org.productservice.model.dto.response.ProductResponse;
+import tgdd.org.productservice.model.dto.request.ProductUpdateRequest;
 
 import java.util.List;
 

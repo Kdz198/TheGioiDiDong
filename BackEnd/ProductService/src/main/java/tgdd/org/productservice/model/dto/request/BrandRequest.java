@@ -1,8 +1,7 @@
-package tgdd.org.productservice.model.dto;
+package tgdd.org.productservice.model.dto.request;
 
 import jakarta.annotation.Nullable;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 @Data
