@@ -25,5 +25,7 @@ public class ProductResponse {
     String brandName;
     String categoryName;
     boolean type;
+    int originalPrice;
+
 }
 

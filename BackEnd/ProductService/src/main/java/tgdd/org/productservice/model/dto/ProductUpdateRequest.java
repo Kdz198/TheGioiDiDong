@@ -13,5 +13,6 @@ public class ProductUpdateRequest {
     Integer versionId;
     Integer brandId;
     Integer categoryId;
+    int originalPrice;
 }
 

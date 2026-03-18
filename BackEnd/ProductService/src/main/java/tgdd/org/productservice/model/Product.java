@@ -48,4 +48,5 @@ public class Product {
     boolean type;//true: product,false: dịch vụ
     @CreationTimestamp
     LocalDateTime createdAt;
+    int originalPrice;
 }
