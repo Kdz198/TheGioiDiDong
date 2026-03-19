@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { cn } from "@/lib/utils";
+import { feedbackService } from "@/services/feedbackService";
 import { orderService } from "@/services/orderService";
 import { paymentService } from "@/services/paymentService";
 import { userService } from "@/services/userService";
@@ -167,6 +168,18 @@ const STATUS_LABELS: Record<string, string> = {
   FAILED: "Thất bại",
 };
 
+const ORDER_STATUS_LABELS: Record<"pending" | "paid" | "canceled", string> = {
+  pending: "Đang chờ",
+  paid: "Đã thanh toán",
+  canceled: "Đã hủy",
+};
+
+const ORDER_STATUS_COLORS: Record<"pending" | "paid" | "canceled", string> = {
+  pending: "#f97316",
+  paid: "#14b8a6",
+  canceled: "#f87171",
+};
+
 // ── Component ──────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   // A — flexible date range
@@ -190,6 +203,11 @@ export function DashboardPage() {
   const { data: rawPayments = [] } = useQuery({
     queryKey: ["admin", "dashboard-payments"],
     queryFn: paymentService.getAllPayments,
+  });
+
+  const { data: rawFeedbacks = [] } = useQuery({
+    queryKey: ["admin", "dashboard-feedbacks"],
+    queryFn: feedbackService.getFeedbacks,
   });
 
   // KPI computed from real data
@@ -270,6 +288,69 @@ export function DashboardPage() {
       .filter(([, v]) => v > 0)
       .map(([status, value]) => ({ name: STATUS_LABELS[status] ?? status, value, status }));
   }, [rawPayments]);
+
+  const ordersInPeriod = useMemo(() => {
+    const from = new Date(effectiveDates.from);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(effectiveDates.to);
+    to.setHours(23, 59, 59, 999);
+    return (allOrders?.data ?? []).filter((order) => {
+      const created = new Date(order.createdAt);
+      if (Number.isNaN(created.getTime())) return false;
+      return created >= from && created <= to;
+    });
+  }, [allOrders, effectiveDates]);
+
+  const orderStatusChartData = useMemo(() => {
+    const map: Record<"pending" | "paid" | "canceled", number> = {
+      pending: 0,
+      paid: 0,
+      canceled: 0,
+    };
+    ordersInPeriod.forEach((order) => {
+      if (order.status in map) {
+        map[order.status as "pending" | "paid" | "canceled"] += 1;
+      }
+    });
+    return (Object.keys(map) as Array<"pending" | "paid" | "canceled">).map((status) => ({
+      status,
+      label: ORDER_STATUS_LABELS[status],
+      value: map[status],
+    }));
+  }, [ordersInPeriod]);
+
+  const feedbackInPeriod = useMemo(() => {
+    const from = new Date(effectiveDates.from);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(effectiveDates.to);
+    to.setHours(23, 59, 59, 999);
+    return rawFeedbacks.filter((feedback) => {
+      const created = new Date(feedback.date);
+      if (Number.isNaN(created.getTime())) return false;
+      return created >= from && created <= to;
+    });
+  }, [effectiveDates, rawFeedbacks]);
+
+  const feedbackChartData = useMemo(() => {
+    const map: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    feedbackInPeriod.forEach((feedback) => {
+      const rating = Math.round(feedback.rating ?? 0);
+      if (rating >= 1 && rating <= 5) {
+        map[rating] += 1;
+      }
+    });
+    return [5, 4, 3, 2, 1].map((rating) => ({
+      rating,
+      label: `${rating} sao`,
+      value: map[rating],
+    }));
+  }, [feedbackInPeriod]);
+
+  const feedbackAverage = useMemo(() => {
+    if (!feedbackInPeriod.length) return 0;
+    const total = feedbackInPeriod.reduce((sum, feedback) => sum + (feedback.rating ?? 0), 0);
+    return total / feedbackInPeriod.length;
+  }, [feedbackInPeriod]);
 
   const kpiCards = [
     {
@@ -651,6 +732,71 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Phân bố trạng thái đơn hàng</CardTitle>
+            <p className="text-xs text-gray-500">Theo kỳ lọc hiện tại</p>
+          </CardHeader>
+          <CardContent>
+            {orderStatusChartData.some((item) => item.value > 0) ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={orderStatusChartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(value) => [`${Number(value)} đơn`, "Số lượng"]} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {orderStatusChartData.map((entry) => (
+                      <Cell
+                        key={entry.status}
+                        fill={ORDER_STATUS_COLORS[entry.status as "pending" | "paid" | "canceled"]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu đơn hàng theo kỳ lọc
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tổng hợp phản hồi khách hàng</CardTitle>
+            <p className="text-xs text-gray-500">
+              Theo kỳ lọc hiện tại · Điểm trung bình {feedbackAverage.toFixed(2)} / 5
+            </p>
+          </CardHeader>
+          <CardContent>
+            {feedbackChartData.some((item) => item.value > 0) ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={feedbackChartData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis dataKey="label" type="category" tick={{ fontSize: 11 }} width={70} />
+                  <Tooltip formatter={(value) => [`${Number(value)} phản hồi`, "Số lượng"]} />
+                  <Bar dataKey="value" fill="#f59e0b" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-64 items-center justify-center text-sm text-gray-400">
+                Chưa có dữ liệu phản hồi theo kỳ lọc
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Recent Orders */}
       <Card>
         <CardHeader>
