@@ -255,7 +255,16 @@ export function ProductManagerPage() {
                           <td className="px-4 py-3 text-gray-600">{product.categoryName}</td>
                           <td className="px-4 py-3 text-gray-600">{product.brandName}</td>
                           <td className="px-4 py-3 text-right font-medium">
-                            {formatVND(product.price)}
+                            <div className="flex flex-col items-end">
+                              <span className="font-medium text-zinc-900">
+                                {formatVND(product.price)}
+                              </span>
+                              {(product.originalPrice ?? product.price) > product.price && (
+                                <span className="text-xs text-gray-400 line-through">
+                                  {formatVND(product.originalPrice ?? product.price)}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-right">
                             {product.type === false ? "—" : product.quantity}

@@ -17,6 +17,7 @@ const FIELD_NAME_MAP: Record<string, string> = {
   name: "Tên sản phẩm",
   description: "Mô tả",
   price: "Giá bán",
+  originalPrice: "Giá gốc",
   stockQuantity: "Số lượng tồn kho",
   quantity: "Số lượng tồn kho",
   reserve: "Số lượng dự trữ",

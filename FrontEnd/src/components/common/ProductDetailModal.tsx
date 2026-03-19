@@ -120,6 +120,13 @@ export function ProductDetailModal({ product, open, onClose }: ProductDetailModa
                 <p className="text-xs text-gray-400">Giá bán</p>
                 <p className="font-bold text-red-400">{formatVND(product.price)}</p>
               </div>
+              <div>
+                <p className="text-xs text-gray-400">Giá gốc</p>
+                <p
+                  className={`font-medium ${(product.originalPrice ?? product.price) > product.price ? "text-gray-400 line-through" : "text-zinc-900"}`}>
+                  {formatVND(product.originalPrice ?? product.price)}
+                </p>
+              </div>
               {!isService && (
                 <>
                   <div>

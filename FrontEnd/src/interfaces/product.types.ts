@@ -84,6 +84,7 @@ export interface AppProduct {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   quantity: number;
   reserve: number;
   imgUrls: string[]; // <-- Đổi thành mảng imgUrls
@@ -115,6 +116,7 @@ export interface BackendProduct {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   quantity: number;
   reserve: number;
   /** Array of up to 5 image URLs; entries may be null when no image was uploaded for that slot */
@@ -154,6 +156,10 @@ export interface PageProductAuditLog {
 /** Map BackendProduct to the FE Product interface for display */
 export function mapBackendProduct(p: BackendProduct): Product {
   const urls = p.imgUrls ?? [];
+  const originalPrice =
+    typeof p.originalPrice === "number" && Number.isFinite(p.originalPrice) && p.originalPrice > 0
+      ? p.originalPrice
+      : p.price;
   return {
     id: p.id,
     name: p.name,
@@ -165,7 +171,7 @@ export function mapBackendProduct(p: BackendProduct): Product {
     brand: { id: 0, name: p.brandName },
     variants: [],
     defaultPrice: p.price,
-    defaultOriginalPrice: p.price,
+    defaultOriginalPrice: originalPrice,
     thumbnailUrl: urls.find((u) => u != null) ?? "",
     extraImages: urls.filter(Boolean) as string[],
     rating: 0,

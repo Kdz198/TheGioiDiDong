@@ -36,6 +36,7 @@ export interface ProductSavePayload {
   name: string;
   description?: string;
   price: number;
+  originalPrice?: number;
   stockQuantity?: number;
   active?: boolean;
   versionId?: number;
@@ -63,6 +64,7 @@ function buildProductFormData(payload: ProductSavePayload, files: ProductSaveFil
     name,
     description,
     price,
+    originalPrice,
     stockQuantity,
     active,
     versionId,
@@ -75,6 +77,7 @@ function buildProductFormData(payload: ProductSavePayload, files: ProductSaveFil
     name,
     description,
     price,
+    originalPrice,
     stockQuantity,
     active,
     versionId,
@@ -214,6 +217,7 @@ export const productService = {
         name: payload.name,
         description: payload.description ?? "",
         price: payload.price,
+        originalPrice: payload.originalPrice,
         quantity: payload.stockQuantity ?? 0,
         reserve: 0,
         imgUrls: [],
