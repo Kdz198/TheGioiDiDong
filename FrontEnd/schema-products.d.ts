@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/products/blogs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateBlog"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/products/product/check-available": {
         parameters: {
             query?: never;
@@ -78,6 +94,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["checkStockAvailable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/products/blogs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getBlogs"];
+        put?: never;
+        post: operations["createBlog"];
         delete?: never;
         options?: never;
         head?: never;
@@ -296,6 +328,8 @@ export interface components {
             brandId?: number;
             /** Format: int32 */
             categoryId?: number;
+            /** Format: int32 */
+            originalPrice?: number;
         };
         ProductResponse: {
             /** Format: int32 */
@@ -314,6 +348,8 @@ export interface components {
             brandName?: string;
             categoryName?: string;
             type?: boolean;
+            /** Format: int32 */
+            originalPrice?: number;
         };
         ProductVersion: {
             /** Format: int32 */
@@ -333,6 +369,12 @@ export interface components {
             description?: string;
             logoUrl?: string;
         };
+        CreateBlogRequest: {
+            title?: string;
+            summary?: string;
+            content?: string;
+            thumbnailUrl?: string;
+        };
         ProductRequest: {
             name?: string;
             description?: string;
@@ -348,6 +390,8 @@ export interface components {
             /** Format: int32 */
             categoryId?: number;
             type?: boolean;
+            /** Format: int32 */
+            originalPrice?: number;
         };
         OrderDetailRequest: {
             /** Format: int32 */
@@ -357,6 +401,11 @@ export interface components {
             /** Format: int32 */
             subtotal?: number;
             type?: string;
+        };
+        OrderInfo: {
+            phoneNumber?: string;
+            address?: string;
+            recipientName?: string;
         };
         OrderRequest: {
             /** Format: int32 */
@@ -369,6 +418,8 @@ export interface components {
             basePrice?: number;
             orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
+            orderInfo?: components["schemas"]["OrderInfo"][];
+            note?: string;
         };
         BrandRequest: {
             /** Format: int32 */
@@ -405,11 +456,11 @@ export interface components {
         };
         PageableObject: {
             unpaged?: boolean;
-            /** Format: int32 */
-            pageNumber?: number;
             paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
@@ -433,6 +484,37 @@ export interface components {
             unsorted?: boolean;
             sorted?: boolean;
             empty?: boolean;
+        };
+        PageRetrieveBlogResponse: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["RetrieveBlogResponse"][];
+            /** Format: int32 */
+            number?: number;
+            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        RetrieveBlogResponse: {
+            /** Format: int64 */
+            id?: number;
+            title?: string;
+            author?: string;
+            summary?: string;
+            content?: string;
+            thumbnailUrl?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
         };
     };
     responses: never;
@@ -739,6 +821,30 @@ export interface operations {
             };
         };
     };
+    updateBlog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBlogRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     checkStockAvailable: {
         parameters: {
             query?: never;
@@ -760,6 +866,50 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["OrderRequest"];
                 };
+            };
+        };
+    };
+    getBlogs: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageRetrieveBlogResponse"];
+                };
+            };
+        };
+    };
+    createBlog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBlogRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
