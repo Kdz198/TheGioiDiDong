@@ -187,6 +187,10 @@ function inDateRange(dateText: string | undefined, from: Date, to: Date): boolea
   return date >= from && date <= to;
 }
 
+function getOrderDateValue(order: { createdAt?: string; updatedAt?: string }): string {
+  return order.createdAt || order.updatedAt || "";
+}
+
 function safeNumber(value: number | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -300,7 +304,7 @@ export function ReportPage() {
   const filteredOrders = useMemo(
     () =>
       allOrders.filter((order) =>
-        inDateRange(order.createdAt, effectiveRange.from, effectiveRange.to)
+        inDateRange(getOrderDateValue(order), effectiveRange.from, effectiveRange.to)
       ),
     [allOrders, effectiveRange]
   );
@@ -308,7 +312,7 @@ export function ReportPage() {
   const previousOrders = useMemo(
     () =>
       allOrders.filter((order) =>
-        inDateRange(order.createdAt, previousRange.from, previousRange.to)
+        inDateRange(getOrderDateValue(order), previousRange.from, previousRange.to)
       ),
     [allOrders, previousRange]
   );

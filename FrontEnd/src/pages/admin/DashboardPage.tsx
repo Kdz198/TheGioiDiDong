@@ -295,7 +295,7 @@ export function DashboardPage() {
     const to = new Date(effectiveDates.to);
     to.setHours(23, 59, 59, 999);
     return (allOrders?.data ?? []).filter((order) => {
-      const created = new Date(order.createdAt);
+      const created = new Date(order.createdAt || order.updatedAt);
       if (Number.isNaN(created.getTime())) return false;
       return created >= from && created <= to;
     });

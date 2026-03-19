@@ -10,6 +10,7 @@ export type { BaseManager, ManagerConfig } from "./manager.types";
 export type { MembershipInfo, PointTransaction } from "./membership.types";
 export type {
   Order,
+  OrderInfo,
   OrderItem,
   OrderStatus,
   OrderStatusHistory,
