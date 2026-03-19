@@ -41,6 +41,7 @@ export const ROUTES = {
 
   STAFF: "/staff",
   STAFF_ORDERS: "/staff/orders",
+  STAFF_ORDER_CREATE: "/staff/orders/create",
   STAFF_ORDER_DETAIL: "/staff/orders/:orderId",
   STAFF_PRODUCTS: "/staff/products",
   STAFF_PRODUCT_CREATE: "/staff/products/create",

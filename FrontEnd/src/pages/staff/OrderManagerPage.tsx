@@ -83,7 +83,12 @@ export function OrderManagerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-zinc-900">Quản lý đơn hàng</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-zinc-900">Quản lý đơn hàng</h1>
+        <Button asChild className="bg-teal-500 hover:bg-teal-600">
+          <Link to={ROUTES.STAFF_ORDER_CREATE}>Tạo đơn mới</Link>
+        </Button>
+      </div>
 
       <div className="flex flex-wrap gap-4">
         <div className="relative max-w-sm flex-1">

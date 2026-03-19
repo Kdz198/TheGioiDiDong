@@ -130,6 +130,11 @@ const StaffOrderManagerPage = lazy(() =>
     default: m.OrderManagerPage,
   }))
 );
+const StaffOrderCreatePage = lazy(() =>
+  import("@/pages/staff/StaffOrderCreatePage").then((m) => ({
+    default: m.StaffOrderCreatePage,
+  }))
+);
 const StaffOrderDetailPage = lazy(() =>
   import("@/pages/staff/OrderDetailPage").then((m) => ({
     default: m.OrderDetailPage,
@@ -352,6 +357,7 @@ function App() {
                 <Route path={ROUTES.STAFF_BRANDS} element={<StaffBrandManagerPage />} />
                 <Route path={ROUTES.STAFF_CATEGORIES} element={<StaffCategoryManagerPage />} />
                 <Route path={ROUTES.STAFF_ORDERS} element={<StaffOrderManagerPage />} />
+                <Route path={ROUTES.STAFF_ORDER_CREATE} element={<StaffOrderCreatePage />} />
                 <Route path={ROUTES.STAFF_ORDER_DETAIL} element={<StaffOrderDetailPage />} />
                 <Route path={ROUTES.STAFF_PROMOTIONS} element={<StaffPromotionManagerPage />} />
                 <Route path={ROUTES.STAFF_USERS} element={<StaffUserManagerPage />} />
