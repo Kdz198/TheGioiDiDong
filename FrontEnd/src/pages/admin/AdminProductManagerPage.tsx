@@ -182,6 +182,7 @@ export function AdminProductManagerPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
+                  <th className="px-4 py-3 font-medium text-gray-500">ID</th>
                   <th className="px-4 py-3 font-medium text-gray-500">
                     <SortButton
                       direction={productSortField === "name" ? productSortDir : "none"}
@@ -216,7 +217,7 @@ export function AdminProductManagerPage() {
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={9} className="px-4 py-3">
+                        <td colSpan={10} className="px-4 py-3">
                           <div className="h-10 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
@@ -225,6 +226,9 @@ export function AdminProductManagerPage() {
                       const rating = product.id ? avgRatingByProduct.get(product.id) : undefined;
                       return (
                         <tr key={product.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-sm text-gray-600">#{product.id}</span>
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               {product.imgUrls?.[0] ? (
