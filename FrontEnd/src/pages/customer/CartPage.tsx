@@ -95,9 +95,7 @@ export function CartPage() {
     }
 
     if (!validateShippingForm()) {
-      toast.error(
-        "Vui lòng điền đầy đủ thông tin giao hàng trước khi tiến hành thanh toán"
-      );
+      toast.error("Vui lòng điền đầy đủ thông tin giao hàng trước khi tiến hành thanh toán");
       return;
     }
 
@@ -147,9 +145,7 @@ export function CartPage() {
             state: { shippingInfo: form },
           });
         } else {
-          alert(
-            "Hiện tại không thể tiến hành thanh toán. Vui lòng thử lại sau."
-          );
+          alert("Hiện tại không thể tiến hành thanh toán. Vui lòng thử lại sau.");
         }
       })
       .catch((error) => {
@@ -167,9 +163,7 @@ export function CartPage() {
       <div className="container mx-auto flex flex-col items-center justify-center px-4 py-20 text-center">
         <ShoppingBag className="mb-4 h-16 w-16 text-gray-300" />
         <h2 className="text-xl font-bold text-zinc-900">Giỏ hàng trống</h2>
-        <p className="mt-2 text-gray-500">
-          Bạn chưa có sản phẩm nào trong giỏ hàng
-        </p>
+        <p className="mt-2 text-gray-500">Bạn chưa có sản phẩm nào trong giỏ hàng</p>
         <Button asChild className="mt-6 bg-teal-500 hover:bg-teal-600">
           <Link to={ROUTES.PRODUCTS}>Tiếp tục mua sắm</Link>
         </Button>
@@ -211,16 +205,13 @@ export function CartPage() {
                           [Quà tặng] {item.product.name}
                         </span>
                         <span className="mt-1 block text-xs text-teal-600">
-                          Quà tặng kèm theo chương trình Mua 1
-                          Tặng 1
+                          Quà tặng kèm theo chương trình Mua 1 Tặng 1
                         </span>
                       </div>
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <div className="text-sm font-bold text-teal-600 uppercase">
-                        Miễn phí
-                      </div>
+                      <div className="text-sm font-bold text-teal-600 uppercase">Miễn phí</div>
                       <div className="mt-1 text-xs font-medium text-gray-500">
                         Số lượng: {item.quantity}
                       </div>
@@ -244,7 +235,9 @@ export function CartPage() {
                     "relative rounded-lg border border-gray-200 bg-gray-50 p-4 pb-4 transition-colors",
                     fieldErrors.recipientName && "border-red-200 bg-red-50/50"
                   )}>
-                  <Label className="pb-4" htmlFor="recipientName">Người nhận</Label>
+                  <Label className="pb-4" htmlFor="recipientName">
+                    Người nhận
+                  </Label>
                   <Input
                     id="recipientName"
                     value={form.recipientName}
@@ -253,7 +246,7 @@ export function CartPage() {
                     aria-invalid={Boolean(fieldErrors.recipientName)}
                     className={cn(
                       fieldErrors.recipientName &&
-                        "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200 .pnb"
+                        ".pnb border-red-500 focus-visible:border-red-500 focus-visible:ring-red-200"
                     )}
                   />
                   <p
@@ -270,7 +263,9 @@ export function CartPage() {
                     "relative rounded-lg border border-gray-200 bg-gray-50 p-4 pb-8 transition-colors",
                     fieldErrors.phoneNumber && "border-red-200 bg-red-50/50"
                   )}>
-                  <Label className="pb-4" htmlFor="phoneNumber">Số điện thoại</Label>
+                  <Label className="pb-4" htmlFor="phoneNumber">
+                    Số điện thoại
+                  </Label>
                   <Input
                     id="phoneNumber"
                     type="tel"
@@ -298,7 +293,9 @@ export function CartPage() {
                   "relative rounded-lg border border-gray-200 bg-gray-50 p-4 pb-8 transition-colors",
                   fieldErrors.address && "border-red-200 bg-red-50/50"
                 )}>
-                <Label className="pb-4" htmlFor="address">Địa chỉ cụ thể</Label>
+                <Label className="pb-4" htmlFor="address">
+                  Địa chỉ cụ thể
+                </Label>
                 <Input
                   id="address"
                   value={form.address}
@@ -320,7 +317,9 @@ export function CartPage() {
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <Label className="pb-4" htmlFor="notes">Ghi chú cho shop (tùy chọn)</Label>
+                <Label className="pb-4" htmlFor="notes">
+                  Ghi chú cho shop (tùy chọn)
+                </Label>
                 <Textarea
                   id="notes"
                   value={form.notes}
@@ -334,9 +333,7 @@ export function CartPage() {
 
           <Card className="border-gray-100 shadow-sm lg:sticky lg:top-6">
             <CardHeader className="border-b border-gray-50 bg-gray-50/50 pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                Tóm tắt đơn hàng
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg">Tóm tắt đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
               <div className="space-y-3 text-sm">
