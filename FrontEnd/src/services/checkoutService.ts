@@ -16,6 +16,12 @@ export interface CheckAvailableRequest {
   basePrice: number;
   orderCode?: string;
   orderDetails: CheckoutOrderDetailRequest[];
+  orderInfo?: Array<{
+    recipientName?: string;
+    phoneNumber?: string;
+    address?: string;
+  }>;
+  note?: string;
 }
 
 export interface CheckAvailableResponse extends CheckAvailableRequest {
