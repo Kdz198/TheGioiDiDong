@@ -24,12 +24,14 @@ import type { Blog, BlogPayload, BlogStatus, PageBlogResponse } from "@/interfac
 import { blogService } from "@/services/blogService";
 import { formatDateTime } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Pencil, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { BarChart3, Eye, FileUp, Loader2, Pencil, Plus, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
 const BLOG_FETCH_SIZE = 500;
+const BLOG_DRAFT_KEY = "blog-manager-form-draft";
 
 const STATUS_OPTIONS: Array<{ value: BlogStatus; label: string; className: string }> = [
   { value: "DRAFT", label: "Nháp", className: "bg-gray-100 text-gray-700" },
@@ -108,6 +110,13 @@ function sanitizeHtml(content: string): string {
   return doc.body.innerHTML;
 }
 
+function estimateReadTimeMinutes(content: string): number {
+  const plainText = stripHtml(content);
+  if (!plainText) return 0;
+  const words = plainText.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 220));
+}
+
 export function BlogManagerPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -116,6 +125,7 @@ export function BlogManagerPage() {
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [showRawHtmlSource, setShowRawHtmlSource] = useState(false);
   const [formData, setFormData] = useState<BlogPayload>(emptyForm);
+  const [initialFormSnapshot, setInitialFormSnapshot] = useState(JSON.stringify(emptyForm));
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | BlogStatus>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,21 +185,71 @@ export function BlogManagerPage() {
     return filteredBlogs.slice(pagination.startIndex, pagination.endIndex + 1);
   }, [filteredBlogs, pagination.endIndex, pagination.startIndex]);
 
-  const createMutation = useMutation({
+  const stats = useMemo(
+    () => ({
+      all: pagedData.content.length,
+      draft: pagedData.content.filter((blog) => blog.status === "DRAFT").length,
+      published: pagedData.content.filter((blog) => blog.status === "PUBLISHED").length,
+      archived: pagedData.content.filter((blog) => blog.status === "ARCHIVED").length,
+    }),
+    [pagedData.content]
+  );
+
+  const contentWords = useMemo(() => {
+    const plain = stripHtml(formData.content ?? "");
+    if (!plain) return 0;
+    return plain.split(/\s+/).filter(Boolean).length;
+  }, [formData.content]);
+
+  const estimatedReadMinutes = useMemo(
+    () => estimateReadTimeMinutes(formData.content ?? ""),
+    [formData.content]
+  );
+
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (!formData.title.trim()) errors.push("Tiêu đề không được để trống");
+    if (formData.title.trim().length > 150) errors.push("Tiêu đề không vượt quá 150 ký tự");
+    if (!formData.summary.trim()) errors.push("Tóm tắt không được để trống");
+    if (formData.summary.trim().length > 300) errors.push("Tóm tắt không vượt quá 300 ký tự");
+    if (!formData.content.trim()) errors.push("Nội dung không được để trống");
+    return errors;
+  }, [formData.content, formData.summary, formData.title]);
+
+  const currentFormSnapshot = useMemo(() => JSON.stringify(formData), [formData]);
+  const hasUnsavedChanges = dialogOpen && currentFormSnapshot !== initialFormSnapshot;
+
+  const updateFormData = useCallback((updater: (_previous: BlogPayload) => BlogPayload) => {
+    setFormData((previous) => updater(previous));
+  }, []);
+
+  const insertSnippet = useCallback(
+    (snippet: string) => {
+      updateFormData((previous) => ({
+        ...previous,
+        content: `${previous.content}\n${snippet}`.trim(),
+      }));
+    },
+    [updateFormData]
+  );
+
+  const { mutate: createBlog, isPending: isCreating } = useMutation({
     mutationFn: (payload: BlogPayload) => blogService.createBlog(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["blogs"] });
       toast.success("Tạo bài viết thành công");
       setDialogOpen(false);
       setFormData(emptyForm);
+      setInitialFormSnapshot(JSON.stringify(emptyForm));
       setEditingBlog(null);
       setShowContentEditor(true);
       setShowRawThumbnailValue(false);
+      localStorage.removeItem(BLOG_DRAFT_KEY);
     },
     onError: () => toast.error("Không thể tạo bài viết"),
   });
 
-  const updateMutation = useMutation({
+  const { mutate: updateBlog, isPending: isUpdating } = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: BlogPayload }) =>
       blogService.updateBlog(id, payload),
     onSuccess: async () => {
@@ -197,18 +257,42 @@ export function BlogManagerPage() {
       toast.success("Cập nhật bài viết thành công");
       setDialogOpen(false);
       setFormData(emptyForm);
+      setInitialFormSnapshot(JSON.stringify(emptyForm));
       setEditingBlog(null);
       setShowContentEditor(true);
       setShowRawThumbnailValue(false);
+      localStorage.removeItem(BLOG_DRAFT_KEY);
     },
     onError: () => toast.error("Không thể cập nhật bài viết"),
   });
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = isCreating || isUpdating;
 
   const openCreate = () => {
+    const savedDraft = localStorage.getItem(BLOG_DRAFT_KEY);
+    let nextForm = emptyForm;
+
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft) as BlogPayload;
+        if (
+          parsed?.title !== undefined &&
+          parsed?.summary !== undefined &&
+          parsed?.content !== undefined
+        ) {
+          nextForm = {
+            ...emptyForm,
+            ...parsed,
+          };
+        }
+      } catch {
+        localStorage.removeItem(BLOG_DRAFT_KEY);
+      }
+    }
+
     setEditingBlog(null);
-    setFormData(emptyForm);
+    setFormData(nextForm);
+    setInitialFormSnapshot(JSON.stringify(nextForm));
     setShowContentEditor(true);
     setShowRawThumbnailValue(false);
     setEditPreviewImageError(false);
@@ -224,27 +308,33 @@ export function BlogManagerPage() {
       thumbnailUrl: blog.thumbnailUrl,
       status: blog.status,
     });
+    setInitialFormSnapshot(
+      JSON.stringify({
+        title: blog.title,
+        summary: blog.summary,
+        content: blog.content,
+        thumbnailUrl: blog.thumbnailUrl,
+        status: blog.status,
+      })
+    );
     setShowContentEditor(false);
     setShowRawThumbnailValue(false);
     setEditPreviewImageError(false);
     setDialogOpen(true);
   };
 
-  const isFormValid = useMemo(
-    () => !!formData.title?.trim() && !!formData.summary?.trim() && !!formData.content?.trim(),
-    [formData.content, formData.summary, formData.title]
-  );
+  const isFormValid = validationErrors.length === 0;
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!isFormValid || isSubmitting) return;
 
     if (editingBlog) {
-      updateMutation.mutate({ id: editingBlog.id, payload: formData });
+      updateBlog({ id: editingBlog.id, payload: formData });
       return;
     }
 
-    createMutation.mutate(formData);
-  };
+    createBlog(formData);
+  }, [createBlog, editingBlog, formData, isFormValid, isSubmitting, updateBlog]);
 
   const openPreview = (blog: Blog) => {
     setPreviewBlog(blog);
@@ -271,6 +361,63 @@ export function BlogManagerPage() {
     [previewBlog?.content]
   );
 
+  useEffect(() => {
+    if (!dialogOpen || editingBlog) return;
+    localStorage.setItem(BLOG_DRAFT_KEY, JSON.stringify(formData));
+  }, [dialogOpen, editingBlog, formData]);
+
+  useEffect(() => {
+    if (!dialogOpen || !hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [dialogOpen, hasUnsavedChanges]);
+
+  useEffect(() => {
+    const handleKeyboardSave = (event: KeyboardEvent) => {
+      if (!dialogOpen) return;
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      if (isFormValid && !isSubmitting) {
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyboardSave);
+    return () => window.removeEventListener("keydown", handleKeyboardSave);
+  }, [dialogOpen, handleSave, isFormValid, isSubmitting]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
+    maxFiles: 1,
+    accept: {
+      "image/*": [],
+    },
+    onDropAccepted: (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = typeof reader.result === "string" ? reader.result : "";
+        updateFormData((previous) => ({ ...previous, thumbnailUrl: result }));
+        setEditPreviewImageError(false);
+      };
+      reader.onerror = () => {
+        toast.error("Không thể đọc tệp ảnh");
+      };
+      reader.readAsDataURL(file);
+    },
+    onDropRejected: () => {
+      toast.error("Chỉ hỗ trợ tải lên 1 ảnh hợp lệ");
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -278,6 +425,33 @@ export function BlogManagerPage() {
         <Button className="bg-teal-500 hover:bg-teal-600" onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> Thêm bài viết
         </Button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-gray-500">Tổng bài viết</p>
+            <p className="mt-1 text-xl font-semibold text-zinc-900">{stats.all}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-gray-500">Nháp</p>
+            <p className="mt-1 text-xl font-semibold text-gray-700">{stats.draft}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-gray-500">Đã xuất bản</p>
+            <p className="mt-1 text-xl font-semibold text-green-700">{stats.published}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-gray-500">Lưu trữ</p>
+            <p className="mt-1 text-xl font-semibold text-orange-700">{stats.archived}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -566,163 +740,242 @@ export function BlogManagerPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && hasUnsavedChanges) {
+            const shouldDiscard = window.confirm(
+              "Bạn có thay đổi chưa lưu. Bạn có chắc muốn đóng?"
+            );
+            if (!shouldDiscard) return;
+          }
+          setDialogOpen(nextOpen);
+        }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingBlog ? "Chỉnh sửa bài viết" : "Thêm bài viết"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            <div className="space-y-2">
-              <Label htmlFor="title">Tiêu đề</Label>
-              <Input
-                id="title"
-                maxLength={150}
-                value={formData.title}
-                onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, title: event.target.value }))
-                }
-                placeholder="Nhập tiêu đề bài viết"
-              />
-              <p className="text-right text-xs text-gray-400">{formData.title.length}/150</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-teal-100 bg-teal-50 px-3 py-2 text-xs text-teal-700">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>{contentWords} từ</span>
+                <span>•</span>
+                <span>{estimatedReadMinutes} phút đọc</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>{hasUnsavedChanges ? "Có thay đổi chưa lưu" : "Đã đồng bộ"}</span>
+                <span className="font-medium">Ctrl/Cmd + S để lưu</span>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="summary">Tóm tắt</Label>
-              <Textarea
-                id="summary"
-                rows={3}
-                maxLength={300}
-                value={formData.summary}
-                onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, summary: event.target.value }))
-                }
-                placeholder="Nhập tóm tắt ngắn"
-              />
-              <p className="text-right text-xs text-gray-400">{formData.summary.length}/300</p>
-            </div>
+            {validationErrors.length > 0 ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                {validationErrors.map((error) => (
+                  <p key={error}>• {error}</p>
+                ))}
+              </div>
+            ) : null}
 
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label htmlFor="content">Nội dung</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowContentEditor((prev) => !prev)}>
-                  {showContentEditor ? "Thu gọn trình chỉnh sửa" : "Mở trình chỉnh sửa"}
-                </Button>
-              </div>
-              <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-                <p className="mb-1 text-xs font-medium text-gray-500">Xem nhanh nội dung</p>
-                <p className="line-clamp-4 text-sm text-gray-600">
-                  {contentPlainPreview || "Chưa có nội dung"}
-                </p>
-              </div>
-              {showContentEditor && (
-                <>
-                  <Textarea
-                    id="content"
-                    rows={10}
-                    value={formData.content}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Tiêu đề</Label>
+                  <Input
+                    id="title"
+                    maxLength={150}
+                    value={formData.title}
                     onChange={(event) =>
-                      setFormData((prev) => ({ ...prev, content: event.target.value }))
+                      updateFormData((prev) => ({ ...prev, title: event.target.value }))
                     }
-                    placeholder="Nhập nội dung bài viết (HTML hoặc văn bản thường)"
-                    className="font-mono text-xs leading-5"
+                    placeholder="Nhập tiêu đề bài viết"
                   />
-                  <p className="text-right text-xs text-gray-400">
-                    {formData.content.length} ký tự
-                  </p>
-                </>
-              )}
-            </div>
+                  <p className="text-right text-xs text-gray-400">{formData.title.length}/150</p>
+                </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="thumbnailUrl">Ảnh đại diện (URL)</Label>
-                <Input
-                  id="thumbnailUrl"
-                  value={visibleThumbnailInputValue}
-                  readOnly={isThumbnailDataImage && !showRawThumbnailValue}
-                  onChange={(event) =>
-                    setFormData((prev) => ({ ...prev, thumbnailUrl: event.target.value }))
-                  }
-                  placeholder="https://... hoặc data:image/..."
-                />
-                <div className="flex flex-wrap gap-2">
-                  {isThumbnailDataImage && (
+                <div className="space-y-2">
+                  <Label htmlFor="summary">Tóm tắt</Label>
+                  <Textarea
+                    id="summary"
+                    rows={3}
+                    maxLength={300}
+                    value={formData.summary}
+                    onChange={(event) =>
+                      updateFormData((prev) => ({ ...prev, summary: event.target.value }))
+                    }
+                    placeholder="Nhập tóm tắt ngắn"
+                  />
+                  <p className="text-right text-xs text-gray-400">{formData.summary.length}/300</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label htmlFor="content">Nội dung</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowContentEditor((prev) => !prev)}>
+                      {showContentEditor ? "Thu gọn trình chỉnh sửa" : "Mở trình chỉnh sửa"}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => setShowRawThumbnailValue((prev) => !prev)}>
-                      {showRawThumbnailValue ? "Ẩn chuỗi gốc" : "Hiện chuỗi gốc"}
+                      onClick={() => insertSnippet("<h2>Tiêu đề phụ</h2>")}>
+                      Tiêu đề phụ
                     </Button>
-                  )}
-                  {hasThumbnail && (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setFormData((prev) => ({ ...prev, thumbnailUrl: "" }));
-                        setShowRawThumbnailValue(false);
-                      }}>
-                      Xóa ảnh
+                      onClick={() => insertSnippet("<p><strong>Nội dung nhấn mạnh</strong></p>")}>
+                      Nhấn mạnh
                     </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => insertSnippet("<ul>\n  <li>Ý 1</li>\n  <li>Ý 2</li>\n</ul>")}>
+                      Danh sách
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => insertSnippet("<blockquote>Trích dẫn nổi bật</blockquote>")}>
+                      Trích dẫn
+                    </Button>
+                  </div>
+                  <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">Xem nhanh nội dung</p>
+                    <p className="line-clamp-4 text-sm text-gray-600">
+                      {contentPlainPreview || "Chưa có nội dung"}
+                    </p>
+                  </div>
+                  {showContentEditor && (
+                    <>
+                      <Textarea
+                        id="content"
+                        rows={12}
+                        value={formData.content}
+                        onChange={(event) =>
+                          updateFormData((prev) => ({ ...prev, content: event.target.value }))
+                        }
+                        placeholder="Nhập nội dung bài viết (HTML hoặc văn bản thường)"
+                        className="font-mono text-xs leading-5"
+                      />
+                      <p className="text-right text-xs text-gray-400">
+                        {formData.content.length} ký tự
+                      </p>
+                    </>
                   )}
                 </div>
-                {isThumbnailDataImage && !showRawThumbnailValue && (
-                  <p className="text-xs text-gray-500">
-                    Chuỗi data:image đã được rút gọn để dễ nhìn.
-                  </p>
-                )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Trạng thái</Label>
-                <Select
-                  value={formData.status ?? "DRAFT"}
-                  onValueChange={(value: BlogStatus) =>
-                    setFormData((prev) => ({ ...prev, status: value }))
-                  }>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Trạng thái</Label>
+                  <Select
+                    value={formData.status ?? "DRAFT"}
+                    onValueChange={(value: BlogStatus) =>
+                      updateFormData((prev) => ({ ...prev, status: value }))
+                    }>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label>Xem trước ảnh đại diện</Label>
-              {hasThumbnail ? (
-                <div className="overflow-hidden rounded-md border border-gray-100 bg-stone-100">
-                  {!editPreviewImageError ? (
-                    <img
-                      src={thumbnailValue}
-                      alt="Ảnh đại diện bài viết"
-                      className="h-44 w-full object-contain"
-                      onError={() => setEditPreviewImageError(true)}
-                    />
+                <div className="space-y-2">
+                  <Label htmlFor="thumbnailUrl">Ảnh đại diện (URL hoặc kéo thả)</Label>
+                  <Input
+                    id="thumbnailUrl"
+                    value={visibleThumbnailInputValue}
+                    readOnly={isThumbnailDataImage && !showRawThumbnailValue}
+                    onChange={(event) =>
+                      updateFormData((prev) => ({ ...prev, thumbnailUrl: event.target.value }))
+                    }
+                    placeholder="https://... hoặc data:image/..."
+                  />
+
+                  <div
+                    {...getRootProps()}
+                    className={`cursor-pointer rounded-md border border-dashed px-3 py-5 text-center text-xs transition-colors ${
+                      isDragActive
+                        ? "border-teal-400 bg-teal-50 text-teal-700"
+                        : "border-gray-200 bg-gray-50 text-gray-500"
+                    }`}>
+                    <input {...getInputProps()} />
+                    <FileUp className="mx-auto mb-1 h-4 w-4" />
+                    {isDragActive ? "Thả ảnh vào đây" : "Kéo thả ảnh hoặc bấm để chọn tệp"}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {isThumbnailDataImage && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowRawThumbnailValue((prev) => !prev)}>
+                        {showRawThumbnailValue ? "Ẩn chuỗi gốc" : "Hiện chuỗi gốc"}
+                      </Button>
+                    )}
+                    {hasThumbnail && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          updateFormData((prev) => ({ ...prev, thumbnailUrl: "" }));
+                          setShowRawThumbnailValue(false);
+                        }}>
+                        Xóa ảnh
+                      </Button>
+                    )}
+                  </div>
+
+                  {isThumbnailDataImage && !showRawThumbnailValue && (
+                    <p className="text-xs text-gray-500">
+                      Chuỗi data:image đã được rút gọn để dễ nhìn.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Xem trước ảnh đại diện</Label>
+                  {hasThumbnail ? (
+                    <div className="overflow-hidden rounded-md border border-gray-100 bg-stone-100">
+                      {!editPreviewImageError ? (
+                        <img
+                          src={thumbnailValue}
+                          alt="Ảnh đại diện bài viết"
+                          className="h-44 w-full object-contain"
+                          onError={() => setEditPreviewImageError(true)}
+                        />
+                      ) : (
+                        <div className="flex h-44 items-center justify-center text-sm text-gray-500">
+                          Không thể hiển thị ảnh từ nguồn hiện tại
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div className="flex h-44 items-center justify-center text-sm text-gray-500">
-                      Không thể hiển thị ảnh từ nguồn hiện tại
+                    <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400">
+                      Chưa có ảnh đại diện
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400">
-                  Chưa có ảnh đại diện
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
