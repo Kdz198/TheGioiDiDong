@@ -43,6 +43,7 @@ export function useCart() {
         },
         quantity,
         subtotal: variant.price * quantity,
+        type: product.isService ? "gift" : "buy",
       });
     },
     successMessage: "Đã thêm vào giỏ hàng!",
