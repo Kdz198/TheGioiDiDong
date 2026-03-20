@@ -59,6 +59,11 @@ export const API_ENDPOINTS = {
     UPDATE: "/api/products/brands",
     DELETE: (id: number) => `/api/products/brands/${id}`,
   },
+  BLOGS: {
+    LIST: "/api/products/blogs",
+    CREATE: "/api/products/blogs",
+    UPDATE: (id: number) => `/api/products/blogs/${id}`,
+  },
   AUDIT_LOGS: {
     /** GET /api/products/{productId}/audit-logs — paginated logs for one product */
     BY_PRODUCT: (productId: number) => `/api/products/${productId}/audit-logs`,

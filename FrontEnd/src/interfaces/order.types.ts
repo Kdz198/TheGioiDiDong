@@ -36,12 +36,19 @@ export interface OrderStatusHistory {
   updatedBy?: string;
 }
 
+export interface OrderInfo {
+  recipientName?: string;
+  phoneNumber?: string;
+  address?: string;
+}
+
 export interface Order {
   id: number;
   orderCode: string;
   userId?: number;
   userName?: string;
   items: OrderItem[];
+  orderInfo?: OrderInfo[];
   shippingInfo?: ShippingInfo; // Frontend-only
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
@@ -53,6 +60,8 @@ export interface Order {
   appliedVoucherCode?: string; // Frontend-only
   pointsUsed: number; // Frontend-only
   pointsEarned: number; // Frontend-only
+  note?: string;
+  /** @deprecated use note */
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -68,6 +77,12 @@ export interface BackendOrderDetail {
   quantity?: number;
   subtotal?: number;
   type?: string;
+}
+
+export interface BackendOrderInfo {
+  recipientName?: string;
+  phoneNumber?: string;
+  address?: string;
 }
 
 export interface OrderDetailDTO {
@@ -89,6 +104,8 @@ export interface OrderDTO {
   orderCode: string;
   orderDate: string;
   orderDetails: OrderDetailDTO[];
+  orderInfo?: BackendOrderInfo[];
+  note?: string;
 }
 
 export type BackendOrderStatus = "PENDING" | "PAID" | "CANCELED";
@@ -96,6 +113,7 @@ export type BackendOrderStatus = "PENDING" | "PAID" | "CANCELED";
 /** Matches OrderDto from schema-orders.d.ts */
 export interface BackendOrder {
   id?: number;
+  userId?: number;
   userName?: string;
   orderDate?: string;
   status?: BackendOrderStatus;
@@ -103,21 +121,35 @@ export interface BackendOrder {
   basePrice?: number;
   orderCode?: string;
   orderDetails?: BackendOrderDetail[];
+  orderInfo?: BackendOrderInfo[];
+  note?: string;
 }
 
-const STATUS_MAP: Record<string, OrderStatus> = {
+const STATUS_MAP: Record<BackendOrderStatus, OrderStatus> = {
   PENDING: "pending",
   PAID: "paid",
   CANCELED: "canceled",
 };
 
+export function mapBackendOrderStatus(status?: string): OrderStatus {
+  const normalized = (status ?? "PENDING").toUpperCase() as BackendOrderStatus;
+  return STATUS_MAP[normalized] ?? "pending";
+}
+
+export function toBackendOrderStatus(status: string): BackendOrderStatus {
+  const normalized = status.toUpperCase();
+  if (normalized === "PAID") return "PAID";
+  if (normalized === "CANCELED") return "CANCELED";
+  return "PENDING";
+}
+
 /** Map a raw BackendOrder (from /api/orders) to the frontend Order shape */
 export function mapBackendOrder(raw: BackendOrder): Order {
-  const rawStatus = (raw.status ?? "PENDING").toUpperCase();
+  const mappedStatus = mapBackendOrderStatus(raw.status);
   return {
     id: raw.id ?? 0,
     orderCode: raw.orderCode ?? `#${raw.id ?? 0}`,
-    userId: undefined,
+    userId: raw.userId,
     userName: raw.userName,
     items: (raw.orderDetails ?? []).map((d) => ({
       id: d.id ?? 0,
@@ -131,10 +163,15 @@ export function mapBackendOrder(raw: BackendOrder): Order {
         d.subtotal && d.quantity && d.quantity > 0 ? Math.round(d.subtotal / d.quantity) : 0,
       subtotal: d.subtotal ?? 0,
     })),
+    orderInfo: (raw.orderInfo ?? []).map((info) => ({
+      recipientName: info.recipientName ?? "",
+      phoneNumber: info.phoneNumber ?? "",
+      address: info.address ?? "",
+    })),
     shippingInfo: undefined,
     paymentMethod: "payos", // Since system only allows PayOS for now (backend is hardcoded to that), we can default to it
-    paymentStatus: rawStatus === "PAID" ? "paid" : "pending",
-    status: STATUS_MAP[rawStatus] ?? "pending",
+    paymentStatus: mappedStatus === "paid" ? "paid" : "pending",
+    status: mappedStatus,
     subtotal: raw.basePrice ?? 0,
     discountAmount:
       (raw.basePrice ?? 0) - (raw.totalPrice ?? 0) > 0
@@ -144,6 +181,8 @@ export function mapBackendOrder(raw: BackendOrder): Order {
     total: raw.totalPrice ?? 0,
     pointsUsed: 0,
     pointsEarned: 0,
+    note: raw.note,
+    notes: raw.note,
     createdAt: raw.orderDate ?? "",
     updatedAt: raw.orderDate ?? "",
     statusHistory: [],

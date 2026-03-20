@@ -1,6 +1,6 @@
 import type { Permission, User } from "@/interfaces/user.types";
-import { create } from "zustand";
 import { useCartStore } from "@/stores/cartStore.ts";
+import { create } from "zustand";
 
 const TOKEN_KEY = "auth-token";
 const USER_KEY = "auth-user";

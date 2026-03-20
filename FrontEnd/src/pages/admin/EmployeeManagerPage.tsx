@@ -35,7 +35,6 @@ import {
 import { usePagination } from "@/hooks/usePagination";
 import type { User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
-import { formatDate } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -81,7 +80,7 @@ export function EmployeeManagerPage() {
   const [permEmp, setPermEmp] = useState<User | null>(null);
   const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
 
-  const [empSortField, setEmpSortField] = useState<"fullName" | "createdAt">("createdAt");
+  const [empSortField, setEmpSortField] = useState<"fullName">("fullName");
   const [empSortDir, setEmpSortDir] = useState<SortDirection>("none");
   const [pageSize, setPageSize] = useState(10);
 
@@ -115,11 +114,9 @@ export function EmployeeManagerPage() {
         if (empSortField === "fullName") {
           const diff = a.fullName.localeCompare(b.fullName);
           return empSortDir === "asc" ? diff : -diff;
-        } else {
-          const diff =
-            new Date(a.createdAt ?? "").getTime() - new Date(b.createdAt ?? "").getTime();
-          return empSortDir === "asc" ? diff : -diff;
         }
+        // Fallback or handle other sorts if added later
+        return 0;
       });
     }
     return result;
@@ -304,16 +301,6 @@ export function EmployeeManagerPage() {
                   </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">
-                    <SortButton
-                      direction={empSortField === "createdAt" ? empSortDir : "none"}
-                      onChange={(dir) => {
-                        setEmpSortField("createdAt");
-                        setEmpSortDir(dir);
-                      }}>
-                      Ngày tham gia
-                    </SortButton>
-                  </th>
                   <th className="px-4 py-3 font-medium text-gray-500">Quyền</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
@@ -322,7 +309,7 @@ export function EmployeeManagerPage() {
                 {isLoading
                   ? Array.from({ length: 3 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={6} className="px-4 py-3">
+                        <td colSpan={5} className="px-4 py-3">
                           <div className="h-10 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
@@ -341,7 +328,6 @@ export function EmployeeManagerPage() {
                             {emp.isActive ? "Hoạt động" : "Đã khóa"}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-gray-400">{formatDate(emp.createdAt)}</td>
                         <td className="px-4 py-3">
                           {emp.allPermissions && emp.allPermissions.length > 0 ? (
                             <span className="text-xs text-teal-600">
@@ -406,7 +392,7 @@ export function EmployeeManagerPage() {
                     ))}
                 {!isLoading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
                       Không tìm thấy nhân viên nào
                     </td>
                   </tr>

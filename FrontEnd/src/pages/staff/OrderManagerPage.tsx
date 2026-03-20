@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ORDER_STATUS_FILTER_OPTIONS } from "@/constants/order.const";
 import { usePagination } from "@/hooks/usePagination";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
@@ -23,13 +24,6 @@ import { useQuery } from "@tanstack/react-query";
 import { CreditCard, Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "Tất cả" },
-  { value: "PENDING", label: "Chờ xử lý" },
-  { value: "PAID", label: "Đã thanh toán" },
-  { value: "CANCELED", label: "Đã hủy" },
-];
 
 export function OrderManagerPage() {
   const [search, setSearch] = useState("");
@@ -89,7 +83,12 @@ export function OrderManagerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-zinc-900">Quản lý đơn hàng</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-zinc-900">Quản lý đơn hàng</h1>
+        <Button asChild className="bg-teal-500 hover:bg-teal-600">
+          <Link to={ROUTES.STAFF_ORDER_CREATE}>Tạo đơn mới</Link>
+        </Button>
+      </div>
 
       <div className="flex flex-wrap gap-4">
         <div className="relative max-w-sm flex-1">
@@ -106,7 +105,7 @@ export function OrderManagerPage() {
             <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
+            {ORDER_STATUS_FILTER_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
