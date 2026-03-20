@@ -16,6 +16,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Newspaper,
   Package,
   ShoppingCart,
   Tag,
@@ -39,6 +40,7 @@ const adminItems: SidebarItem[] = [
   { label: "Danh mục", href: ROUTES.ADMIN_CATEGORIES, icon: FolderTree },
   { label: "Đơn hàng", href: ROUTES.ADMIN_ORDERS, icon: ShoppingCart },
   { label: "Khuyến mãi", href: ROUTES.ADMIN_PROMOTIONS, icon: Tag },
+  { label: "Bài viết", href: ROUTES.ADMIN_BLOGS, icon: Newspaper },
   { label: "Người dùng", href: ROUTES.ADMIN_USERS, icon: Users },
   { label: "Nhân viên", href: ROUTES.ADMIN_EMPLOYEES, icon: UserCog },
   { label: "Nhật ký SP", href: ROUTES.ADMIN_AUDIT_LOGS, icon: ClipboardList },
@@ -51,6 +53,7 @@ const staffItems: SidebarItem[] = [
   { label: "Đơn hàng", href: ROUTES.STAFF_ORDERS, icon: ShoppingCart },
   { label: "Danh mục", href: ROUTES.STAFF_CATEGORIES, icon: FolderTree },
   { label: "Khuyến mãi", href: ROUTES.STAFF_PROMOTIONS, icon: Tag },
+  { label: "Bài viết", href: ROUTES.STAFF_BLOGS, icon: Newspaper },
   { label: "Khách hàng", href: ROUTES.STAFF_USERS, icon: Users },
 ];
 

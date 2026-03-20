@@ -1,5 +1,6 @@
 export { authManager } from "./auth.manager";
 export { authService } from "./authService";
+export { blogService } from "./blogService";
 export { cartService } from "./cartService";
 export { categoryService } from "./categoryService";
 export { checkoutService } from "./checkoutService";

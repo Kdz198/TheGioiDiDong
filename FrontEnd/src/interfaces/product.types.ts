@@ -140,6 +140,62 @@ export interface ProductAuditLog {
   createdAt: string;
 }
 
+export type BlogStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export interface Blog {
+  id: number;
+  title: string;
+  author: string;
+  summary: string;
+  content: string;
+  thumbnailUrl: string;
+  createdAt: string;
+  status: BlogStatus;
+}
+
+export interface BlogPayload {
+  title: string;
+  summary: string;
+  content: string;
+  thumbnailUrl?: string;
+  status?: BlogStatus;
+}
+
+export interface BackendBlog {
+  id?: number;
+  title?: string;
+  author?: string;
+  summary?: string;
+  content?: string;
+  thumbnailUrl?: string;
+  createdAt?: string;
+  status?: BlogStatus;
+}
+
+export interface PageBlogResponse {
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  size: number;
+  content: Blog[];
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+export function mapBackendBlog(blog: BackendBlog): Blog {
+  return {
+    id: blog.id ?? 0,
+    title: blog.title ?? "",
+    author: blog.author ?? "",
+    summary: blog.summary ?? "",
+    content: blog.content ?? "",
+    thumbnailUrl: blog.thumbnailUrl ?? "",
+    createdAt: blog.createdAt ?? new Date().toISOString(),
+    status: blog.status ?? "DRAFT",
+  };
+}
 /** Paginated wrapper for ProductAuditLog */
 export interface PageProductAuditLog {
   totalElements: number;

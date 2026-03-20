@@ -20,6 +20,9 @@ export type {
 } from "./order.types";
 export type { PaymentInitiateRequest, PaymentInitiateResponse } from "./payment.types";
 export type {
+  Blog,
+  BlogPayload,
+  BlogStatus,
   Brand,
   Category,
   Product,

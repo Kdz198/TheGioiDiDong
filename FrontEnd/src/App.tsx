@@ -155,6 +155,11 @@ const StaffProductVersionManagerPage = lazy(() =>
     default: m.ProductVersionManagerPage,
   }))
 );
+const StaffBlogManagerPage = lazy(() =>
+  import("@/pages/staff/BlogManagerPage").then((m) => ({
+    default: m.BlogManagerPage,
+  }))
+);
 
 // Admin CRUD pages
 const AdminProductManagerPage = lazy(() =>
@@ -205,6 +210,11 @@ const AdminProductVersionManagerPage = lazy(() =>
 const AdminAuditLogPage = lazy(() =>
   import("@/pages/admin/AdminAuditLogPage").then((m) => ({
     default: m.AdminAuditLogPage,
+  }))
+);
+const AdminBlogManagerPage = lazy(() =>
+  import("@/pages/admin/BlogManagerPage").then((m) => ({
+    default: m.BlogManagerPage,
   }))
 );
 
@@ -332,6 +342,7 @@ function App() {
                 <Route path={ROUTES.ADMIN_ORDERS} element={<AdminOrderManagerPage />} />
                 <Route path={ROUTES.ADMIN_ORDER_DETAIL} element={<AdminOrderDetailPage />} />
                 <Route path={ROUTES.ADMIN_PROMOTIONS} element={<AdminPromotionManagerPage />} />
+                <Route path={ROUTES.ADMIN_BLOGS} element={<AdminBlogManagerPage />} />
                 <Route path={ROUTES.ADMIN_FEEDBACK} element={<AdminFeedbackManagerPage />} />
                 <Route
                   path={ROUTES.ADMIN_PRODUCT_VERSIONS}
@@ -360,6 +371,7 @@ function App() {
                 <Route path={ROUTES.STAFF_ORDER_CREATE} element={<StaffOrderCreatePage />} />
                 <Route path={ROUTES.STAFF_ORDER_DETAIL} element={<StaffOrderDetailPage />} />
                 <Route path={ROUTES.STAFF_PROMOTIONS} element={<StaffPromotionManagerPage />} />
+                <Route path={ROUTES.STAFF_BLOGS} element={<StaffBlogManagerPage />} />
                 <Route path={ROUTES.STAFF_USERS} element={<StaffUserManagerPage />} />
                 <Route path={ROUTES.STAFF_FEEDBACK} element={<StaffFeedbackManagerPage />} />
                 <Route
