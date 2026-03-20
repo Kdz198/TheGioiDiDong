@@ -65,17 +65,17 @@ src/
 
 ## Naming Conventions
 
-| Type            | Convention              | Example                            |
-| --------------- | ----------------------- | ---------------------------------- |
-| Component       | `PascalCase`            | `ProductCard.tsx`, `CartItem.tsx`  |
-| Hook            | `camelCase` + `use`     | `useAuth.ts`, `useCart.ts`         |
-| Service         | `camelCase` + `Service` | `productService.ts`                |
-| Type/Interface  | `PascalCase`            | `Product`, `OrderResponse`         |
-| Props interface | suffix `Props`          | `ProductCardProps`                 |
-| Store           | `camelCase` + `Store`   | `cartStore.ts`                     |
-| Constant file   | `camelCase` + `.const`  | `app.const.ts`                     |
-| Enum value      | `UPPER_CASE`            | `OrderStatus.PENDING`              |
-| CSS class       | Tailwind utility class  | `className="bg-teal-500 ..."`      |
+| Type            | Convention              | Example                           |
+| --------------- | ----------------------- | --------------------------------- |
+| Component       | `PascalCase`            | `ProductCard.tsx`, `CartItem.tsx` |
+| Hook            | `camelCase` + `use`     | `useAuth.ts`, `useCart.ts`        |
+| Service         | `camelCase` + `Service` | `productService.ts`               |
+| Type/Interface  | `PascalCase`            | `Product`, `OrderResponse`        |
+| Props interface | suffix `Props`          | `ProductCardProps`                |
+| Store           | `camelCase` + `Store`   | `cartStore.ts`                    |
+| Constant file   | `camelCase` + `.const`  | `app.const.ts`                    |
+| Enum value      | `UPPER_CASE`            | `OrderStatus.PENDING`             |
+| CSS class       | Tailwind utility class  | `className="bg-teal-500 ..."`     |
 
 ---
 
@@ -85,26 +85,26 @@ src/
 
 ### Primary Colors
 
-| Role                  | Tailwind Class         | Hex       |
-| --------------------- | ---------------------- | --------- |
-| CTA button / Primary  | `bg-teal-500`          | `#14b8a6` |
-| CTA button hover      | `hover:bg-teal-600`    | `#0d9488` |
-| Link / active text    | `text-teal-500`        | `#14b8a6` |
-| Accent (sale/badge)   | `bg-red-400`           | `#f87171` |
-| Sale price            | `text-red-400`         | `#f87171` |
+| Role                     | Tailwind Class      | Hex       |
+| ------------------------ | ------------------- | --------- |
+| CTA button / Primary     | `bg-teal-500`       | `#14b8a6` |
+| CTA button hover         | `hover:bg-teal-600` | `#0d9488` |
+| Link / active text       | `text-teal-500`     | `#14b8a6` |
+| Accent (sale/badge)      | `bg-red-400`        | `#f87171` |
+| Sale price               | `text-red-400`      | `#f87171` |
 | Secondary accent (admin) | `bg-orange-500`     | `#f97316` |
-| Rating stars          | `text-yellow-500`      | `#eab308` |
-| Discount              | `text-green-600`       | `#16a34a` |
+| Rating stars             | `text-yellow-500`   | `#eab308` |
+| Discount                 | `text-green-600`    | `#16a34a` |
 
 ### Background & Text Colors
 
-| Role                  | Tailwind Class         |
-| --------------------- | ---------------------- |
-| Page background       | `bg-stone-50`          |
-| Card / panel          | `bg-white`             |
-| Heading text          | `text-zinc-900`        |
-| Body text             | `text-gray-500`        |
-| Border                | `border-gray-100`      |
+| Role            | Tailwind Class    |
+| --------------- | ----------------- |
+| Page background | `bg-stone-50`     |
+| Card / panel    | `bg-white`        |
+| Heading text    | `text-zinc-900`   |
+| Body text       | `text-gray-500`   |
+| Border          | `border-gray-100` |
 
 ### Typography
 
@@ -118,7 +118,7 @@ src/
 ### Primary CTA Button
 
 ```tsx
-<button className="bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl px-6 py-3 shadow-[0px_10px_15px_-3px_rgba(20,170,184,0.20)] transition-colors">
+<button className="rounded-xl bg-teal-500 px-6 py-3 font-bold text-white shadow-[0px_10px_15px_-3px_rgba(20,170,184,0.20)] transition-colors hover:bg-teal-600">
   Khám phá ngay
 </button>
 ```
@@ -126,7 +126,7 @@ src/
 ### Flash Sale Badge
 
 ```tsx
-<span className="bg-red-400 text-white text-sm font-bold font-['Epilogue'] px-3 py-1 rounded">
+<span className="rounded bg-red-400 px-3 py-1 font-['Epilogue'] text-sm font-bold text-white">
   SIÊU SALE
 </span>
 ```
@@ -135,10 +135,8 @@ src/
 
 ```tsx
 <div className="flex items-center gap-2">
-  <span className="text-red-400 text-lg font-bold font-['Epilogue']">
-    {formatVND(salePrice)}
-  </span>
-  <span className="text-gray-400 text-sm line-through font-['Epilogue']">
+  <span className="font-['Epilogue'] text-lg font-bold text-red-400">{formatVND(salePrice)}</span>
+  <span className="font-['Epilogue'] text-sm text-gray-400 line-through">
     {formatVND(originalPrice)}
   </span>
 </div>
@@ -147,9 +145,11 @@ src/
 ### Star Rating
 
 ```tsx
-{Array.from({ length: 5 }).map((_, i) => (
-  <StarIcon key={i} className={i < rating ? "text-yellow-500" : "text-gray-300"} />
-))}
+{
+  Array.from({ length: 5 }).map((_, i) => (
+    <StarIcon key={i} className={i < rating ? "text-yellow-500" : "text-gray-300"} />
+  ));
+}
 ```
 
 ---
@@ -158,12 +158,12 @@ src/
 
 ### Roles & Permissions
 
-| Role          | Access                                                                     |
-| ------------- | -------------------------------------------------------------------------- |
-| Guest         | Browse products, search, filter, add to cart, checkout, register           |
-| Customer      | All Guest capabilities + order history, wishlist, membership points, redeem|
-| Staff         | Order management, status updates, feedback handling, payment management     |
-| Admin         | Full access: products, categories, brands, users, promotions, reports       |
+| Role     | Access                                                                      |
+| -------- | --------------------------------------------------------------------------- |
+| Guest    | Browse products, search, filter, add to cart, checkout, register            |
+| Customer | All Guest capabilities + order history, wishlist, membership points, redeem |
+| Staff    | Order management, status updates, feedback handling, payment management     |
+| Admin    | Full access: products, categories, brands, users, promotions, reports       |
 
 ### Product Categories
 
@@ -195,18 +195,21 @@ delivered → return_requested → returned
 ### API Schema Summary
 
 **Products Service** (`/api/products/`):
+
 - `Product`: id, name, description, price, stockQuantity, imgUrl, active, versionName, brandName, categoryName
 - `Category`: id, name, description
 - `Brand`: id, name, description, logoUrl
 - `ProductVersion`: id, versionName
 
 **Orders Service** (`/api/orders/`):
+
 - `Order`: id, userId, status (PENDING/PAID/CANCELED), totalPrice, basePrice, discount, orderDetails
 - `Promotion`: id, code, description, type (MONEY/PERCENTAGE/BOGO), discountValue, minOrderAmount, startDate, endDate, active
 - `Payment`: id, order, paymentMethod, amount, date, status (PENDING/COMPLETED/FAILED/REFUNDED)
 - `Feedback`: id, userId, productId, rating, comment, date
 
 **Users Service** (`/api/users/`):
+
 - Basic health/welcome endpoints (user management via mock data for now)
 
 ---
@@ -297,4 +300,3 @@ export function formatVND(amount: number): string {
 6. **Error handling** — every API call must have try/catch; show user-friendly error messages in Vietnamese
 7. **Loading states** — show skeleton/spinner while fetching data
 8. **Unused parameters** starting with `_` (e.g., `_data`) are acceptable to suppress lint warnings
-

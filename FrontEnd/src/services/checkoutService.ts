@@ -9,6 +9,12 @@ export interface CheckoutOrderDetailRequest {
   type: string;
 }
 
+export interface CheckoutOrderInfo {
+  recipientName: string;
+  phoneNumber: string;
+  address: string;
+}
+
 export interface CheckAvailableRequest {
   userId: number;
   status?: "PENDING" | "PAID" | "CANCELED";
@@ -16,6 +22,8 @@ export interface CheckAvailableRequest {
   basePrice: number;
   orderCode?: string;
   orderDetails: CheckoutOrderDetailRequest[];
+  orderInfo?: CheckoutOrderInfo[];
+  note: string;
 }
 
 export interface CheckAvailableResponse extends CheckAvailableRequest {

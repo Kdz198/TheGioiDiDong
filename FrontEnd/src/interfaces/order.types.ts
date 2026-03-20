@@ -70,6 +70,27 @@ export interface BackendOrderDetail {
   type?: string;
 }
 
+export interface OrderDetailDTO {
+  orderDetailId: number;
+  productId: number;
+  productName: string;
+  imgUrl: string;
+  quantity: number;
+  subtotal: number;
+  type: string;
+}
+
+export interface OrderDTO {
+  id: number;
+  userName: string;
+  status: string; // VD: "PENDING", "PAID", "CANCELED"
+  totalPrice: number;
+  basePrice: number;
+  orderCode: string;
+  orderDate: string;
+  orderDetails: OrderDetailDTO[];
+}
+
 export type BackendOrderStatus = "PENDING" | "PAID" | "CANCELED";
 
 /** Matches OrderDto from schema-orders.d.ts */

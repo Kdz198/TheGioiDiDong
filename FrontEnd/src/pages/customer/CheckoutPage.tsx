@@ -19,7 +19,7 @@ import { formatVND } from "@/utils/formatPrice";
 import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -37,6 +37,14 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+type ShippingInfo = {
+  recipientName: string;
+  phoneNumber: string;
+  address: string;
+  note?: string;
+  notes?: string;
+};
+
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const hydrateFromServer = useCartStore((s) => s.hydrateFromServer);
@@ -50,6 +58,13 @@ export function CheckoutPage() {
   const [isApplyingPromotion, setIsApplyingPromotion] = useState(false);
   const [promotionCodeInput, setPromotionCodeInput] = useState("");
   const [appliedPromotion, setAppliedPromotion] = useState<ApiPromotion | null>(null);
+
+  const location = useLocation();
+  const shippingInfoState = location.state as
+    | { shippingInfo?: ShippingInfo; orderInfo?: ShippingInfo }
+    | null;
+  const shippingInfo = shippingInfoState?.shippingInfo ?? shippingInfoState?.orderInfo;
+  const customerNote = shippingInfo?.notes?.trim() || shippingInfo?.note?.trim() || "Không có";
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.subtotal, 0), [items]);
 
@@ -192,26 +207,32 @@ export function CheckoutPage() {
           <div className="space-y-4 lg:col-span-3">
             <Card>
               <CardHeader>
-                <CardTitle>Quy trình thanh toán</CardTitle>
+                <CardTitle>Thông tin khách hàng</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    1
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Họ và tên</span>
+                  <span className="text-right font-medium text-zinc-900">
+                    {shippingInfo?.recipientName || "-"}
                   </span>
-                  <p>Xác nhận đơn hàng và kiểm tra tồn kho.</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    2
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Số điện thoại</span>
+                  <span className="text-right font-medium text-zinc-900">
+                    {shippingInfo?.phoneNumber || "-"}
                   </span>
-                  <p>Hệ thống chuyển bạn đến cổng thanh toán PayOS để thanh toán liên ngân hàng.</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    3
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Địa chỉ</span>
+                  <span className="max-w-[65%] break-words text-right font-medium text-zinc-900">
+                    {shippingInfo?.address || "-"}
                   </span>
-                  <p>Quay lại trang xác nhận sau khi giao dịch hoàn tất.</p>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Ghi chú</span>
+                  <span className="max-w-[65%] break-words text-right font-medium text-zinc-900">
+                    {customerNote}
+                  </span>
                 </div>
               </CardContent>
             </Card>

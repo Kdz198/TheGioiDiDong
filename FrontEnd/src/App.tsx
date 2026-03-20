@@ -22,6 +22,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 const HomePage = lazy(() =>
   import("@/pages/customer/HomePage").then((m) => ({ default: m.HomePage }))
 );
+const ServicesPage = lazy(() =>
+  import("@/pages/customer/ServicesPage").then((m) => ({ default: m.ServicesPage }))
+);
 const ProductListPage = lazy(() =>
   import("@/pages/customer/ProductListPage").then((m) => ({
     default: m.ProductListPage,
@@ -60,11 +63,11 @@ const ProfilePage = lazy(() =>
     default: m.ProfilePage,
   }))
 );
-const WishlistPage = lazy(() =>
-  import("@/pages/customer/WishlistPage").then((m) => ({
-    default: m.WishlistPage,
-  }))
-);
+// const WishlistPage = lazy(() =>
+//   import("@/pages/customer/WishlistPage").then((m) => ({
+//     default: m.WishlistPage,
+//   }))
+// );
 const MembershipPage = lazy(() =>
   import("@/pages/customer/MembershipPage").then((m) => ({
     default: m.MembershipPage,
@@ -194,6 +197,11 @@ const AdminProductVersionManagerPage = lazy(() =>
     default: m.ProductVersionManagerPage,
   }))
 );
+const AdminAuditLogPage = lazy(() =>
+  import("@/pages/admin/AdminAuditLogPage").then((m) => ({
+    default: m.AdminAuditLogPage,
+  }))
+);
 
 function PageLoader() {
   return (
@@ -215,6 +223,7 @@ function App() {
                 <Route path={ROUTES.HOME} element={<HomePage />} />
                 <Route path={ROUTES.PRODUCTS} element={<ProductListPage />} />
                 <Route path={ROUTES.PRODUCT_DETAIL} element={<ProductDetailPage />} />
+                <Route path={ROUTES.SERVICES} element={<ServicesPage />} />
                 <Route path={ROUTES.CATEGORY} element={<ProductListPage />} />
                 <Route path={ROUTES.SEARCH} element={<ProductListPage />} />
               </Route>
@@ -276,14 +285,14 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route
-                  path={ROUTES.WISHLIST}
-                  element={
-                    <ProtectedRoute role="customer">
-                      <WishlistPage />
-                    </ProtectedRoute>
-                  }
-                />
+                {/*<Route*/}
+                {/*  path={ROUTES.WISHLIST}*/}
+                {/*  element={*/}
+                {/*    <ProtectedRoute role="customer">*/}
+                {/*      <WishlistPage />*/}
+                {/*    </ProtectedRoute>*/}
+                {/*  }*/}
+                {/*/>*/}
                 <Route
                   path={ROUTES.MEMBERSHIP}
                   element={
@@ -323,6 +332,7 @@ function App() {
                   path={ROUTES.ADMIN_PRODUCT_VERSIONS}
                   element={<AdminProductVersionManagerPage />}
                 />
+                <Route path={ROUTES.ADMIN_AUDIT_LOGS} element={<AdminAuditLogPage />} />
               </Route>
 
               {/* Staff Routes — DashboardLayout + ProtectedRoute */}

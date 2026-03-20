@@ -6,18 +6,13 @@ export interface CartItem {
   productId: number;
   variantId: number;
   product: Pick<Product, "id" | "slug" | "name" | "thumbnailUrl">;
-  appProduct: Pick<AppProduct, "id" | "name" | "imgUrl">;
+  appProduct: Pick<AppProduct, "id" | "name" | "imgUrls">;
   variant: Pick<
     ProductVariant,
     "id" | "sku" | "color" | "size" | "price" | "originalPrice" | "stockQuantity"
   >;
   quantity: number;
   subtotal: number;
-  /**
-   * Inside Product interface, we have isService field to indicate if the product is a service 
-   * If it is a service, then when adding to cart, we will set type to "gift", otherwise it is "buy".
-   */
-  type: "gift" | "buy";
 }
 
 export interface Cart {

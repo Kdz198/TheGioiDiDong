@@ -56,3 +56,18 @@ export interface ApiPromotion {
   quantity: number;
   applicableProductIds?: number[];
 }
+
+export interface AppPromotion {
+  id: number;
+  code: string;
+  description: string;
+  type: "PERCENTAGE" | "BOGO" | "MONEY" | string;
+  discountValue: number;
+  maxDiscountValue: number;
+  minOrderAmount: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  quantity: number;
+  applicableProductIds: number[];
+}

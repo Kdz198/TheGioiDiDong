@@ -56,6 +56,11 @@ export function Header() {
             className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Sản phẩm
           </Link>
+          <Link
+            to={ROUTES.SERVICES}
+            className="text-sm font-medium text-zinc-700 hover:text-teal-500">
+            Dịch vụ
+          </Link>
         </nav>
 
         {/* Search Bar */}

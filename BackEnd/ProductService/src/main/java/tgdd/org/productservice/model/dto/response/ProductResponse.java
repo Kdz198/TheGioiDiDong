@@ -1,11 +1,10 @@
-package tgdd.org.productservice.model.dto;
+package tgdd.org.productservice.model.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -25,5 +24,7 @@ public class ProductResponse {
     String brandName;
     String categoryName;
     boolean type;
+    int originalPrice;
+
 }
 

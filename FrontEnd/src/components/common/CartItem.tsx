@@ -27,11 +27,6 @@ export function CartItemRow({ item, onUpdateQty, onRemove }: CartItemProps) {
           className="text-sm font-medium text-zinc-900 hover:text-teal-500">
           {item.product.name}
         </Link>
-        {(item.variant.color || item.variant.size) && (
-          <p className="text-xs text-gray-400">
-            {[item.variant.color, item.variant.size].filter(Boolean).join(" - ")}
-          </p>
-        )}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-red-400">{formatVND(item.variant.price)}</span>
           {item.variant.originalPrice > item.variant.price && (

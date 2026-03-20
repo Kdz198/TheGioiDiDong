@@ -62,7 +62,8 @@ public class OrderServiceImpl implements OrderService {
         newOrder.setTotalPrice(orderRequest.getTotalPrice());
         newOrder.setBasePrice(orderRequest.getBasePrice());
         newOrder.setOrderCode(orderRequest.getOrderCode());
-
+        newOrder.setOrderInfo(orderRequest.getOrderInfo());
+        newOrder.setNote(orderRequest.getNote());
         List<OrderDetail> details = getOrderDetails(orderRequest);
         newOrder.setOrderDetails(details);
         return toOrderResponse(orderRepo.save(newOrder));
@@ -135,6 +136,8 @@ public class OrderServiceImpl implements OrderService {
                 .orderCode(order.getOrderCode())
                 .orderDate(order.getOrderDate())
                 .orderDetails(orderDetails)
+                .orderInfo(order.getOrderInfo())
+                .note(order.getNote())
                 .build();
     }
 

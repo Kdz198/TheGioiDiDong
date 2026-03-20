@@ -3,6 +3,7 @@ import { USE_MOCK_API } from "@/constants/app.const";
 import type {
   ApiPromotion,
   ApiPromotionType,
+  AppPromotion,
   Promotion,
   Voucher,
 } from "@/interfaces/promotion.types";
@@ -182,5 +183,10 @@ export const promotionService = {
       return;
     }
     await apiClient.delete(API_ENDPOINTS.PROMOTIONS.DELETE(id));
+  },
+
+  getActivePromotions: async (): Promise<AppPromotion[]> => {
+    const response = await apiClient.get<AppPromotion[]>("/api/orders/promotions/active");
+    return response.data;
   },
 };

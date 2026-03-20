@@ -1,5 +1,6 @@
 package fpt.com.orderservice.model.dto;
 
+import fpt.com.orderservice.model.Order;
 import fpt.com.orderservice.model.enums.OrderStatus;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,8 @@ public class OrderDto {
     String orderCode;
     LocalDateTime orderDate;
     List<OrderDetailRequest> orderDetails;
+    List<Order.OrderInfo> orderInfo ;
+    String note;
 
     @Data
     public static class OrderDetailRequest{

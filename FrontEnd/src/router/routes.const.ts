@@ -1,6 +1,7 @@
 export const ROUTES = {
   HOME: "/",
   PRODUCTS: "/products",
+  SERVICES: "/services",
   PRODUCT_DETAIL: "/products/:slug",
   CATEGORY: "/category/:slug",
   SEARCH: "/search",
@@ -36,6 +37,7 @@ export const ROUTES = {
   ADMIN_PROMOTIONS: "/admin/promotions",
   ADMIN_FEEDBACK: "/admin/feedback",
   ADMIN_PRODUCT_VERSIONS: "/admin/product-versions",
+  ADMIN_AUDIT_LOGS: "/admin/audit-logs",
 
   STAFF: "/staff",
   STAFF_ORDERS: "/staff/orders",

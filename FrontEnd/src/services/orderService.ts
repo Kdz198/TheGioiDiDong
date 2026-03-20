@@ -1,10 +1,12 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import type { PaginatedResponse } from "@/interfaces/api.types";
-import type { BackendOrder, BackendOrderStatus, Order } from "@/interfaces/order.types";
+import type { BackendOrder, BackendOrderStatus, Order, OrderDTO } from "@/interfaces/order.types";
 import { mapBackendOrder } from "@/interfaces/order.types";
 import { apiClient } from "@/lib/api";
 import { mockOrders } from "@/mocks/orders.mock";
+import { useAuthStore } from "@/stores";
+import { extractAccountIdFromToken } from "@/utils/authToken.ts";
 
 export interface CreateOrderRequest {
   userId: number;
@@ -152,5 +154,21 @@ export const orderService = {
     }
     const response = await apiClient.get<BackendOrder[]>(API_ENDPOINTS.ORDERS.BY_USER(userId));
     return Array.isArray(response.data) ? response.data.map(mapBackendOrder) : [];
+  },
+
+  getAppOrdersByUserId: async (): Promise<OrderDTO[]> => {
+    // Lấy token từ store để giải mã ra userId
+    const token = useAuthStore.getState().token;
+    const userId = extractAccountIdFromToken(token);
+
+    if (!userId) throw new Error("User not found");
+
+    const response = await apiClient.get<OrderDTO[]>(`/api/orders/user/${userId}`);
+    return response.data;
+  },
+
+  getAppOrderById: async (id: number): Promise<OrderDTO> => {
+    const response = await apiClient.get<OrderDTO>(`/api/orders/${id}`);
+    return response.data;
   },
 };

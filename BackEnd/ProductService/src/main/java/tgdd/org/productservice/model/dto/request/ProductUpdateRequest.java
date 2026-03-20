@@ -1,4 +1,4 @@
-package tgdd.org.productservice.model.dto;
+package tgdd.org.productservice.model.dto.request;
 
 import lombok.Data;
 
@@ -13,5 +13,6 @@ public class ProductUpdateRequest {
     Integer versionId;
     Integer brandId;
     Integer categoryId;
+    int originalPrice;
 }
 
