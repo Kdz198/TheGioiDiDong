@@ -32,7 +32,6 @@ import {
 import { usePagination } from "@/hooks/usePagination";
 import type { CreateAccountRequest, User } from "@/interfaces/user.types";
 import { userService } from "@/services/userService";
-import { formatDate } from "@/utils/formatDate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Search, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -244,7 +243,6 @@ export function UserManagerPage() {
                   <th className="px-4 py-3 font-medium text-gray-500">Email</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Vai trò</th>
                   <th className="px-4 py-3 font-medium text-gray-500">Trạng thái</th>
-                  <th className="px-4 py-3 font-medium text-gray-500">Ngày tham gia</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -252,7 +250,7 @@ export function UserManagerPage() {
                 {isLoading
                   ? Array.from({ length: 3 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={6} className="px-4 py-3">
+                        <td colSpan={5} className="px-4 py-3">
                           <div className="h-10 animate-pulse rounded bg-gray-100" />
                         </td>
                       </tr>
@@ -276,7 +274,6 @@ export function UserManagerPage() {
                             {user.isActive ? "Hoạt động" : "Khóa"}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-gray-400">{formatDate(user.createdAt)}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button
@@ -307,7 +304,7 @@ export function UserManagerPage() {
                     ))}
                 {!isLoading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
                       {roleFilter === "STAFF"
                         ? "Không tìm thấy nhân viên nào"
                         : "Không tìm thấy khách hàng nào"}

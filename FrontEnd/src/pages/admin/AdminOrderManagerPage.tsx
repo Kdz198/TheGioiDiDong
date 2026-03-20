@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ORDER_STATUS_FILTER_OPTIONS } from "@/constants/order.const";
 import { usePagination } from "@/hooks/usePagination";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
@@ -23,13 +24,6 @@ import { useQuery } from "@tanstack/react-query";
 import { CreditCard, Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "Tất cả" },
-  { value: "PENDING", label: "Chờ xử lý" },
-  { value: "PAID", label: "Đã thanh toán" },
-  { value: "CANCELED", label: "Đã hủy" },
-];
 
 export function AdminOrderManagerPage() {
   const [search, setSearch] = useState("");
@@ -106,7 +100,7 @@ export function AdminOrderManagerPage() {
             <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
+            {ORDER_STATUS_FILTER_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
