@@ -13,6 +13,7 @@ export interface CartItem {
   >;
   quantity: number;
   subtotal: number;
+  type?: "gift" | "buy";
 }
 
 export interface Cart {
