@@ -1,3 +1,4 @@
+import { ProductPickerDialog } from "@/components/common/ProductPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,8 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/router/routes.const";
-import { type CreateOrderRequest, orderService } from "@/services/orderService";
-import { paymentService } from "@/services/paymentService";
+import { checkoutService, type CheckAvailableRequest } from "@/services/checkoutService";
 import { productService } from "@/services/productService";
 import {
   calculatePromotionDiscount,
@@ -24,7 +24,7 @@ import { useAuthStore } from "@/stores";
 import { extractAccountIdFromToken } from "@/utils/authToken";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Copy, ExternalLink, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -46,6 +46,8 @@ interface PaymentResultState {
   orderCode: string;
 }
 
+const RECENT_CUSTOMER_IDS_KEY = "staff-order-recent-customer-ids";
+
 function toPositiveInt(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return 1;
@@ -64,10 +66,20 @@ export function StaffOrderCreatePage() {
   const [orderTargetMode, setOrderTargetMode] = useState<OrderTargetMode>("customer");
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [productSearch, setProductSearch] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [items, setItems] = useState<DraftOrderItem[]>([]);
+  const [recentCustomerIds, setRecentCustomerIds] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem(RECENT_CUSTOMER_IDS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((item) => Number.isInteger(item));
+    } catch {
+      return [];
+    }
+  });
 
   const [recipientName, setRecipientName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -98,6 +110,10 @@ export function StaffOrderCreatePage() {
 
   const customers = useMemo(() => customerPaged?.content ?? [], [customerPaged?.content]);
   const products = useMemo(() => productList?.items ?? [], [productList?.items]);
+  const { data: allAddresses = [] } = useQuery({
+    queryKey: ["staff", "order-create", "addresses"],
+    queryFn: userService.getAddresses,
+  });
 
   const filteredCustomers = useMemo(() => {
     const keyword = customerSearch.trim().toLowerCase();
@@ -109,21 +125,15 @@ export function StaffOrderCreatePage() {
     );
   }, [customerSearch, customers]);
 
-  const filteredProducts = useMemo(() => {
-    const keyword = productSearch.trim().toLowerCase();
-    if (!keyword) return products;
-    return products.filter((product) => product.name.toLowerCase().includes(keyword));
-  }, [productSearch, products]);
-
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId]
   );
 
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === selectedProductId) ?? null,
-    [products, selectedProductId]
-  );
+  const recentCustomers = useMemo(() => {
+    const recentSet = new Set(recentCustomerIds);
+    return customers.filter((customer) => recentSet.has(customer.id));
+  }, [customers, recentCustomerIds]);
 
   const effectiveTargetUserId = orderTargetMode === "self" ? selfAccountId : selectedCustomerId;
 
@@ -134,54 +144,111 @@ export function StaffOrderCreatePage() {
     [basePrice, promoDiscountAmount]
   );
 
-  const addItem = () => {
-    if (!selectedProduct) {
-      toast.error("Vui lòng chọn sản phẩm");
-      return;
+  const existingQuantities = useMemo(
+    () =>
+      items.reduce<Record<number, number>>((acc, item) => {
+        acc[item.productId] = item.quantity;
+        return acc;
+      }, {}),
+    [items]
+  );
+
+  const pushRecentCustomer = (customerId: number) => {
+    setRecentCustomerIds((prev) => {
+      const next = [customerId, ...prev.filter((id) => id !== customerId)].slice(0, 5);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(RECENT_CUSTOMER_IDS_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const selectCustomer = (customerId: number) => {
+    const customer = customers.find((item) => item.id === customerId);
+    setSelectedCustomerId(customerId);
+    pushRecentCustomer(customerId);
+
+    if (customer) {
+      setRecipientName(customer.fullName ?? "");
+      setPhoneNumber(customer.phone ?? "");
     }
 
-    const maxStock = selectedProduct.stockQuantity ?? 0;
-    if (maxStock <= 0) {
-      toast.error("Sản phẩm đã hết hàng");
-      return;
-    }
+    const defaultAddress =
+      allAddresses.find((item) => item.userId === customerId && item.isDefault) ??
+      allAddresses.find((item) => item.userId === customerId);
 
-    if (selectedQuantity > maxStock) {
-      toast.error(`Số lượng vượt tồn kho (${maxStock})`);
-      return;
-    }
+    if (defaultAddress) {
+      const formattedAddress = [
+        defaultAddress.streetAddress,
+        defaultAddress.ward,
+        defaultAddress.district,
+        defaultAddress.province,
+      ]
+        .filter(Boolean)
+        .join(", ");
 
+      setAddress(formattedAddress);
+      if (defaultAddress.recipientName) setRecipientName(defaultAddress.recipientName);
+      if (defaultAddress.phone) setPhoneNumber(defaultAddress.phone);
+    }
+  };
+
+  const addSelectedProducts = (selections: Array<{ productId: number; quantity: number }>) => {
+    if (!selections.length) return;
+
+    let hasStockIssue = false;
     setItems((prev) => {
-      const existing = prev.find((item) => item.productId === selectedProduct.id);
-      if (existing) {
-        const nextQty = existing.quantity + selectedQuantity;
-        if (nextQty > existing.maxStock) {
-          toast.error(`Tổng số lượng vượt tồn kho (${existing.maxStock})`);
-          return prev;
+      let next = [...prev];
+
+      for (const selection of selections) {
+        const product = products.find((item) => item.id === selection.productId);
+        if (!product) continue;
+
+        const maxStock = product.stockQuantity ?? 0;
+        if (maxStock <= 0) {
+          hasStockIssue = true;
+          continue;
         }
-        return prev.map((item) =>
-          item.productId === selectedProduct.id
-            ? {
-                ...item,
-                quantity: nextQty,
-                subtotal: nextQty * item.unitPrice,
-              }
-            : item
-        );
+
+        const existing = next.find((item) => item.productId === product.id);
+        if (existing) {
+          const mergedQty = existing.quantity + selection.quantity;
+          if (mergedQty > existing.maxStock) {
+            hasStockIssue = true;
+            continue;
+          }
+
+          next = next.map((item) =>
+            item.productId === product.id
+              ? {
+                  ...item,
+                  quantity: mergedQty,
+                  subtotal: mergedQty * item.unitPrice,
+                }
+              : item
+          );
+          continue;
+        }
+
+        const boundedQty = Math.min(selection.quantity, maxStock);
+        next.push({
+          productId: product.id,
+          productName: product.name,
+          unitPrice: product.defaultPrice,
+          quantity: boundedQty,
+          subtotal: boundedQty * product.defaultPrice,
+          maxStock,
+        });
       }
 
-      return [
-        ...prev,
-        {
-          productId: selectedProduct.id,
-          productName: selectedProduct.name,
-          unitPrice: selectedProduct.defaultPrice,
-          quantity: selectedQuantity,
-          subtotal: selectedProduct.defaultPrice * selectedQuantity,
-          maxStock,
-        },
-      ];
+      return next;
     });
+
+    if (hasStockIssue) {
+      toast.error("Một số sản phẩm vượt tồn kho và đã được bỏ qua");
+    } else {
+      toast.success("Đã thêm sản phẩm vào đơn");
+    }
   };
 
   const updateItemQuantity = (productId: number, quantityText: string) => {
@@ -248,7 +315,7 @@ export function StaffOrderCreatePage() {
         throw new Error("Vui lòng thêm ít nhất một sản phẩm");
       }
 
-      const payload: CreateOrderRequest = {
+      const payload: CheckAvailableRequest = {
         userId: effectiveTargetUserId,
         status: "PENDING",
         basePrice,
@@ -269,22 +336,22 @@ export function StaffOrderCreatePage() {
         note: orderNote.trim() || undefined,
       };
 
-      const order = await orderService.createOrder(payload);
-      if (!order.orderCode) {
+      const checkAvailable = await checkoutService.checkAvailable(payload);
+      if (!checkAvailable.orderCode) {
         throw new Error("Không nhận được mã đơn để khởi tạo thanh toán");
       }
 
-      const payment = await paymentService.initiatePayment(
-        order.orderCode,
+      const paymentUrl = await checkoutService.makePaymentWithRetry(
+        checkAvailable.orderCode,
         appliedPromoCode ?? undefined
       );
-      if (!payment.paymentUrl) {
+      if (!paymentUrl) {
         throw new Error("Đơn đã tạo nhưng không nhận được link thanh toán");
       }
 
       return {
-        orderCode: order.orderCode,
-        paymentUrl: payment.paymentUrl,
+        orderCode: checkAvailable.orderCode,
+        paymentUrl,
       };
     },
     onSuccess: ({ orderCode, paymentUrl }) => {
@@ -363,6 +430,20 @@ export function StaffOrderCreatePage() {
               {orderTargetMode === "customer" ? (
                 <div className="space-y-3 rounded-lg border border-gray-100 p-3">
                   <Label>Tìm khách hàng</Label>
+                  {recentCustomers.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {recentCustomers.map((customer) => (
+                        <Button
+                          key={customer.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => selectCustomer(customer.id)}>
+                          {customer.fullName}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                   <div className="relative">
                     <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <Input
@@ -375,7 +456,7 @@ export function StaffOrderCreatePage() {
 
                   <Select
                     value={selectedCustomerId ? String(selectedCustomerId) : ""}
-                    onValueChange={(value) => setSelectedCustomerId(Number(value))}>
+                    onValueChange={(value) => selectCustomer(Number(value))}>
                     <SelectTrigger>
                       <SelectValue
                         placeholder={
@@ -392,10 +473,19 @@ export function StaffOrderCreatePage() {
                     </SelectContent>
                   </Select>
                   {selectedCustomer && (
-                    <p className="text-xs text-gray-500">
-                      Đang chọn:{" "}
-                      <span className="font-medium text-zinc-700">{selectedCustomer.fullName}</span>
-                    </p>
+                    <div className="rounded-md border border-teal-100 bg-teal-50 px-3 py-2 text-xs text-teal-700">
+                      <p>
+                        Đang chọn:{" "}
+                        <span className="font-semibold">{selectedCustomer.fullName}</span>
+                      </p>
+                      <p>
+                        Email: <span className="font-medium">{selectedCustomer.email}</span>
+                      </p>
+                      <p>
+                        SĐT:{" "}
+                        <span className="font-medium">{selectedCustomer.phone || "Chưa có"}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -411,51 +501,20 @@ export function StaffOrderCreatePage() {
               <CardTitle className="text-base">Sản phẩm</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-[1fr,180px,130px]">
+              <div className="space-y-2">
                 <div className="space-y-2">
-                  <Label>Tìm sản phẩm</Label>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      value={productSearch}
-                      onChange={(event) => setProductSearch(event.target.value)}
-                      placeholder="Nhập tên sản phẩm"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select
-                    value={selectedProductId ? String(selectedProductId) : ""}
-                    onValueChange={(value) => setSelectedProductId(Number(value))}>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={isProductsLoading ? "Đang tải sản phẩm..." : "Chọn sản phẩm"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredProducts.map((product) => (
-                        <SelectItem key={product.id} value={String(product.id)}>
-                          {product.name} - {formatVND(product.defaultPrice)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Số lượng</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={selectedQuantity}
-                    onChange={(event) => setSelectedQuantity(toPositiveInt(event.target.value))}
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={addItem}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm
+                  <Label>Sản phẩm</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setProductPickerOpen(true)}>
+                    <Search className="mr-2 h-4 w-4 text-gray-500" />
+                    Chọn nhiều sản phẩm
                   </Button>
+                  <p className="text-xs text-gray-500">
+                    Chọn sản phẩm và số lượng ngay trong modal, hệ thống sẽ tự cộng dồn khi trùng.
+                  </p>
                 </div>
               </div>
 
@@ -661,6 +720,15 @@ export function StaffOrderCreatePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ProductPickerDialog
+        open={productPickerOpen}
+        onOpenChange={setProductPickerOpen}
+        products={products}
+        isLoading={isProductsLoading}
+        existingQuantities={existingQuantities}
+        onConfirm={addSelectedProducts}
+      />
     </div>
   );
 }
