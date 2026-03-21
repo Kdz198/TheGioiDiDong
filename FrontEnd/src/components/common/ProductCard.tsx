@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import type { AppProduct } from "@/interfaces/product.types";
 import { formatVND } from "@/utils/formatPrice";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -12,12 +12,7 @@ interface ProductCardProps {
   onToggleWishlist?: (id: number) => void;
 }
 
-export function ProductCard({
-  product,
-  onAddToCart,
-  isWishlisted,
-  onToggleWishlist,
-}: ProductCardProps) {
+export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   // Đảm bảo luôn có ít nhất 1 ảnh để hiển thị (tránh lỗi nếu API trả về rỗng)
@@ -69,16 +64,6 @@ export function ProductCard({
             ))}
           </div>
         )}
-
-        {/* Nút Yêu thích */}
-        <button
-          onClick={(e) => {
-            e.preventDefault(); // Ngăn việc bấm tim bị chuyển trang
-            onToggleWishlist?.(product.id);
-          }}
-          className="absolute top-3 right-3 z-10 rounded-full bg-white/80 p-2 text-gray-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-red-500">
-          <Heart className={`h-4 w-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
-        </button>
       </Link>
 
       {/* THÔNG TIN SẢN PHẨM */}
@@ -100,6 +85,11 @@ export function ProductCard({
         <div className="mt-auto pt-3">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-red-500">{formatVND(product.price)}</span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-xs text-gray-400 line-through">
+                {formatVND(product.originalPrice)}
+              </span>
+            )}
           </div>
 
           <div className="mt-3 flex gap-2">

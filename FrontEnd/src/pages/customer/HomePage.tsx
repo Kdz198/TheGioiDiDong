@@ -26,7 +26,7 @@ import { toast } from "sonner";
 
 import { categoryService } from "@/services/categoryService";
 import { productService } from "@/services/productService";
-import { promotionService } from "@/services/promotionService"; // Gọi API Khuyến mãi chuẩn
+import { promotionService } from "@/services/promotionService";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 
@@ -35,7 +35,7 @@ import { ProductCardSkeleton } from "@/components/common/ProductCardSkeleton";
 import { Button } from "@/components/ui/button";
 import type { AppProduct } from "@/interfaces/product.types.ts";
 
-// Lưu ý: Đảm bảo đường dẫn import formatVND đúng với dự án của bạn (format hoặc formatPrice)
+// Đảm bảo import đúng hàm formatVND của bạn
 import { formatVND } from "@/utils/formatPrice";
 
 const BANNER_PAIRS = [
@@ -103,13 +103,11 @@ export function HomePage() {
     setCurrentPage(1);
   }, [selectedBrand, selectedCategory, selectedVersion, sortBy]);
 
-  // --- 1. GỌI API LẤY DANH SÁCH KHUYẾN MÃI (BẰNG SERVICE) ---
   const { data: promotions } = useQuery({
     queryKey: ["promotions", "active"],
     queryFn: promotionService.getActivePromotions,
   });
 
-  // --- 2. TÌM MÃ BOGO VÀ GỌI API LẤY CHI TIẾT SẢN PHẨM MUA 1 TẶNG 1 ---
   const bogoPromotion = promotions?.find((p) => p.code === "BOGO-1");
   const bogoProductIds = bogoPromotion?.applicableProductIds?.filter((id) => id > 0) || [];
 
@@ -126,7 +124,6 @@ export function HomePage() {
     enabled: bogoProductIds.length > 0,
   });
 
-  // LOGIC CHUYỂN TRANG CHO MINI SLIDER MUA 1 TẶNG 1
   const [bogoIdx, setBogoIdx] = useState(0);
   const nextBogo = () =>
     setBogoIdx((prev) => (bogoProducts && prev + 2 < bogoProducts.length ? prev + 2 : 0));
@@ -135,7 +132,6 @@ export function HomePage() {
       bogoProducts && prev - 2 >= 0 ? prev - 2 : Math.max(0, (bogoProducts?.length || 0) - 2)
     );
 
-  // --- CÁC API SẢN PHẨM & DANH MỤC ---
   const { data: allProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["products", "all-active"],
     queryFn: productService.getAppFeaturedProducts,
@@ -282,14 +278,16 @@ export function HomePage() {
                 .map((promo) => (
                   <div
                     key={promo.id}
-                    className="flex overflow-hidden rounded-lg border border-yellow-300 shadow-sm transition-shadow hover:shadow-md">
-                    <div className="flex w-[35%] flex-col items-center justify-center border-r border-dashed border-yellow-200 bg-yellow-400 p-2 text-white">
+                    className="flex overflow-hidden rounded-lg border border-teal-200 shadow-sm transition-shadow hover:shadow-md">
+                    {/* Đã Đổi màu sang Teal thay vì Vàng */}
+                    <div className="flex w-[35%] flex-col items-center justify-center border-r border-dashed border-teal-100 bg-teal-500 p-2 text-white">
                       <Ticket className="mb-1 h-6 w-6 drop-shadow-sm" />
                       <span className="text-center text-[10px] font-bold tracking-wider uppercase">
                         {promo.type}
                       </span>
                     </div>
-                    <div className="flex w-[65%] flex-col justify-between bg-yellow-50/50 p-2">
+                    {/* Nội dung mã */}
+                    <div className="flex w-[65%] flex-col justify-between bg-teal-50/30 p-2">
                       <div>
                         <h3 className="line-clamp-1 text-xs font-bold text-gray-800">
                           Giảm{" "}
@@ -303,7 +301,7 @@ export function HomePage() {
                           {promo.description}
                         </p>
                       </div>
-                      <button className="mt-2 w-max rounded-full bg-blue-600 px-3 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-blue-700">
+                      <button className="mt-2 w-max rounded-full bg-teal-600 px-3 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-teal-700">
                         Lưu mã
                       </button>
                     </div>
@@ -367,8 +365,9 @@ export function HomePage() {
             <h2 className="text-xl font-bold text-zinc-900 uppercase">Gợi ý sản phẩm</h2>
             <Link
               to="/services"
-              className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg">
-              In ấn, Thiết kế, Dịch vụ cá nhân hóa
+              className="group flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-teal-600 hover:shadow-lg">
+              {/* Đã Đổi màu nút dẫn sang trang dịch vụ từ Gradient sang Teal đồng bộ */}
+              Khám phá các Dịch vụ Cá nhân hóa
               <ChevronRightCircle className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -389,7 +388,7 @@ export function HomePage() {
               <button
                 key={ver}
                 onClick={() => setSelectedVersion(selectedVersion === ver ? null : ver)}
-                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedVersion === ver ? "border-blue-500 bg-blue-50 font-semibold text-blue-700" : "border-gray-200 text-gray-600 hover:border-blue-500"}`}>
+                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedVersion === ver ? "border-teal-500 bg-teal-50 font-semibold text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-500"}`}>
                 {ver}
               </button>
             ))}

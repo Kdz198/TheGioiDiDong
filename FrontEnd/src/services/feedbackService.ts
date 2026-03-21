@@ -113,4 +113,33 @@ export const feedbackService = {
     const response = await apiClient.get(API_ENDPOINTS.FEEDBACKS.BY_PRODUCT(productId));
     return response.data;
   },
+
+  getFeedbackByOrderDetailId: async (orderDetailId: number) => {
+    try {
+      const response = await apiClient.get(`/api/orders/feedbacks/order-detail/${orderDetailId}`);
+      return response.data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-unused-vars
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Gửi đánh giá mới
+  submitFeedback: async (data: {
+    userId: number;
+    productId: number;
+    rating: number;
+    comment: string;
+    orderDetailId: number;
+  }) => {
+    const response = await apiClient.post(`/api/orders/feedbacks`, data);
+    return response.data;
+  },
+
+  getProductFeedbacks: async (productId: number) => {
+    // Tùy vào file service của bạn đang dùng apiClient, axios hay fetch, hãy dùng cái tương ứng.
+    // Ví dụ nếu dùng apiClient (hoặc axios):
+    const response = await apiClient.get(`/api/orders/feedbacks/product/${productId}`);
+    return response.data;
+  },
 };
