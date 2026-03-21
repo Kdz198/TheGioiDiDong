@@ -142,4 +142,14 @@ export const feedbackService = {
     const response = await apiClient.get(`/api/orders/feedbacks/product/${productId}`);
     return response.data;
   },
+
+  getFeedbacksByUserId: async (userId: number) => {
+    const response = await apiClient.get(`/api/orders/feedbacks/user/${userId}`);
+    return response.data;
+  },
+
+  getAllFeedbacks: async () => {
+    const response = await apiClient.get(`/api/orders/feedbacks`);
+    return response.data;
+  },
 };
