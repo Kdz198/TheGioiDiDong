@@ -1,3 +1,5 @@
+import { CustomerPickerDialog } from "@/components/common/CustomerPickerDialog";
+import { ProductPickerDialog } from "@/components/common/ProductPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,9 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { User } from "@/interfaces/user.types";
 import { ROUTES } from "@/router/routes.const";
-import { type CreateOrderRequest, orderService } from "@/services/orderService";
-import { paymentService } from "@/services/paymentService";
+import { checkoutService, type CheckAvailableRequest } from "@/services/checkoutService";
 import { productService } from "@/services/productService";
 import {
   calculatePromotionDiscount,
@@ -30,6 +32,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 type OrderTargetMode = "customer" | "self";
+const RECENT_CUSTOMER_KEY = "staff-order-create-recent-customers";
+const RECENT_CUSTOMER_LIMIT = 6;
 
 interface DraftOrderItem {
   productId: number;
@@ -62,11 +66,23 @@ export function StaffOrderCreatePage() {
   const { token, user } = useAuthStore();
 
   const [orderTargetMode, setOrderTargetMode] = useState<OrderTargetMode>("customer");
-  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [productSearch, setProductSearch] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [recentCustomerIds, setRecentCustomerIds] = useState<number[]>(() => {
+    const rawValue = localStorage.getItem(RECENT_CUSTOMER_KEY);
+    if (!rawValue) return [];
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0);
+    } catch {
+      return [];
+    }
+  });
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [items, setItems] = useState<DraftOrderItem[]>([]);
 
   const [recipientName, setRecipientName] = useState("");
@@ -99,31 +115,19 @@ export function StaffOrderCreatePage() {
   const customers = useMemo(() => customerPaged?.content ?? [], [customerPaged?.content]);
   const products = useMemo(() => productList?.items ?? [], [productList?.items]);
 
-  const filteredCustomers = useMemo(() => {
-    const keyword = customerSearch.trim().toLowerCase();
-    if (!keyword) return customers;
-    return customers.filter(
-      (customer) =>
-        customer.fullName.toLowerCase().includes(keyword) ||
-        customer.email.toLowerCase().includes(keyword)
-    );
-  }, [customerSearch, customers]);
-
-  const filteredProducts = useMemo(() => {
-    const keyword = productSearch.trim().toLowerCase();
-    if (!keyword) return products;
-    return products.filter((product) => product.name.toLowerCase().includes(keyword));
-  }, [productSearch, products]);
-
   const selectedCustomer = useMemo(
     () => customers.find((customer) => customer.id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId]
   );
 
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === selectedProductId) ?? null,
-    [products, selectedProductId]
-  );
+  const recentCustomers = useMemo(() => {
+    if (!recentCustomerIds.length) return [];
+
+    const customerMap = new Map(customers.map((customer) => [customer.id, customer]));
+    return recentCustomerIds
+      .map((customerId) => customerMap.get(customerId))
+      .filter((customer): customer is User => Boolean(customer));
+  }, [customers, recentCustomerIds]);
 
   const effectiveTargetUserId = orderTargetMode === "self" ? selfAccountId : selectedCustomerId;
 
@@ -134,53 +138,45 @@ export function StaffOrderCreatePage() {
     [basePrice, promoDiscountAmount]
   );
 
-  const addItem = () => {
-    if (!selectedProduct) {
-      toast.error("Vui lòng chọn sản phẩm");
-      return;
-    }
-
-    const maxStock = selectedProduct.stockQuantity ?? 0;
-    if (maxStock <= 0) {
-      toast.error("Sản phẩm đã hết hàng");
-      return;
-    }
-
-    if (selectedQuantity > maxStock) {
-      toast.error(`Số lượng vượt tồn kho (${maxStock})`);
-      return;
-    }
+  const handleConfirmProductSelections = (
+    selections: Array<{ productId: number; quantity: number }>
+  ) => {
+    if (!selections.length) return;
 
     setItems((prev) => {
-      const existing = prev.find((item) => item.productId === selectedProduct.id);
-      if (existing) {
-        const nextQty = existing.quantity + selectedQuantity;
-        if (nextQty > existing.maxStock) {
-          toast.error(`Tổng số lượng vượt tồn kho (${existing.maxStock})`);
-          return prev;
+      const next = [...prev];
+
+      for (const selection of selections) {
+        const product = products.find((item) => item.id === selection.productId);
+        if (!product) continue;
+
+        const maxStock = product.stockQuantity ?? 0;
+        if (maxStock <= 0) continue;
+
+        const safeQuantity = Math.max(1, Math.min(selection.quantity, maxStock));
+        const existingIndex = next.findIndex((item) => item.productId === product.id);
+
+        if (existingIndex >= 0) {
+          const existing = next[existingIndex];
+          const mergedQuantity = Math.min(existing.quantity + safeQuantity, existing.maxStock);
+          next[existingIndex] = {
+            ...existing,
+            quantity: mergedQuantity,
+            subtotal: mergedQuantity * existing.unitPrice,
+          };
+        } else {
+          next.push({
+            productId: product.id,
+            productName: product.name,
+            unitPrice: product.defaultPrice,
+            quantity: safeQuantity,
+            subtotal: safeQuantity * product.defaultPrice,
+            maxStock,
+          });
         }
-        return prev.map((item) =>
-          item.productId === selectedProduct.id
-            ? {
-                ...item,
-                quantity: nextQty,
-                subtotal: nextQty * item.unitPrice,
-              }
-            : item
-        );
       }
 
-      return [
-        ...prev,
-        {
-          productId: selectedProduct.id,
-          productName: selectedProduct.name,
-          unitPrice: selectedProduct.defaultPrice,
-          quantity: selectedQuantity,
-          subtotal: selectedProduct.defaultPrice * selectedQuantity,
-          maxStock,
-        },
-      ];
+      return next;
     });
   };
 
@@ -248,7 +244,7 @@ export function StaffOrderCreatePage() {
         throw new Error("Vui lòng thêm ít nhất một sản phẩm");
       }
 
-      const payload: CreateOrderRequest = {
+      const payload: CheckAvailableRequest = {
         userId: effectiveTargetUserId,
         status: "PENDING",
         basePrice,
@@ -269,22 +265,22 @@ export function StaffOrderCreatePage() {
         note: orderNote.trim() || undefined,
       };
 
-      const order = await orderService.createOrder(payload);
-      if (!order.orderCode) {
+      const checkAvailable = await checkoutService.checkAvailable(payload);
+      if (!checkAvailable.orderCode) {
         throw new Error("Không nhận được mã đơn để khởi tạo thanh toán");
       }
 
-      const payment = await paymentService.initiatePayment(
-        order.orderCode,
+      const paymentUrl = await checkoutService.makePaymentWithRetry(
+        checkAvailable.orderCode,
         appliedPromoCode ?? undefined
       );
-      if (!payment.paymentUrl) {
+      if (!paymentUrl) {
         throw new Error("Đơn đã tạo nhưng không nhận được link thanh toán");
       }
 
       return {
-        orderCode: order.orderCode,
-        paymentUrl: payment.paymentUrl,
+        orderCode: checkAvailable.orderCode,
+        paymentUrl,
       };
     },
     onSuccess: ({ orderCode, paymentUrl }) => {
@@ -312,6 +308,27 @@ export function StaffOrderCreatePage() {
     }
   };
 
+  const updateRecentCustomers = (customerId: number) => {
+    setRecentCustomerIds((previous) => {
+      const next = [customerId, ...previous.filter((id) => id !== customerId)].slice(
+        0,
+        RECENT_CUSTOMER_LIMIT
+      );
+      localStorage.setItem(RECENT_CUSTOMER_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const applyCustomerSelection = (customerId: number) => {
+    const customer = customers.find((item) => item.id === customerId);
+    if (!customer) return;
+
+    setSelectedCustomerId(customerId);
+    setRecipientName(customer.fullName ?? "");
+    setPhoneNumber(customer.phone ?? "");
+    updateRecentCustomers(customerId);
+  };
+
   const clearPromo = () => {
     setAppliedPromoCode(null);
     setPromoDiscountAmount(0);
@@ -326,6 +343,15 @@ export function StaffOrderCreatePage() {
       toast.error("Không thể sao chép link");
     }
   };
+
+  const existingQuantities = useMemo(
+    () =>
+      items.reduce<Record<number, number>>((acc, item) => {
+        acc[item.productId] = item.quantity;
+        return acc;
+      }, {}),
+    [items]
+  );
 
   return (
     <div className="space-y-6">
@@ -362,41 +388,64 @@ export function StaffOrderCreatePage() {
 
               {orderTargetMode === "customer" ? (
                 <div className="space-y-3 rounded-lg border border-gray-100 p-3">
-                  <Label>Tìm khách hàng</Label>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      value={customerSearch}
-                      onChange={(event) => setCustomerSearch(event.target.value)}
-                      placeholder="Nhập tên hoặc email"
-                      className="pl-9"
-                    />
+                  <Label>Khách hàng</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCustomerPickerOpen(true)}>
+                      <Search className="mr-2 h-4 w-4 text-gray-500" />
+                      {selectedCustomer ? "Đổi khách hàng" : "Chọn khách hàng"}
+                    </Button>
+                    {selectedCustomerId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-gray-500"
+                        onClick={() => {
+                          setSelectedCustomerId(null);
+                          setRecipientName("");
+                          setPhoneNumber("");
+                        }}>
+                        Bỏ chọn
+                      </Button>
+                    ) : null}
                   </div>
 
-                  <Select
-                    value={selectedCustomerId ? String(selectedCustomerId) : ""}
-                    onValueChange={(value) => setSelectedCustomerId(Number(value))}>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isCustomersLoading ? "Đang tải khách hàng..." : "Chọn khách hàng"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCustomers.map((customer) => (
-                        <SelectItem key={customer.id} value={String(customer.id)}>
-                          {customer.fullName} - {customer.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   {selectedCustomer && (
-                    <p className="text-xs text-gray-500">
-                      Đang chọn:{" "}
-                      <span className="font-medium text-zinc-700">{selectedCustomer.fullName}</span>
-                    </p>
+                    <div className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-xs text-teal-800">
+                      <p>
+                        Đang chọn:{" "}
+                        <span className="font-semibold">{selectedCustomer.fullName}</span>
+                      </p>
+                      <p className="text-teal-700">{selectedCustomer.email}</p>
+                    </div>
                   )}
+
+                  {!selectedCustomer ? (
+                    <p className="text-xs text-amber-600">
+                      Vui lòng chọn khách hàng trước khi tạo đơn.
+                    </p>
+                  ) : null}
+
+                  {recentCustomers.length > 0 ? (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-500">Khách gần đây</p>
+                      <div className="flex flex-wrap gap-2">
+                        {recentCustomers.map((customer) => (
+                          <Button
+                            key={`recent-customer-${customer.id}`}
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="max-w-full"
+                            onClick={() => applyCustomerSelection(customer.id)}>
+                            <span className="truncate">{customer.fullName}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-700">
@@ -411,52 +460,20 @@ export function StaffOrderCreatePage() {
               <CardTitle className="text-base">Sản phẩm</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-[1fr,180px,130px]">
-                <div className="space-y-2">
-                  <Label>Tìm sản phẩm</Label>
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      value={productSearch}
-                      onChange={(event) => setProductSearch(event.target.value)}
-                      placeholder="Nhập tên sản phẩm"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select
-                    value={selectedProductId ? String(selectedProductId) : ""}
-                    onValueChange={(value) => setSelectedProductId(Number(value))}>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={isProductsLoading ? "Đang tải sản phẩm..." : "Chọn sản phẩm"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredProducts.map((product) => (
-                        <SelectItem key={product.id} value={String(product.id)}>
-                          {product.name} - {formatVND(product.defaultPrice)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">Danh sách sản phẩm trong đơn</p>
+                  <p className="text-xs text-gray-500">
+                    Chọn nhiều sản phẩm và số lượng trong popup
+                  </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Số lượng</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={selectedQuantity}
-                    onChange={(event) => setSelectedQuantity(toPositiveInt(event.target.value))}
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={addItem}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  className="bg-teal-500 hover:bg-teal-600"
+                  onClick={() => setProductPickerOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Thêm sản phẩm
+                </Button>
               </div>
 
               <div className="overflow-auto rounded-lg border border-gray-100">
@@ -613,7 +630,11 @@ export function StaffOrderCreatePage() {
               <Button
                 className="mt-4 w-full bg-teal-500 hover:bg-teal-600"
                 onClick={() => createOrderMutation.mutate()}
-                disabled={createOrderMutation.isPending || !items.length}>
+                disabled={
+                  createOrderMutation.isPending ||
+                  !items.length ||
+                  (orderTargetMode === "customer" && !selectedCustomerId)
+                }>
                 {createOrderMutation.isPending ? "Đang xử lý..." : "Tạo đơn và thanh toán"}
               </Button>
 
@@ -661,6 +682,25 @@ export function StaffOrderCreatePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CustomerPickerDialog
+        open={customerPickerOpen}
+        onOpenChange={setCustomerPickerOpen}
+        customers={customers}
+        isLoading={isCustomersLoading}
+        selectedCustomerId={selectedCustomerId}
+        recentCustomerIds={recentCustomerIds}
+        onSelectCustomer={applyCustomerSelection}
+      />
+
+      <ProductPickerDialog
+        open={productPickerOpen}
+        onOpenChange={setProductPickerOpen}
+        products={products}
+        isLoading={isProductsLoading}
+        existingQuantities={existingQuantities}
+        onConfirm={handleConfirmProductSelections}
+      />
     </div>
   );
 }
