@@ -21,6 +21,7 @@ export interface CheckAvailableRequest {
   totalPrice: number;
   basePrice: number;
   orderCode?: string;
+  paymentMethod?: "CASH" | "PAYOS";
   orderDetails: CheckoutOrderDetailRequest[];
   orderInfo?: Array<{
     recipientName?: string;
@@ -28,7 +29,6 @@ export interface CheckAvailableRequest {
     address?: string;
   }>;
   note?: string;
-  paymentMethod: "PAYOS" | "COD";
 }
 
 export interface CheckAvailableResponse extends CheckAvailableRequest {
@@ -37,6 +37,11 @@ export interface CheckAvailableResponse extends CheckAvailableRequest {
 
 const PAYMENT_RETRY_ATTEMPTS = 5;
 const PAYMENT_RETRY_DELAY_MS = 250;
+
+interface PaymentRetryOptions {
+  attempts?: number;
+  delayMs?: number;
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -57,16 +62,23 @@ async function makePayment(orderCode: string, promotionCode?: string): Promise<s
   return String(response.data);
 }
 
-async function makePaymentWithRetry(orderCode: string, promotionCode?: string): Promise<string> {
-  for (let attempt = 1; attempt <= PAYMENT_RETRY_ATTEMPTS; attempt += 1) {
+async function makePaymentWithRetry(
+  orderCode: string,
+  promotionCode?: string,
+  options?: PaymentRetryOptions
+): Promise<string> {
+  const attempts = Math.max(1, options?.attempts ?? PAYMENT_RETRY_ATTEMPTS);
+  const delayMs = Math.max(0, options?.delayMs ?? PAYMENT_RETRY_DELAY_MS);
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       return await makePayment(orderCode, promotionCode);
     } catch (error) {
       // Order is created by an async RabbitMQ listener after check-available.
-      if (attempt === PAYMENT_RETRY_ATTEMPTS || !isOrderNotReadyError(error)) {
+      if (attempt === attempts || !isOrderNotReadyError(error)) {
         throw error;
       }
-      await sleep(PAYMENT_RETRY_DELAY_MS);
+      await sleep(delayMs);
     }
   }
   throw new Error("Không thể tạo liên kết thanh toán");
