@@ -274,9 +274,14 @@ export function OrderDetailPage() {
 
   const handleCancel = async () => {
     try {
-      await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
-      toast.success("Đã hủy đơn hàng thành công!");
-      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      const response = await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
+      if (response.status === 200) {
+        toast.success("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ xác nhận từ hệ thống.");
+        queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      } else {
+        toast.error("Không thể hủy đơn hàng lúc này.");
+      }
     } catch {
       toast.error("Không thể hủy đơn hàng lúc này.");
     }
