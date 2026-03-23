@@ -61,5 +61,12 @@ public class PaymentController {
     @PostMapping("/cancel")
     public ResponseEntity<Payment> cancelPayment(@RequestParam String paymentCode) {
         return ResponseEntity.ok(paymentService.cancelPayment(paymentCode));}
+
+
+    @GetMapping("/transaction/{transactionCode}")
+    public ResponseEntity<String> getOrderCodeByTransactionCode(@PathVariable String transactionCode) {
+        return ResponseEntity.ok(paymentService.findOrderCodeByTransactionCode(transactionCode));
+    }
+
 }
 

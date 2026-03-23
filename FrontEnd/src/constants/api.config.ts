@@ -86,6 +86,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: number) => `/api/orders/${id}`,
     BY_USER: (userId: number) => `/api/orders/user/${userId}`,
     BY_STATUS: (status: string) => `/api/orders/status/${status}`,
+    CANCEL: (orderId: number) => `/api/orders/cancel/${orderId}`,
   },
   PAYMENTS: {
     LIST: "/api/orders/payments",

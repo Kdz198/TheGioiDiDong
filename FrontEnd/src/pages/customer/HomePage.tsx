@@ -34,8 +34,6 @@ import { ProductCard } from "@/components/common/ProductCard";
 import { ProductCardSkeleton } from "@/components/common/ProductCardSkeleton";
 import { Button } from "@/components/ui/button";
 import type { AppProduct } from "@/interfaces/product.types.ts";
-
-// Đảm bảo import đúng hàm formatVND của bạn
 import { formatVND } from "@/utils/formatPrice";
 
 const BANNER_PAIRS = [
@@ -93,27 +91,46 @@ export function HomePage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-  const [currentBanner, setCurrentBanner] = useState(0);
 
-  const nextBanner = () => setCurrentBanner((prev) => (prev + 1) % BANNER_PAIRS.length);
-  const prevBanner = () =>
-    setCurrentBanner((prev) => (prev === 0 ? BANNER_PAIRS.length - 1 : prev - 1));
+  // --- States for Sliders ---
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const [bogoIdx, setBogoIdx] = useState(0);
+  const [promoIdx, setPromoIdx] = useState(0);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedBrand, selectedCategory, selectedVersion, sortBy]);
 
-  // THÊM: isLoading để kiểm tra trạng thái đang tải Promotion
+  // --- Data Fetching ---
   const { data: promotions, isLoading: promoLoading } = useQuery({
     queryKey: ["promotions", "active"],
     queryFn: promotionService.getActivePromotions,
   });
 
-  // SỬA: Ưu tiên tìm bằng Type "BOGO", an toàn hơn là tìm bằng Code cố định
-  const bogoPromotion = promotions?.find((p) => p.type === "BOGO" || p.code === "BOGO-1");
+  const { data: allProducts, isLoading: productsLoading } = useQuery({
+    queryKey: ["products", "all-active"],
+    queryFn: productService.getAppFeaturedProducts,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories,
+  });
+
+  // --- Logic for Vouchers (Mã tặng bạn) ---
+  const discountPromos = useMemo(
+    () => promotions?.filter((p) => p.type !== "BOGO") || [],
+    [promotions]
+  );
+
+  const nextPromo = () => setPromoIdx((prev) => (prev + 2 < discountPromos.length ? prev + 2 : 0));
+  const prevPromo = () =>
+    setPromoIdx((prev) => (prev - 2 >= 0 ? prev - 2 : Math.max(0, discountPromos.length - 2)));
+
+  // --- Logic for BOGO ---
+  const bogoPromotion = promotions?.find((p) => p.type === "BOGO");
   const bogoProductIds = bogoPromotion?.applicableProductIds?.filter((id) => id > 0) || [];
 
-  // SỬA: Bỏ thuộc tính `enabled` đi, nếu mảng ID rỗng thì cho return mảng rỗng [] ngay lập tức
   const { data: bogoProducts, isLoading: bogoLoading } = useQuery({
     queryKey: ["bogo-products", bogoProductIds],
     queryFn: async () => {
@@ -126,7 +143,6 @@ export function HomePage() {
     },
   });
 
-  const [bogoIdx, setBogoIdx] = useState(0);
   const nextBogo = () =>
     setBogoIdx((prev) => (bogoProducts && prev + 2 < bogoProducts.length ? prev + 2 : 0));
   const prevBogo = () =>
@@ -134,16 +150,7 @@ export function HomePage() {
       bogoProducts && prev - 2 >= 0 ? prev - 2 : Math.max(0, (bogoProducts?.length || 0) - 2)
     );
 
-  const { data: allProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ["products", "all-active"],
-    queryFn: productService.getAppFeaturedProducts,
-  });
-
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: categoryService.getCategories,
-  });
-
+  // --- Filtering & Sorting Logic ---
   const filterOptions = useMemo(() => {
     if (!allProducts) return { brands: [], versions: [] };
     const realProducts = allProducts.filter((p) => p.type === true);
@@ -162,22 +169,21 @@ export function HomePage() {
       const matchVersion = selectedVersion ? p.versionName === selectedVersion : true;
       return matchBrand && matchCategory && matchVersion;
     });
-
     if (sortBy === "price_asc") result.sort((a, b) => a.price - b.price);
     else if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price);
-
     return result;
   }, [allProducts, selectedBrand, selectedCategory, selectedVersion, sortBy]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
 
+  // --- Handlers ---
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success(`Đã lưu mã: ${code} vào bộ nhớ tạm!`);
+    toast.success(`Đã lưu mã: ${code}`);
   };
 
   const handleAddToCart = (product: AppProduct) => {
@@ -194,7 +200,7 @@ export function HomePage() {
         color: "Mặc định",
         size: "Mặc định",
         price: product.price,
-        originalPrice: (product as any).originalPrice || product.price,
+        originalPrice: product.price,
         stockQuantity: product.quantity ?? 0,
       },
       quantity: 1,
@@ -229,43 +235,34 @@ export function HomePage() {
             </div>
           </div>
           <button
-            onClick={prevBanner}
-            className="absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 opacity-0 shadow-md transition-all group-hover:opacity-100 hover:bg-white sm:-left-3 sm:p-3 lg:-left-5">
-            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            onClick={() => setCurrentBanner((p) => (p === 0 ? BANNER_PAIRS.length - 1 : p - 1))}
+            className="absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-0 transition-all group-hover:opacity-100 sm:-left-3 sm:p-3 lg:-left-5">
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <button
-            onClick={nextBanner}
-            className="absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 opacity-0 shadow-md transition-all group-hover:opacity-100 hover:bg-white sm:-right-3 sm:p-3 lg:-right-5">
-            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            onClick={() => setCurrentBanner((p) => (p + 1) % BANNER_PAIRS.length)}
+            className="absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-0 transition-all group-hover:opacity-100 sm:-right-3 sm:p-3 lg:-right-5">
+            <ChevronRight className="h-6 w-6" />
           </button>
-          <div className="absolute right-0 -bottom-6 left-0 flex justify-center gap-2">
-            {BANNER_PAIRS.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentBanner(idx)}
-                className={`h-2 rounded-full transition-all duration-300 ${currentBanner === idx ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"}`}
-              />
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* THANH DANH MỤC */}
+      {/* DANH MỤC */}
       <section className="relative z-10 container mx-auto -mt-6 px-4">
         <div className="scrollbar-hide flex gap-4 overflow-x-auto rounded-xl border border-gray-100 bg-white p-4 shadow-md">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === null ? "border-teal-500 bg-teal-50 font-semibold text-teal-700 shadow-inner" : "border-gray-100 text-gray-700 hover:border-teal-200 hover:bg-gray-50"}`}>
+            className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === null ? "border-teal-500 bg-teal-50 text-teal-700" : "border-gray-100 hover:bg-gray-50"}`}>
             <LayoutGrid
-              className={`mb-2 h-7 w-7 ${selectedCategory === null ? "text-teal-600" : "text-gray-400 group-hover:text-teal-500"}`}
+              className={`mb-2 h-7 w-7 ${selectedCategory === null ? "text-teal-600" : "text-gray-400"}`}
             />
-            <span className="line-clamp-2 text-center text-xs">Tất cả</span>
+            <span className="text-xs">Tất cả</span>
           </button>
           {categories?.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.name)}
-              className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === cat.name ? "border-teal-500 bg-teal-50 font-semibold text-teal-700 shadow-inner" : "border-gray-100 text-gray-700 hover:border-teal-200 hover:bg-gray-50"}`}>
+              className={`group flex min-w-[100px] flex-col items-center justify-center rounded-lg border p-3 transition-all ${selectedCategory === cat.name ? "border-teal-500 bg-teal-50 text-teal-700" : "border-gray-100 hover:bg-gray-50"}`}>
               {getCategoryIcon(cat.name, selectedCategory === cat.name)}
               <span className="line-clamp-2 text-center text-xs">{cat.name}</span>
             </button>
@@ -274,49 +271,69 @@ export function HomePage() {
       </section>
 
       <div className="container mx-auto mt-8 space-y-8 px-4">
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* CỘT TRÁI: MÃ TẶNG BẠN */}
-          <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <h2 className="mb-4 text-lg font-bold text-zinc-900">Mã tặng bạn</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {promotions
-                ?.filter((p) => p.type !== "BOGO")
-                .map((promo) => (
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* CỘT TRÁI: MÃ TẶNG BẠN (Dạng Slider & Ticket) */}
+          <div className="group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-zinc-900">Mã tặng bạn</h2>
+              {discountPromos.length > 2 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={prevPromo}
+                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 transition-colors hover:bg-teal-50 hover:text-teal-600">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={nextPromo}
+                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 transition-colors hover:bg-teal-50 hover:text-teal-600">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 overflow-hidden">
+              {promoLoading ? (
+                <p className="text-sm text-gray-400 italic">Đang tải mã...</p>
+              ) : (
+                discountPromos.slice(promoIdx, promoIdx + 2).map((promo) => (
                   <div
                     key={promo.id}
-                    className="flex overflow-hidden rounded-lg border border-teal-200 shadow-sm transition-shadow hover:shadow-md">
-                    <div className="flex w-[35%] flex-col items-center justify-center border-r border-dashed border-teal-200 bg-teal-500 p-2 text-white">
-                      <Ticket className="mb-1 h-6 w-6 drop-shadow-sm" />
-                      <span className="text-center text-[10px] font-bold tracking-wider uppercase">
+                    className="relative flex w-1/2 overflow-hidden rounded-xl border border-teal-100 bg-white shadow-sm transition-all hover:shadow-md">
+                    {/* Left Side (Icon Section) */}
+                    <div className="relative flex w-[35%] flex-col items-center justify-center bg-gradient-to-br from-teal-500 to-teal-600 p-2 text-white">
+                      <Ticket className="mb-1 h-6 w-6" />
+                      <span className="text-[9px] font-black uppercase opacity-80">
                         {promo.type}
                       </span>
+                      <div className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-white shadow-inner" />
+                      <div className="absolute -right-1.5 -bottom-1.5 h-3 w-3 rounded-full bg-white shadow-inner" />
                     </div>
-                    <div className="flex w-[65%] flex-col justify-between bg-white p-2">
+                    {/* Right Side (Info Section) */}
+                    <div className="flex w-[65%] flex-col justify-between border-l border-dashed border-teal-200 bg-teal-50/20 p-2.5">
                       <div>
-                        <h3 className="line-clamp-1 text-xs font-bold text-gray-800">
-                          Giảm{" "}
+                        <h3 className="line-clamp-1 text-[13px] font-extrabold text-teal-800">
+                          GIẢM{" "}
                           {promo.type === "PERCENTAGE"
                             ? `${promo.discountValue}%`
                             : formatVND(promo.discountValue)}
                         </h3>
-                        <p
-                          className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-gray-500"
-                          title={promo.description}>
+                        <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-gray-500 italic">
                           {promo.description}
                         </p>
                       </div>
                       <button
                         onClick={() => handleCopyCode(promo.code)}
-                        className="mt-2 w-max rounded-full bg-teal-600 px-3 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-teal-700">
+                        className="mt-2 w-full rounded-lg border border-teal-500 bg-white py-1 text-[10px] font-bold text-teal-600 transition-all hover:bg-teal-600 hover:text-white">
                         Lưu mã
                       </button>
                     </div>
                   </div>
-                ))}
+                ))
+              )}
             </div>
           </div>
 
-          {/* CỘT PHẢI: DEAL MUA 1 TẶNG 1 */}
+          {/* CỘT PHẢI: MUA 1 TẶNG 1 */}
           <div className="group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-zinc-900">Mua 1 Tặng 1</h2>
@@ -324,35 +341,33 @@ export function HomePage() {
                 <div className="flex gap-2">
                   <button
                     onClick={prevBogo}
-                    className="rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
+                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50">
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     onClick={nextBogo}
-                    className="rounded-full border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
+                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50">
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               )}
             </div>
-
             <div className="flex gap-3 overflow-hidden">
-              {/* SỬA: Hiển thị đúng trạng thái Đang tải hoặc Trống */}
-              {promoLoading || bogoLoading ? (
-                <p className="py-4 text-sm text-gray-400">Đang tải deal hời...</p>
-              ) : bogoProducts && bogoProducts.length > 0 ? (
-                bogoProducts.slice(bogoIdx, bogoIdx + 2).map((product) => (
+              {bogoLoading ? (
+                <p className="text-sm text-gray-400">Đang tải...</p>
+              ) : (
+                bogoProducts?.slice(bogoIdx, bogoIdx + 2).map((product) => (
                   <Link
                     to={`/products/${product.id}`}
                     key={product.id}
-                    className="flex w-1/2 items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-2 transition-all hover:border-teal-300 hover:shadow-sm">
+                    className="flex w-1/2 items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-2 transition-all hover:border-teal-300 hover:bg-white hover:shadow-sm">
                     <img
                       src={product.imgUrls?.[0]}
                       alt={product.name}
-                      className="h-16 w-16 rounded-md border border-gray-200 bg-white object-cover"
+                      className="h-14 w-14 rounded-lg border bg-white object-cover"
                     />
                     <div className="flex-1 overflow-hidden">
-                      <h4 className="line-clamp-2 text-xs leading-tight font-medium text-gray-800 group-hover:text-teal-600">
+                      <h4 className="line-clamp-2 text-xs font-medium text-gray-800">
                         {product.name}
                       </h4>
                       <p className="mt-1 text-sm font-bold text-red-500">
@@ -361,27 +376,24 @@ export function HomePage() {
                     </div>
                   </Link>
                 ))
-              ) : (
-                <p className="py-4 text-sm text-gray-400">
-                  Hiện chưa có deal Mua 1 Tặng 1 nào đang diễn ra.
-                </p>
               )}
             </div>
           </div>
         </section>
 
-        {/* SẢN PHẨM & BỘ LỌC */}
+        {/* GỢI Ý SẢN PHẨM & BỘ LỌC */}
         <section className="rounded-xl bg-white p-4 shadow-sm">
           <div className="mb-6 flex flex-col justify-between gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
             <h2 className="text-xl font-bold text-zinc-900 uppercase">Gợi ý sản phẩm</h2>
             <Link
               to="/services"
-              className="group flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-teal-600 hover:shadow-lg">
-              Khám phá các Dịch vụ Cá nhân hóa
+              className="group flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-teal-600 hover:shadow-lg">
+              Khám phá Dịch vụ{" "}
               <ChevronRightCircle className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
 
+          {/* Filter Bar */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="mr-2 flex items-center gap-1 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700">
               <Filter className="h-4 w-4" /> Lọc
@@ -390,16 +402,8 @@ export function HomePage() {
               <button
                 key={brand}
                 onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
-                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedBrand === brand ? "border-teal-500 bg-teal-50 font-semibold text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-500"}`}>
+                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedBrand === brand ? "border-teal-500 bg-teal-50 font-bold text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-500"}`}>
                 {brand}
-              </button>
-            ))}
-            {filterOptions.versions.map((ver) => (
-              <button
-                key={ver}
-                onClick={() => setSelectedVersion(selectedVersion === ver ? null : ver)}
-                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${selectedVersion === ver ? "border-teal-500 bg-teal-50 font-semibold text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-500"}`}>
-                {ver}
               </button>
             ))}
             {(selectedBrand || selectedCategory || selectedVersion) && (
@@ -415,25 +419,27 @@ export function HomePage() {
             )}
           </div>
 
-          <div className="mb-6 flex items-center gap-4 border-b border-gray-100 pb-4 text-sm">
+          {/* Sort Bar */}
+          <div className="mb-6 flex items-center gap-6 border-b border-gray-100 pb-4 text-sm">
             <span className="text-gray-500">Xếp theo:</span>
             <button
               onClick={() => setSortBy("hot")}
-              className={`${sortBy === "hot" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              className={`${sortBy === "hot" ? "font-bold text-teal-600 underline underline-offset-8" : "text-gray-600"}`}>
               Nổi bật
             </button>
             <button
               onClick={() => setSortBy("price_desc")}
-              className={`flex items-center ${sortBy === "price_desc" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              className={`flex items-center ${sortBy === "price_desc" ? "font-bold text-teal-600 underline underline-offset-8" : "text-gray-600"}`}>
               Giá cao <ArrowDown className="ml-1 h-3 w-3" />
             </button>
             <button
               onClick={() => setSortBy("price_asc")}
-              className={`flex items-center ${sortBy === "price_asc" ? "font-bold text-teal-600" : "text-gray-600"}`}>
+              className={`flex items-center ${sortBy === "price_asc" ? "font-bold text-teal-600 underline underline-offset-8" : "text-gray-600"}`}>
               Giá thấp <ArrowUp className="ml-1 h-3 w-3" />
             </button>
           </div>
 
+          {/* Product Grid */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {productsLoading ? (
               Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={i} />)
@@ -450,16 +456,17 @@ export function HomePage() {
             ) : (
               <div className="col-span-full py-16 text-center">
                 <Star className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-                <p className="text-gray-500">Không tìm thấy sản phẩm phù hợp</p>
+                <p className="text-gray-500">Không tìm thấy sản phẩm phù hợp.</p>
               </div>
             )}
           </div>
 
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-4 border-t border-gray-100 pt-6">
               <Button
                 variant="outline"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
                 className="gap-1 bg-white hover:bg-teal-50">
                 <ChevronLeft className="h-4 w-4" /> Trước
@@ -469,7 +476,7 @@ export function HomePage() {
               </span>
               <Button
                 variant="outline"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="gap-1 bg-white hover:bg-teal-50">
                 Sau <ChevronRight className="h-4 w-4" />

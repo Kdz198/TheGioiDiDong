@@ -1,29 +1,37 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { orderService } from "@/services/orderService";
-import { formatVND } from "@/utils/formatPrice"; // Đảm bảo đúng đường dẫn format tiền của bạn
+import { formatVND } from "@/utils/formatPrice";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Package } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Hash,
+  Package,
+  ShoppingBag,
+  XCircle,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Các tab lọc theo status API (PENDING, PAID, CANCELED)
 const tabs = [
   { label: "Tất cả", value: "all" },
-  { label: "Chờ xử lý", value: "PENDING" },
-  { label: "Đã thanh toán", value: "PAID" },
-  { label: "Đã hủy", value: "CANCELED" },
+  { label: "Chờ xử lý", value: "PENDING", icon: <Clock className="mr-2 h-4 w-4" /> },
+  { label: "Đã thanh toán", value: "PAID", icon: <CheckCircle2 className="mr-2 h-4 w-4" /> },
+  { label: "Đã hủy", value: "CANCELED", icon: <XCircle className="mr-2 h-4 w-4" /> },
 ];
 
-const getStatusColor = (status: string) => {
+const getStatusStyles = (status: string) => {
   switch (status) {
     case "PAID":
-      return "text-green-600 bg-green-50 border-green-200";
+      return "text-emerald-700 bg-emerald-50 border-emerald-100";
     case "CANCELED":
-      return "text-red-600 bg-red-50 border-red-200";
+      return "text-rose-700 bg-rose-50 border-rose-100";
     case "PENDING":
-      return "text-amber-600 bg-amber-50 border-amber-200";
+      return "text-amber-700 bg-amber-50 border-amber-100";
     default:
-      return "text-gray-600 bg-gray-50 border-gray-200";
+      return "text-slate-600 bg-slate-50 border-slate-100";
   }
 };
 
@@ -47,32 +55,48 @@ export function OrderHistoryPage() {
   });
 
   return (
-    <div className="container mx-auto min-h-screen bg-[#f1f1f1] px-4 py-8">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="mb-6 text-2xl font-bold text-zinc-900 uppercase">Đơn hàng của tôi</h1>
+    <div className="min-h-screen bg-[#f8fafc] pb-20">
+      {/* Header Section */}
+      <div className="mb-8 border-b border-gray-100 bg-white pt-10 pb-6">
+        <div className="container mx-auto max-w-4xl px-4">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="rounded-lg bg-teal-500 p-2 text-white">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900 uppercase">
+              Đơn hàng của tôi
+            </h1>
+          </div>
+          <p className="text-sm font-normal text-slate-500">
+            Theo dõi và quản lý lịch sử mua sắm của bạn
+          </p>
+        </div>
+      </div>
 
-        <Tabs
-          defaultValue="all"
-          className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-          <TabsList className="scrollbar-hide mb-6 flex h-auto w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+      <div className="container mx-auto max-w-4xl px-4">
+        <Tabs defaultValue="all" className="space-y-6">
+          <TabsList className="scrollbar-hide flex h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="rounded-none border-b-2 border-transparent px-6 py-3 text-sm font-semibold whitespace-nowrap data-[state=active]:border-teal-500 data-[state=active]:bg-transparent data-[state=active]:text-teal-600 data-[state=active]:shadow-none">
+                className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-slate-500 transition-all data-[state=active]:border-teal-500 data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 data-[state=active]:shadow-none">
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {tabs.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value} className="space-y-4">
+            <TabsContent
+              key={tab.value}
+              value={tab.value}
+              className="animate-in fade-in mt-0 space-y-4 duration-500">
               {isLoading ? (
                 <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
+                  {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="h-40 animate-pulse rounded-xl border border-gray-200 bg-gray-100"
+                      className="h-40 animate-pulse rounded-xl border border-gray-100 bg-white"
                     />
                   ))}
                 </div>
@@ -80,34 +104,40 @@ export function OrderHistoryPage() {
                 <>
                   {orders
                     ?.filter((order) => tab.value === "all" || order.status === tab.value)
-                    // Sort giảm dần theo thời gian (mới nhất lên trên)
                     .sort(
                       (a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
                     )
                     .map((order) => (
                       <div
                         key={order.id}
-                        className="overflow-hidden rounded-xl border border-gray-200 bg-white transition-colors hover:border-teal-300">
-                        {/* Header Đơn hàng */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-zinc-800">Mã: {order.orderCode}</span>
-                            <span className="hidden text-sm text-gray-500 sm:inline">
-                              {/* Nếu bạn có hàm formatDate, bọc order.orderDate vào */}
-                              Ngày đặt: {new Date(order.orderDate).toLocaleDateString("vi-VN")}
-                            </span>
+                        className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all hover:border-teal-200">
+                        {/* Order Header */}
+                        <div className="flex items-center justify-between border-b border-gray-50 bg-slate-50/40 px-5 py-3">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5 text-slate-900">
+                              <Hash className="h-3.5 w-3.5 text-teal-500" />
+                              <span className="text-sm font-medium">
+                                {order.orderCode.split("-")[0]}...{order.orderCode.slice(-4)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-slate-400">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span className="text-xs">
+                                {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+                              </span>
+                            </div>
                           </div>
                           <div
-                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusColor(order.status)}`}>
+                            className={`rounded-md border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${getStatusStyles(order.status)}`}>
                             {getStatusText(order.status)}
                           </div>
                         </div>
 
-                        {/* Danh sách sản phẩm */}
-                        <div className="space-y-4 p-4">
+                        {/* Order Items */}
+                        <div className="divide-y divide-gray-50 px-5">
                           {order.orderDetails.map((item) => (
-                            <div key={item.orderDetailId} className="flex items-center gap-4">
-                              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-white p-1">
+                            <div key={item.orderDetailId} className="flex items-center gap-4 py-4">
+                              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-white p-1">
                                 <img
                                   src={item.imgUrl}
                                   alt={item.productName}
@@ -115,13 +145,15 @@ export function OrderHistoryPage() {
                                 />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <h4 className="line-clamp-2 text-sm font-medium text-zinc-900">
+                                <h4 className="line-clamp-1 text-sm font-medium text-slate-800">
                                   {item.productName}
                                 </h4>
-                                <p className="mt-1 text-sm text-gray-500">x {item.quantity}</p>
+                                <p className="mt-1 text-xs font-normal text-slate-400">
+                                  Số lượng: {item.quantity}
+                                </p>
                               </div>
-                              <div className="shrink-0 text-right">
-                                <p className="text-sm font-bold text-red-500">
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-slate-900">
                                   {formatVND(item.subtotal)}
                                 </p>
                               </div>
@@ -129,39 +161,41 @@ export function OrderHistoryPage() {
                           ))}
                         </div>
 
-                        {/* Footer Đơn hàng (Tổng tiền & Nút hành động) */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-200 bg-gray-50 px-4 py-3">
-                          <div className="text-sm">
-                            <span className="text-gray-600">Thành tiền: </span>
-                            <span className="text-lg font-bold text-red-500">
+                        {/* Summary Footer */}
+                        <div className="flex items-center justify-between border-t border-gray-50 bg-white px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-normal tracking-wider text-slate-400 uppercase">
+                              Tổng cộng:
+                            </span>
+                            <span className="text-lg font-semibold text-slate-900">
                               {formatVND(order.totalPrice)}
                             </span>
                           </div>
                           <Button
                             asChild
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            className="hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600">
-                            <Link to={`/orders/${order.id}`} className="flex items-center">
-                              Xem chi tiết <ChevronRight className="ml-1 h-4 w-4" />
+                            className="text-xs font-medium text-teal-600 hover:bg-teal-50">
+                            <Link to={`/orders/${order.id}`}>
+                              Xem chi tiết <ChevronRight className="ml-1 h-3 w-3" />
                             </Link>
                           </Button>
                         </div>
                       </div>
                     ))}
 
-                  {/* Trạng thái Empty */}
+                  {/* Empty State */}
                   {orders?.filter((order) => tab.value === "all" || order.status === tab.value)
                     .length === 0 && (
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-16 text-center">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                        <Package className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <p className="text-lg font-medium text-gray-700">Chưa có đơn hàng nào</p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Khi bạn đặt hàng, chúng sẽ xuất hiện ở đây.
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
+                      <Package className="mb-4 h-10 w-10 text-slate-200" />
+                      <h3 className="text-lg font-medium text-slate-800">Chưa có đơn hàng</h3>
+                      <p className="mt-1 mb-6 text-sm text-slate-400">
+                        Bạn chưa có đơn hàng nào trong mục này.
                       </p>
-                      <Button asChild className="mt-6 bg-teal-500 hover:bg-teal-600">
+                      <Button
+                        asChild
+                        className="rounded-full bg-teal-500 px-8 shadow-sm hover:bg-teal-600">
                         <Link to="/products">Tiếp tục mua sắm</Link>
                       </Button>
                     </div>

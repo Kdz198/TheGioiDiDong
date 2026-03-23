@@ -1,5 +1,6 @@
 package tgdd.org.productservice.model.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -14,6 +15,7 @@ public class OrderRequest {
     List<OrderDetailRequest> orderDetails;
     List<OrderInfo> orderInfo ;
     String note;
+    @NotNull
     PaymentMethod paymentMethod;
 
     @Data
