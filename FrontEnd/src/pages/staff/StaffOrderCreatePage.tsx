@@ -160,7 +160,6 @@ export function StaffOrderCreatePage() {
           },
         ],
         note: orderNote.trim() || undefined,
-        paymentMethod: "PAYOS",
       };
 
       const available = await checkoutService.checkAvailable(payload);
