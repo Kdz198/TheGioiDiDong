@@ -13,6 +13,7 @@ export const ROUTES = {
   CART: "/cart",
   CHECKOUT: "/checkout",
   ORDER_SUCCESS: "/order/success",
+  ORDER_CANCEL: "/order/cancel",
   ORDER_HISTORY: "/orders",
   ORDER_DETAIL: "/orders/:orderId",
   PROFILE: "/profile",

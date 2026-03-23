@@ -28,6 +28,7 @@ export interface CheckAvailableRequest {
     address?: string;
   }>;
   note?: string;
+  paymentMethod: "PAYOS" | "COD";
 }
 
 export interface CheckAvailableResponse extends CheckAvailableRequest {
