@@ -17,6 +17,7 @@ const FIELD_NAME_MAP: Record<string, string> = {
   name: "Tên sản phẩm",
   description: "Mô tả",
   price: "Giá bán",
+  originalPrice: "Giá gốc",
   stockQuantity: "Số lượng tồn kho",
   quantity: "Số lượng tồn kho",
   reserve: "Số lượng dự trữ",
@@ -78,6 +79,8 @@ interface ChangeDetailsPanelProps {
 
 function ChangeDetailsPanel({ log, open, onClose }: ChangeDetailsPanelProps) {
   const entries = Object.entries(log.changes ?? {});
+  const isCreateAction = log.action === "CREATE";
+
   const formattedEntries = entries.map(([key, val]) => {
     const fieldLabel = FIELD_NAME_MAP[key] || key;
 
@@ -114,75 +117,135 @@ function ChangeDetailsPanel({ log, open, onClose }: ChangeDetailsPanelProps) {
           </DialogTitle>
         </DialogHeader>
 
-        {/* Meta */}
-        <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-4 text-sm">
-          <div>
-            <span className="text-gray-500">Hành động</span>
-            <p className="mt-1">
-              <Badge className={actionColor}>{actionLabel}</Badge>
-            </p>
+        {/* Meta Information Card */}
+        <div className="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5 shadow-sm md:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+              Hành động
+            </span>
+            <Badge className={`w-fit ${actionColor}`}>{actionLabel}</Badge>
           </div>
-          <div>
-            <span className="text-gray-500">Thời gian</span>
-            <p className="mt-1 font-medium text-zinc-700">{formatDateTime(log.createdAt)}</p>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+              Thời gian
+            </span>
+            <p className="text-sm font-semibold text-zinc-800">{formatDateTime(log.createdAt)}</p>
           </div>
-          <div className="col-span-2">
-            <span className="text-gray-500">Người thực hiện</span>
-            <p className="mt-1 font-medium text-zinc-700">{log.actorEmail || "—"}</p>
+          <div className="flex flex-col gap-1.5 md:col-span-1">
+            <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+              Người thực hiện
+            </span>
+            <p className="text-sm font-semibold text-zinc-800">{log.actorEmail || "—"}</p>
           </div>
         </div>
 
         <Separator />
 
         {formattedEntries.length === 0 ? (
-          <p className="py-6 text-center text-sm text-gray-400">Không có dữ liệu thay đổi.</p>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg bg-gray-50 py-12">
+            <ClipboardList className="h-12 w-12 text-gray-300" />
+            <p className="text-sm text-gray-500">Không có dữ liệu thay đổi.</p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-gray-700">
-              {formattedEntries.length} trường đã thay đổi
-            </p>
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <div className="grid grid-cols-[minmax(160px,0.9fr)_1fr_1fr] border-b bg-zinc-50 text-xs font-semibold tracking-wide text-zinc-600 uppercase">
-                <div className="px-3 py-2.5">Trường thay đổi</div>
-                <div className="border-l border-gray-200 px-3 py-2.5 text-red-700">Giá trị cũ</div>
-                <div className="border-l border-gray-200 px-3 py-2.5 text-green-700">
-                  Giá trị mới
-                </div>
-              </div>
-
-              {formattedEntries.map((entry) => (
-                <div
-                  key={entry.key}
-                  className="grid grid-cols-[minmax(160px,0.9fr)_1fr_1fr] border-b border-gray-100 text-sm last:border-0">
-                  <div className="min-w-0 bg-zinc-50/70 px-3 py-3 font-semibold wrap-break-word text-zinc-800">
-                    {entry.fieldLabel}
-                  </div>
-
-                  <div className="min-w-0 border-l border-gray-100 bg-red-50/60 px-3 py-3">
-                    <span className="mb-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                      Cũ
-                    </span>
-                    <p className="break-all whitespace-pre-wrap text-red-700 line-through decoration-1">
-                      {entry.before}
-                    </p>
-                  </div>
-
-                  <div className="min-w-0 border-l border-gray-100 bg-green-50/60 px-3 py-3">
-                    <span className="mb-1 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
-                      Mới
-                    </span>
-                    <p className="font-medium break-all whitespace-pre-wrap text-green-800">
-                      {entry.after}
-                    </p>
-                  </div>
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">
+                {isCreateAction ? (
+                  <>
+                    Đã tạo <span className="text-teal-600">{formattedEntries.length}</span> trường
+                  </>
+                ) : (
+                  <>
+                    Đã thay đổi <span className="text-teal-600">{formattedEntries.length}</span>{" "}
+                    trường
+                  </>
+                )}
+              </p>
+              {isCreateAction && (
+                <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                  Tạo mới
+                </Badge>
+              )}
             </div>
+
+            {/* Different layout for CREATE vs UPDATE/DELETE */}
+            {isCreateAction ? (
+              // Single column layout for CREATE action
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="grid grid-cols-[minmax(180px,1fr)_2fr] border-b bg-gradient-to-r from-teal-50 to-green-50 text-xs font-semibold tracking-wide text-zinc-700 uppercase">
+                  <div className="px-4 py-3">Trường dữ liệu</div>
+                  <div className="border-l border-gray-200 px-4 py-3 text-teal-700">Giá trị</div>
+                </div>
+
+                {formattedEntries.map((entry, idx) => (
+                  <div
+                    key={entry.key}
+                    className={`grid grid-cols-[minmax(180px,1fr)_2fr] border-b border-gray-100 text-sm transition-colors last:border-0 hover:bg-gray-50/50 ${
+                      idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                    }`}>
+                    <div className="flex items-center gap-2 px-4 py-3.5 font-semibold text-zinc-800">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-500"></span>
+                      {entry.fieldLabel}
+                    </div>
+
+                    <div className="border-l border-gray-200 px-4 py-3.5">
+                      <p className="font-medium break-all whitespace-pre-wrap text-zinc-700">
+                        {entry.after}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Three column layout for UPDATE/DELETE actions
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="grid grid-cols-[minmax(160px,1fr)_1.2fr_1.2fr] border-b bg-gradient-to-r from-gray-50 to-zinc-50 text-xs font-semibold tracking-wide text-zinc-700 uppercase">
+                  <div className="px-4 py-3">Trường dữ liệu</div>
+                  <div className="border-l border-gray-200 px-4 py-3 text-red-700">Giá trị cũ</div>
+                  <div className="border-l border-gray-200 px-4 py-3 text-green-700">
+                    Giá trị mới
+                  </div>
+                </div>
+
+                {formattedEntries.map((entry, idx) => (
+                  <div
+                    key={entry.key}
+                    className={`grid grid-cols-[minmax(160px,1fr)_1.2fr_1.2fr] border-b border-gray-100 text-sm transition-colors last:border-0 hover:bg-gray-50/30 ${
+                      idx % 2 === 0 ? "bg-white" : "bg-gray-50/20"
+                    }`}>
+                    <div className="flex items-center gap-2 px-4 py-3.5 font-semibold text-zinc-800">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                      {entry.fieldLabel}
+                    </div>
+
+                    <div className="border-l border-gray-200 bg-red-50/40 px-4 py-3.5">
+                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-red-700 uppercase">
+                        <span className="inline-block h-1 w-1 rounded-full bg-red-500"></span>
+                        Trước
+                      </span>
+                      <p className="mt-1 break-all whitespace-pre-wrap text-red-800 line-through decoration-red-400/60 decoration-2">
+                        {entry.before}
+                      </p>
+                    </div>
+
+                    <div className="border-l border-gray-200 bg-green-50/40 px-4 py-3.5">
+                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-green-700 uppercase">
+                        <span className="inline-block h-1 w-1 rounded-full bg-green-500"></span>
+                        Sau
+                      </span>
+                      <p className="mt-1 font-semibold break-all whitespace-pre-wrap text-green-900">
+                        {entry.after}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="flex justify-end gap-2 border-t pt-3">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-2 border-t pt-4">
+          <Button variant="outline" onClick={onClose} className="min-w-24">
             Đóng
           </Button>
         </div>

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { ORDER_STATUS_UPDATE_OPTIONS } from "@/constants/order.const";
 import type { ApiPayment } from "@/interfaces/payment.types";
 import { ROUTES } from "@/router/routes.const";
 import { orderService } from "@/services/orderService";
@@ -140,9 +141,11 @@ export function OrderDetailPage() {
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                <SelectItem value="PAID">Đã thanh toán</SelectItem>
-                <SelectItem value="CANCELED">Đã hủy</SelectItem>
+                {ORDER_STATUS_UPDATE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -235,6 +238,39 @@ export function OrderDetailPage() {
                     <span className="text-xs font-medium text-green-700">
                       Khuyến mãi: {payment.promotion.code} — {payment.promotion.description}
                     </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {((order.orderInfo?.length ?? 0) > 0 || order.note) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Thông tin nhận hàng</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {(order.orderInfo ?? []).map((info, index) => (
+                  <div key={`${info.recipientName}-${index}`} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">Người nhận</span>
+                      <span className="font-medium text-zinc-900">{info.recipientName || "—"}</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-gray-500">Số điện thoại</span>
+                      <span className="font-medium text-zinc-900">{info.phoneNumber || "—"}</span>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-gray-500">Địa chỉ</p>
+                      <p className="mt-1 font-medium text-zinc-900">{info.address || "—"}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {order.note && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                    <p className="text-xs text-blue-600">Ghi chú đơn hàng</p>
+                    <p className="mt-1 text-sm font-medium text-blue-800">{order.note}</p>
                   </div>
                 )}
               </CardContent>

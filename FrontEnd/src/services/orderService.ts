@@ -2,7 +2,11 @@ import { API_ENDPOINTS } from "@/constants/api.config";
 import { USE_MOCK_API } from "@/constants/app.const";
 import type { PaginatedResponse } from "@/interfaces/api.types";
 import type { BackendOrder, BackendOrderStatus, Order, OrderDTO } from "@/interfaces/order.types";
-import { mapBackendOrder } from "@/interfaces/order.types";
+import {
+  mapBackendOrder,
+  mapBackendOrderStatus,
+  toBackendOrderStatus,
+} from "@/interfaces/order.types";
 import { apiClient } from "@/lib/api";
 import { mockOrders } from "@/mocks/orders.mock";
 import { useAuthStore } from "@/stores";
@@ -20,6 +24,12 @@ export interface CreateOrderRequest {
     subtotal: number;
     type: string;
   }>;
+  orderInfo?: Array<{
+    recipientName?: string;
+    phoneNumber?: string;
+    address?: string;
+  }>;
+  note?: string;
 }
 
 interface GetOrdersParams {
@@ -60,7 +70,8 @@ export const orderService = {
       await new Promise((r) => setTimeout(r, 500));
       let filtered = [...mockOrders];
       if (params.status) {
-        filtered = filtered.filter((o) => o.status === params.status);
+        const normalized = mapBackendOrderStatus(params.status);
+        filtered = filtered.filter((o) => o.status === normalized);
       }
       return {
         data: filtered,
@@ -119,7 +130,7 @@ export const orderService = {
     }
     // If filtering by status, use the BY_STATUS endpoint
     const endpoint = params.status
-      ? API_ENDPOINTS.ORDERS.BY_STATUS(params.status.toUpperCase())
+      ? API_ENDPOINTS.ORDERS.BY_STATUS(toBackendOrderStatus(params.status))
       : API_ENDPOINTS.ORDERS.ALL;
     const response = await apiClient.get<BackendOrder[]>(endpoint);
     const raw = Array.isArray(response.data) ? response.data : [];
@@ -138,11 +149,11 @@ export const orderService = {
       await new Promise((r) => setTimeout(r, 500));
       const order = mockOrders.find((o) => o.id === orderId);
       if (!order) throw new Error("Đơn hàng không tồn tại");
-      return { ...order, status: status as Order["status"] };
+      return { ...order, status: mapBackendOrderStatus(status) };
     }
     // Backend expects UPPERCASE status (PENDING/PAID/CANCELED)
     const response = await apiClient.put<BackendOrder>(API_ENDPOINTS.ORDERS.UPDATE_STATUS, null, {
-      params: { orderId, status: status.toUpperCase() },
+      params: { orderId, status: toBackendOrderStatus(status) },
     });
     return mapBackendOrder(response.data);
   },

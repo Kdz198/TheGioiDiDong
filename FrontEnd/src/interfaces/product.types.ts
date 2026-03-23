@@ -84,9 +84,10 @@ export interface AppProduct {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   quantity: number;
   reserve: number;
-  imgUrls: string[]; // <-- Đổi thành mảng imgUrls
+  imgUrls: string[];
   active: boolean;
   versionName: string;
   brandName: string;
@@ -115,6 +116,7 @@ export interface BackendProduct {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
   quantity: number;
   reserve: number;
   /** Array of up to 5 image URLs; entries may be null when no image was uploaded for that slot */
@@ -138,6 +140,62 @@ export interface ProductAuditLog {
   createdAt: string;
 }
 
+export type BlogStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export interface Blog {
+  id: number;
+  title: string;
+  author: string;
+  summary: string;
+  content: string;
+  thumbnailUrl: string;
+  createdAt: string;
+  status: BlogStatus;
+}
+
+export interface BlogPayload {
+  title: string;
+  summary: string;
+  content: string;
+  thumbnailUrl?: string;
+  status?: BlogStatus;
+}
+
+export interface BackendBlog {
+  id?: number;
+  title?: string;
+  author?: string;
+  summary?: string;
+  content?: string;
+  thumbnailUrl?: string;
+  createdAt?: string;
+  status?: BlogStatus;
+}
+
+export interface PageBlogResponse {
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  size: number;
+  content: Blog[];
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+export function mapBackendBlog(blog: BackendBlog): Blog {
+  return {
+    id: blog.id ?? 0,
+    title: blog.title ?? "",
+    author: blog.author ?? "",
+    summary: blog.summary ?? "",
+    content: blog.content ?? "",
+    thumbnailUrl: blog.thumbnailUrl ?? "",
+    createdAt: blog.createdAt ?? new Date().toISOString(),
+    status: blog.status ?? "DRAFT",
+  };
+}
 /** Paginated wrapper for ProductAuditLog */
 export interface PageProductAuditLog {
   totalElements: number;
@@ -154,6 +212,10 @@ export interface PageProductAuditLog {
 /** Map BackendProduct to the FE Product interface for display */
 export function mapBackendProduct(p: BackendProduct): Product {
   const urls = p.imgUrls ?? [];
+  const originalPrice =
+    typeof p.originalPrice === "number" && Number.isFinite(p.originalPrice) && p.originalPrice > 0
+      ? p.originalPrice
+      : p.price;
   return {
     id: p.id,
     name: p.name,
@@ -165,7 +227,7 @@ export function mapBackendProduct(p: BackendProduct): Product {
     brand: { id: 0, name: p.brandName },
     variants: [],
     defaultPrice: p.price,
-    defaultOriginalPrice: p.price,
+    defaultOriginalPrice: originalPrice,
     thumbnailUrl: urls.find((u) => u != null) ?? "",
     extraImages: urls.filter(Boolean) as string[],
     rating: 0,

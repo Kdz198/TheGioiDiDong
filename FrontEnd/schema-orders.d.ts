@@ -403,6 +403,13 @@ export interface components {
             /** Format: date-time */
             orderDate?: string;
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
+            orderInfo?: components["schemas"]["OrderInfo"][];
+            note?: string;
+        };
+        OrderInfo: {
+            phoneNumber?: string;
+            address?: string;
+            recipientName?: string;
         };
         Promotion: {
             /** Format: int32 */
@@ -441,6 +448,8 @@ export interface components {
             basePrice?: number;
             orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetail"][];
+            orderInfo?: components["schemas"]["OrderInfo"][];
+            note?: string;
         };
         OrderDetail: {
             /** Format: int32 */
@@ -492,6 +501,8 @@ export interface components {
             basePrice?: number;
             orderCode?: string;
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
+            orderInfo?: components["schemas"]["OrderInfo"][];
+            note?: string;
         };
         Webhook: {
             code?: string;

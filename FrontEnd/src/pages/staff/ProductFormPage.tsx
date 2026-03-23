@@ -86,6 +86,7 @@ export function ProductFormPage() {
       categoryId: 0,
       brandId: 0,
       price: 0,
+      originalPrice: 0,
       stockQuantity: 0,
       active: true,
       type: true,
@@ -107,6 +108,7 @@ export function ProductFormPage() {
       setSelectedVersionId(version?.id ?? 0);
       setValue("active", existingProduct.active);
       setValue("price", existingProduct.price ?? 0);
+      setValue("originalPrice", existingProduct.originalPrice ?? existingProduct.price ?? 0);
       setValue("stockQuantity", existingProduct.quantity ?? 0);
       const isServ = existingProduct.type === false;
       setIsService(isServ);
@@ -138,6 +140,7 @@ export function ProductFormPage() {
         categoryId: data.categoryId,
         brandId: data.brandId,
         price: data.price,
+        originalPrice: data.originalPrice,
         stockQuantity: isService ? 0 : (data.stockQuantity ?? 0),
         active: data.active ?? true,
         versionId: selectedVersionId || undefined,
@@ -221,7 +224,7 @@ export function ProductFormPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="name">Tên {isService ? "dịch vụ" : "sản phẩm"} *</Label>
                 <Input
@@ -241,6 +244,18 @@ export function ProductFormPage() {
                 />
                 {errors.price && (
                   <p className="text-xs text-red-500">{errors.price.message as string}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="originalPrice">Giá gốc (VNĐ) *</Label>
+                <Input
+                  id="originalPrice"
+                  type="number"
+                  placeholder="0"
+                  {...register("originalPrice", { valueAsNumber: true })}
+                />
+                {errors.originalPrice && (
+                  <p className="text-xs text-red-500">{errors.originalPrice.message as string}</p>
                 )}
               </div>
             </div>

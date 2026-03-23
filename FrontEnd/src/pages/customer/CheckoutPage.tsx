@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CHECKOUT_PENDING_ORDER_CODE_KEY } from "@/constants/checkout.const";
-import type { CartItem } from "@/interfaces/cart.types";
 import type { ApiPromotion } from "@/interfaces/promotion.types";
 import { ROUTES } from "@/router/routes.const";
 import { checkoutService } from "@/services/checkoutService";
@@ -19,8 +18,8 @@ import { extractAccountIdFromToken } from "@/utils/authToken";
 import { formatVND } from "@/utils/formatPrice";
 import axios from "axios";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -38,13 +37,13 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function resolveOrderDetailType(item: CartItem): string {
-  const maybeType = (item as CartItem & { type?: unknown }).type;
-  if (typeof maybeType === "string" && maybeType.trim()) {
-    return maybeType.trim();
-  }
-  return "buy";
-}
+type ShippingInfo = {
+  recipientName: string;
+  phoneNumber: string;
+  address: string;
+  note?: string;
+  notes?: string;
+};
 
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
@@ -60,6 +59,14 @@ export function CheckoutPage() {
   const [promotionCodeInput, setPromotionCodeInput] = useState("");
   const [appliedPromotion, setAppliedPromotion] = useState<ApiPromotion | null>(null);
 
+  const location = useLocation();
+  const shippingInfoState = location.state as {
+    shippingInfo?: ShippingInfo;
+    orderInfo?: ShippingInfo;
+  } | null;
+  const shippingInfo = shippingInfoState?.shippingInfo ?? shippingInfoState?.orderInfo;
+  const customerNote = shippingInfo?.notes?.trim() || shippingInfo?.note?.trim() || "Không có";
+
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.subtotal, 0), [items]);
 
   const promotionDiscount = useMemo(() => {
@@ -68,6 +75,31 @@ export function CheckoutPage() {
   }, [appliedPromotion, subtotal]);
 
   const estimatedPayable = Math.max(0, subtotal - promotionDiscount);
+
+  // Get orderCode from query params, if not exist, redirect to cart page since we don't know which order to checkout
+  const [searchParams] = useSearchParams();
+  const orderCode = searchParams.get("orderCode")?.trim() ?? null;
+
+  const userId = extractAccountIdFromToken(token) ?? (user?.id && user.id > 0 ? user.id : null);
+
+  useEffect(() => {
+    // Backend JWT uses accountId claim; prefer it over authStore.user.id.
+    if (!userId) {
+      toast.error("Không xác định được accountId từ token đăng nhập");
+    }
+
+    if (!orderCode) {
+      toast.error("Không tìm thấy mã đơn hàng. Vui lòng quay lại giỏ hàng để thanh toán.");
+    }
+  }, [userId, orderCode]);
+
+  if (!userId) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
+  }
+
+  if (!orderCode) {
+    return <Navigate to={ROUTES.CART} replace />;
+  }
 
   const handleApplyPromotion = async () => {
     const code = promotionCodeInput.trim().toUpperCase();
@@ -125,13 +157,6 @@ export function CheckoutPage() {
       return;
     }
 
-    // Backend JWT uses accountId claim; prefer it over authStore.user.id.
-    const userId = extractAccountIdFromToken(token) ?? (user?.id && user.id > 0 ? user.id : null);
-    if (!userId) {
-      toast.error("Không xác định được accountId từ token đăng nhập");
-      return;
-    }
-
     if (appliedPromotion) {
       const validationError = validatePromotionForCheckout(appliedPromotion, subtotal);
       if (validationError) {
@@ -140,28 +165,8 @@ export function CheckoutPage() {
       }
     }
 
-    const orderDetails = items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      subtotal: item.subtotal,
-      type: resolveOrderDetailType(item),
-    }));
-
     try {
       setIsLoading(true);
-
-      const checkAvailableResponse = await checkoutService.checkAvailable({
-        userId,
-        status: "PENDING",
-        basePrice: subtotal,
-        totalPrice: subtotal,
-        orderDetails,
-      });
-
-      const orderCode = checkAvailableResponse.orderCode;
-      if (!orderCode) {
-        throw new Error("Không nhận được orderCode từ check-available");
-      }
 
       const paymentUrl = await checkoutService.makePaymentWithRetry(
         orderCode,
@@ -202,26 +207,32 @@ export function CheckoutPage() {
           <div className="space-y-4 lg:col-span-3">
             <Card>
               <CardHeader>
-                <CardTitle>Quy trình thanh toán</CardTitle>
+                <CardTitle>Thông tin khách hàng</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    1
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Họ và tên</span>
+                  <span className="text-right font-medium text-zinc-900">
+                    {shippingInfo?.recipientName || "-"}
                   </span>
-                  <p>Xác nhận đơn hàng và kiểm tra tồn kho.</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    2
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Số điện thoại</span>
+                  <span className="text-right font-medium text-zinc-900">
+                    {shippingInfo?.phoneNumber || "-"}
                   </span>
-                  <p>Hệ thống chuyển bạn đến cổng thanh toán PayOS để thanh toán liên ngân hàng.</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
-                    3
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Địa chỉ</span>
+                  <span className="max-w-[65%] text-right font-medium break-words text-zinc-900">
+                    {shippingInfo?.address || "-"}
                   </span>
-                  <p>Quay lại trang xác nhận sau khi giao dịch hoàn tất.</p>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-500">Ghi chú</span>
+                  <span className="max-w-[65%] text-right font-medium break-words text-zinc-900">
+                    {customerNote}
+                  </span>
                 </div>
               </CardContent>
             </Card>
