@@ -263,6 +263,7 @@ export function StaffOrderCreatePage() {
           },
         ],
         note: orderNote.trim() || undefined,
+        paymentMethod: "PAYOS",
       };
 
       const checkAvailable = await checkoutService.checkAvailable(payload);
