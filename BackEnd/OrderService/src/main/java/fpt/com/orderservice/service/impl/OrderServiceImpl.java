@@ -193,5 +193,7 @@ public class OrderServiceImpl implements OrderService {
         orderRequest.setOrderDetails(detailRequests);
         producer.publishOrderCancel(orderRequest);
     }
+
+
 }
 

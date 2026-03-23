@@ -85,6 +85,17 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public String findOrderCodeByTransactionCode(String transactionCode) {
+        Order order = paymentRepo.findByTransactionCode(transactionCode).getOrder();
+        if(order != null){
+            return order.getOrderCode();
+        }
+        else{
+            throw new CustomException("Not found", HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
     @Transactional
     public String save(String orderCode, String promotionCode) {
         Order order = orderRepo.findByOrderCode(orderCode);
@@ -92,7 +103,10 @@ public class PaymentServiceImpl implements PaymentService {
         if (order == null) {
             throw new CustomException("Not found", HttpStatus.NOT_FOUND);
         }
-        Payment payment = new Payment();
+        Payment payment = paymentRepo.findByOrder_OrderCode(orderCode);
+        if (payment == null) {
+            payment = new Payment();
+        }
         int discount = 0;
         if (promotion != null) {
             promotion.setQuantity(promotion.getQuantity() - 1);
