@@ -164,7 +164,7 @@ public class OrderServiceImpl implements OrderService {
         for (Order order : orders) {
             System.out.println("Canceling order with id: " + order.getId());
             order.setStatus(OrderStatus.CANCELED);
-//            producer.publishPaymentCancel(order.getOrderCode());
+            producer.publishPaymentCancel(order.getOrderCode());
         }
         orderRepo.saveAll(orders);
     }

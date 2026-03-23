@@ -231,7 +231,7 @@ public class PaymentServiceImpl implements PaymentService {
                         payment.setStatus(PaymentStatus.FAILED);
                         orderRepo.save(order);
                         paymentRepo.save(payment);
-                        producer.publishPaymentCancel(order.getOrderCode());
+//                        producer.publishPaymentCancel(order.getOrderCode());
                     }
                 }
             } catch (Exception e) {
