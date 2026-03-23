@@ -5,14 +5,17 @@ import fpt.com.orderservice.feignclient.ProductClient;
 import fpt.com.orderservice.feignclient.UserClient;
 import fpt.com.orderservice.model.Order;
 import fpt.com.orderservice.model.OrderDetail;
+import fpt.com.orderservice.model.Payment;
 import fpt.com.orderservice.model.Promotion;
 import fpt.com.orderservice.model.dto.OrderDto;
 import fpt.com.orderservice.model.dto.OrderRequest;
 import fpt.com.orderservice.model.dto.OrderResponse;
 import fpt.com.orderservice.model.dto.ProductResponse;
 import fpt.com.orderservice.model.enums.OrderStatus;
+import fpt.com.orderservice.model.enums.PaymentStatus;
 import fpt.com.orderservice.model.enums.PromotionType;
 import fpt.com.orderservice.repo.OrderRepo;
+import fpt.com.orderservice.repo.PaymentRepo;
 import fpt.com.orderservice.repo.PromotionRepo;
 import fpt.com.orderservice.service.OrderService;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +43,8 @@ public class OrderServiceImpl implements OrderService {
     private ProductClient productClient;
     @Autowired
     private Producer producer;
+    @Autowired
+    private PaymentRepo paymentRepo;
 
     @Override
     public List<OrderDto> findAll() {
@@ -57,8 +62,14 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderDto save(OrderRequest orderRequest) {
         Order newOrder = new Order();
+        if(orderRequest.getPaymentMethod().equals(OrderRequest.PaymentMethod.CASH)){
+            newOrder.setStatus(OrderStatus.PAID);
+            producer.publishPaymentSuccess(orderRequest.getOrderCode());
+        }
+        else{
+            newOrder.setStatus(OrderStatus.PENDING);
+        }
         newOrder.setUserId(orderRequest.getUserId());
-        newOrder.setStatus(OrderStatus.PENDING);
         newOrder.setTotalPrice(orderRequest.getTotalPrice());
         newOrder.setBasePrice(orderRequest.getBasePrice());
         newOrder.setOrderCode(orderRequest.getOrderCode());
@@ -149,9 +160,24 @@ public class OrderServiceImpl implements OrderService {
         for (Order order : orders) {
             System.out.println("Canceling order with id: " + order.getId());
             order.setStatus(OrderStatus.CANCELED);
+            Payment payment = (Payment) paymentRepo.findByOrderId(order.getId());
+            payment.setStatus(PaymentStatus.FAILED);
             producer.publishPaymentCancel(order.getOrderCode());
         }
         orderRepo.saveAll(orders);
+    }
+
+    public void cancelOrder(String orderId){
+        Order order = orderRepo.findByOrderCode(orderId);
+        if(order == null){
+            throw new RuntimeException("Order not found with order code: " + orderId);
+        }
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepo.save(order);
+        Payment payment = (Payment) paymentRepo.findByOrderId(order.getId());
+        payment.setStatus(PaymentStatus.FAILED);
+        paymentRepo.save(payment);
+        producer.publishPaymentCancel(order.getOrderCode());
     }
 }
 

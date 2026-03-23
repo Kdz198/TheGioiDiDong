@@ -16,6 +16,7 @@ public class OrderRequest {
     List<OrderDetailRequest> orderDetails;
     List<Order.OrderInfo> orderInfo ;
     String note;
+    PaymentMethod paymentMethod;
 
     @Data
     public static class OrderDetailRequest{
@@ -26,5 +27,11 @@ public class OrderRequest {
         //nếu type là buy thì là mua - subtotal sẽ là price của product * quantity, nếu type là gift thì là tặng - subtotal sẽ là 0
         //nếu sản phẩm là mua 1 tặng 1 thì sẽ tạo 2 order detail, 1 loại buy và 1 loại gift
     }
+
+    public enum PaymentMethod {
+        CASH,
+        PAYOS
+    }
+
 }
 

@@ -70,6 +70,20 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
     }
 
+    public void saveWithCashMethod(String orderCode){
+        Order order = orderRepo.findByOrderCode(orderCode);
+        if (order == null) {
+            throw new CustomException("Not found", HttpStatus.NOT_FOUND);
+        }
+        Payment payment = new Payment();
+        int amount = (int) (order.getTotalPrice() );
+        payment.setOrder(order);
+        payment.setAmount(amount);
+        payment.setPaymentMethod("CASH");
+        payment.setStatus(PaymentStatus.COMPLETED);
+        paymentRepo.save(payment);
+    }
+
     @Override
     @Transactional
     public String save(String orderCode, String promotionCode) {
