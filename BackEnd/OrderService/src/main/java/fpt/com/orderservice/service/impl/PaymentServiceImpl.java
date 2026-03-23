@@ -224,7 +224,6 @@ public class PaymentServiceImpl implements PaymentService {
                     Order order = null;
                     if (payment != null) {
                         order = payment.getOrder();
-
                     }
                     String status = response.getBody().getData().getStatus();
                     if ("CANCELLED".equals(status) ||"EXPIRED".equals(status)) {

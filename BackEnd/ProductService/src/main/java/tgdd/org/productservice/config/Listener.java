@@ -6,6 +6,7 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
+import tgdd.org.productservice.model.dto.request.OrderRequest;
 import tgdd.org.productservice.service.ProductService;
 
 @Slf4j
@@ -32,6 +33,12 @@ public class Listener {
             default:
                 log.warn("Received message with unknown routing key: " + routingKey);
         }
+    }
+
+    @RabbitListener(queues = "${app.rabbitmq.prefix}.tgdd.order.cancel.queue")
+    public void handlePlusQuantity(OrderRequest request){
+        log.info("Received order cancel message for order: " + request.getOrderCode());
+        productService.plusQuantity(request);
     }
 
 

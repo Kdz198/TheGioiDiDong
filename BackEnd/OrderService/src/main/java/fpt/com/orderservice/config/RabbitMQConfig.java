@@ -16,6 +16,7 @@ public class RabbitMQConfig {
     public static final String ORDER_QUEUE_NAME = "tgdd.order.queue";
     public static final String EXCHANGE_NAME = "tgdd.exchange";
     public static final String PRODUCT_QUEUE_NAME = "tgdd.product.queue";
+    public static final String ORDER_CANCEL_QUEUE_NAME = "tgdd.order.cancel.queue";
     @Value("${app.rabbitmq.prefix}")
     String prefix;
 
@@ -40,6 +41,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue orderCancelQueue() {
+        return new Queue(prefix + "." + ORDER_CANCEL_QUEUE_NAME, true);
+    }
+
+    @Bean
     public Binding bindingProductDeduct(Queue productQueue, DirectExchange exchange) {
         return BindingBuilder.bind(productQueue).to(exchange).with("payment.success");
     }
@@ -47,4 +53,10 @@ public class RabbitMQConfig {
     public Binding bindingProductRollback(Queue productQueue, DirectExchange exchange) {
         return BindingBuilder.bind(productQueue).to(exchange).with("payment.fail");
     }
+
+    @Bean
+    public Binding bindingQuantityProduct(Queue orderCancelQueue, DirectExchange exchange) {
+        return BindingBuilder.bind(orderCancelQueue).to(exchange).with("order.canceled");
+    }
+
 }

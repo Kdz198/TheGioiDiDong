@@ -53,8 +53,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDto findById(int id) {
-        Order order = orderRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+        Order order = orderRepo.findById(id);
+        if(order == null){
+            throw new RuntimeException("Order not found with id: " + id);
+        }
         return toOrderResponse(order);
     }
 
@@ -96,8 +98,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderDto update(int orderId, OrderStatus status) {
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+        Order order = orderRepo.findById(orderId);
+        if(order == null){
+            throw new RuntimeException("Order not found with id: " + orderId);
+        }
         order.setStatus(status);
         return toOrderResponse(orderRepo.save(order));
     }
@@ -155,29 +159,39 @@ public class OrderServiceImpl implements OrderService {
     @Scheduled(fixedDelay = 300000)
     public void cancelOrder() {
         System.out.println("Running cancelOrder ");
-        LocalDateTime times = LocalDateTime.now().minusMinutes(5);
+        LocalDateTime times = LocalDateTime.now().minusMinutes(10);
         List<Order> orders = orderRepo.findByStatusAndOrderDateBefore(OrderStatus.PENDING, times);
         for (Order order : orders) {
             System.out.println("Canceling order with id: " + order.getId());
             order.setStatus(OrderStatus.CANCELED);
-            Payment payment = (Payment) paymentRepo.findByOrderId(order.getId());
-            payment.setStatus(PaymentStatus.FAILED);
-            producer.publishPaymentCancel(order.getOrderCode());
+//            producer.publishPaymentCancel(order.getOrderCode());
         }
         orderRepo.saveAll(orders);
     }
 
-    public void cancelOrder(String orderId){
-        Order order = orderRepo.findByOrderCode(orderId);
+    public void cancelOrder(int orderId){
+        Order order = orderRepo.findById(orderId);
         if(order == null){
             throw new RuntimeException("Order not found with order code: " + orderId);
         }
         order.setStatus(OrderStatus.CANCELED);
         orderRepo.save(order);
-        Payment payment = (Payment) paymentRepo.findByOrderId(order.getId());
+        Payment payment =  paymentRepo.findByOrderId(order.getId()).get(0);
         payment.setStatus(PaymentStatus.FAILED);
         paymentRepo.save(payment);
-        producer.publishPaymentCancel(order.getOrderCode());
+        OrderRequest orderRequest = new OrderRequest();
+        List<OrderDetail> details = order.getOrderDetails();
+        List<OrderRequest.OrderDetailRequest> detailRequests = new ArrayList<>();
+        for (OrderDetail detail : details) {
+            OrderRequest.OrderDetailRequest detailRequest = new OrderRequest.OrderDetailRequest();
+            detailRequest.setProductId(detail.getProductId());
+            detailRequest.setQuantity(detail.getQuantity());
+            detailRequest.setSubtotal(detail.getSubtotal());
+            detailRequest.setType(detail.getType());
+            detailRequests.add(detailRequest);
+        }
+        orderRequest.setOrderDetails(detailRequests);
+        producer.publishOrderCancel(orderRequest);
     }
 }
 

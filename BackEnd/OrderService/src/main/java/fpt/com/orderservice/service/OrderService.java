@@ -16,6 +16,6 @@ public interface OrderService {
     void deleteById(int id);
     List<OrderDto> findByUserId(int userId);
     List<OrderDto> findByStatus(OrderStatus status);
-    void cancelOrder(String orderId);
+    void cancelOrder(int orderId);
 }
 

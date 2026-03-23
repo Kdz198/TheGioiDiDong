@@ -1,6 +1,7 @@
 package fpt.com.orderservice.config;
 
 
+import fpt.com.orderservice.model.dto.OrderRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,5 +25,10 @@ public class Producer {
     public void publishPaymentCancel(String orderCode) {
         log.info("Publish payment cancel");
         rabbitTemplate.convertAndSend(prefix+"." +RabbitMQConfig.EXCHANGE_NAME,"payment.fail", orderCode);
+    }
+
+    public void publishOrderCancel(OrderRequest dto){
+        log.info("Publish order: {}", dto);
+        rabbitTemplate.convertAndSend(prefix+"." +RabbitMQConfig.EXCHANGE_NAME,"order.canceled", dto);
     }
 }

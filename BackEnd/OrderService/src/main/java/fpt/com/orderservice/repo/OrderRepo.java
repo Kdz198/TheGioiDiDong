@@ -15,5 +15,7 @@ public interface OrderRepo extends JpaRepository<Order, Integer> {
     Order findByOrderCode(String orderCode);
 
     List<Order> findByStatusAndOrderDateBefore(OrderStatus status, LocalDateTime orderDateBefore);
+
+    Order findById(int id);
 }
 

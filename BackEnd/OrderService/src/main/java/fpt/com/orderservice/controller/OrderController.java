@@ -55,7 +55,7 @@ public class OrderController {
     }
 
     @GetMapping("/cancel/{orderId}")
-    public ResponseEntity<Void> cancelOrder(@PathVariable String orderId) {
+    public ResponseEntity<Void> cancelOrder(@PathVariable int orderId) {
         orderService.cancelOrder(orderId);
         return ResponseEntity.noContent().build();}
 }

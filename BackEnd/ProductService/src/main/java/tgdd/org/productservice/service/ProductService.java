@@ -1,6 +1,7 @@
 package tgdd.org.productservice.service;
 
 import org.springframework.web.multipart.MultipartFile;
+import tgdd.org.productservice.model.dto.OrderItem;
 import tgdd.org.productservice.model.dto.request.OrderRequest;
 import tgdd.org.productservice.model.dto.request.ProductRequest;
 import tgdd.org.productservice.model.dto.request.ProductUpdateRequest;
@@ -23,4 +24,5 @@ public interface ProductService {
     void deductStock(String orderCode);
     void restoreStock(String orderCode);
     List<ProductResponse> findByCate(int cateId);
+    void plusQuantity(OrderRequest request);
 }

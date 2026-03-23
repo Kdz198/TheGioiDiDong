@@ -218,6 +218,24 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toProductResponseList(productRepo.findByCategoryId(cateId));
     }
 
+    @Override
+    public void plusQuantity(OrderRequest request) {
+        List<OrderItem> items = new ArrayList<>();
+        for (OrderRequest.OrderDetailRequest detail : request.getOrderDetails()) {
+            OrderItem item = new OrderItem();
+            item.setProductId(detail.getProductId());
+            item.setQuantity(detail.getQuantity());
+            items.add(item);
+        }
+        for(OrderItem item : items){
+            Product product = productRepo.findById(item.getProductId());
+            if(product != null){
+                product.setQuantity(product.getQuantity() + item.getQuantity());
+                productRepo.save(product);
+            }
+        }
+    }
+
     private void saveItem(OrderRequest request) {
         Map<Integer, Integer> productQuantities = new HashMap<>();
         for (OrderRequest.OrderDetailRequest item : request.getOrderDetails()) {

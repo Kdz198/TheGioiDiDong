@@ -20,6 +20,9 @@ public class RabbitMQConfig {
 
     public static final String ORDER_QUEUE_NAME = "tgdd.order.queue";
     public static final String PRODUCT_QUEUE_NAME = "tgdd.product.queue";
+
+    public static final String ORDER_CANCEL_QUEUE_NAME = "tgdd.order.cancel.queue";
+
     @Value("${app.rabbitmq.prefix}")
     String prefix;
 
@@ -41,6 +44,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue productQueue() {
         return new Queue(prefix + "." + PRODUCT_QUEUE_NAME, true);
+    }
+
+    @Bean
+    public Queue orderCancelQueue() {
+        return new Queue(prefix + "." + ORDER_CANCEL_QUEUE_NAME, true);
     }
 
     @Bean
