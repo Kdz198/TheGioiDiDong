@@ -4,6 +4,7 @@ interface PriceDisplayProps {
   price: number;
   originalPrice?: number;
   size?: "sm" | "md" | "lg";
+  className?: string;
 }
 
 const sizeClasses = {
