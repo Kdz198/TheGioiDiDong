@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   // ─── Users Service (/api/users) ───────────────────────────────────────────
   AUTH: {
     LOGIN: "/api/users/auth/login",
+    REGISTER: "/api/users",
   },
   USERS: {
     LIST: "/api/users",

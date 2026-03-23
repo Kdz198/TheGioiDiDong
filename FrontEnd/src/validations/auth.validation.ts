@@ -11,10 +11,6 @@ export const registerSchema = z
   .object({
     fullName: z.string().min(1, "Vui lòng nhập họ tên").min(2, "Họ tên phải có ít nhất 2 ký tự"),
     email: z.string().min(1, "Vui lòng nhập email").email("Email không hợp lệ"),
-    phone: z
-      .string()
-      .min(1, "Vui lòng nhập số điện thoại")
-      .regex(/^0\d{9}$/, "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)"),
     password: z
       .string()
       .min(1, "Vui lòng nhập mật khẩu")
