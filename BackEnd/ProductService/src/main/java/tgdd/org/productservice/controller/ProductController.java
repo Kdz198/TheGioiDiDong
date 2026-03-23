@@ -3,6 +3,7 @@ package tgdd.org.productservice.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -100,7 +101,7 @@ public class ProductController {
     }
 
     @PostMapping("/check-available")
-    public ResponseEntity<OrderRequest> checkStockAvailable(@RequestBody OrderRequest request) {
+    public ResponseEntity<OrderRequest> checkStockAvailable(@RequestBody @Valid OrderRequest request) {
         return ResponseEntity.ok(productService.isStockAvailable(request));
     }
 }
