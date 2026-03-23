@@ -60,9 +60,10 @@ export function CheckoutPage() {
   const [appliedPromotion, setAppliedPromotion] = useState<ApiPromotion | null>(null);
 
   const location = useLocation();
-  const shippingInfoState = location.state as
-    | { shippingInfo?: ShippingInfo; orderInfo?: ShippingInfo }
-    | null;
+  const shippingInfoState = location.state as {
+    shippingInfo?: ShippingInfo;
+    orderInfo?: ShippingInfo;
+  } | null;
   const shippingInfo = shippingInfoState?.shippingInfo ?? shippingInfoState?.orderInfo;
   const customerNote = shippingInfo?.notes?.trim() || shippingInfo?.note?.trim() || "Không có";
 
@@ -80,8 +81,7 @@ export function CheckoutPage() {
   const orderCode = searchParams.get("orderCode")?.trim() ?? null;
 
   const userId = extractAccountIdFromToken(token) ?? (user?.id && user.id > 0 ? user.id : null);
-  
-  
+
   useEffect(() => {
     // Backend JWT uses accountId claim; prefer it over authStore.user.id.
     if (!userId) {
@@ -224,13 +224,13 @@ export function CheckoutPage() {
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-gray-500">Địa chỉ</span>
-                  <span className="max-w-[65%] break-words text-right font-medium text-zinc-900">
+                  <span className="max-w-[65%] text-right font-medium break-words text-zinc-900">
                     {shippingInfo?.address || "-"}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-gray-500">Ghi chú</span>
-                  <span className="max-w-[65%] break-words text-right font-medium text-zinc-900">
+                  <span className="max-w-[65%] text-right font-medium break-words text-zinc-900">
                     {customerNote}
                   </span>
                 </div>

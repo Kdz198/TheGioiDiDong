@@ -87,7 +87,7 @@ export interface AppProduct {
   originalPrice?: number;
   quantity: number;
   reserve: number;
-  imgUrls: string[]; // <-- Đổi thành mảng imgUrls
+  imgUrls: string[];
   active: boolean;
   versionName: string;
   brandName: string;

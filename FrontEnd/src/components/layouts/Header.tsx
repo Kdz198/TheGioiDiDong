@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/router/routes.const";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
-import { Heart, LogOut, Menu, Package, Search, ShoppingCart, User, X } from "lucide-react";
+import { LogOut, Menu, Package, Search, ShoppingCart, User, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -78,13 +78,6 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {isLoggedIn && (
-            <Link
-              to={ROUTES.WISHLIST}
-              className="relative hidden p-2 text-zinc-600 hover:text-teal-500 md:block">
-              <Heart className="h-5 w-5" />
-            </Link>
-          )}
 
           <Link to={ROUTES.CART} className="relative p-2 text-zinc-600 hover:text-teal-500">
             <ShoppingCart className="h-5 w-5" />

@@ -16,5 +16,6 @@ public interface PaymentService {
     List<Payment> findByStatus(PaymentStatus status);
     void handlePaymentSuccess(Webhook webhook);
     Payment cancelPayment(String paymentCode);
+    void saveWithCashMethod(String orderCode);
 }
 

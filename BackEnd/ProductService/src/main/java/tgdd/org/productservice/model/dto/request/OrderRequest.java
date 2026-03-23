@@ -14,6 +14,7 @@ public class OrderRequest {
     List<OrderDetailRequest> orderDetails;
     List<OrderInfo> orderInfo ;
     String note;
+    PaymentMethod paymentMethod;
 
     @Data
     public static class OrderDetailRequest{
@@ -21,6 +22,11 @@ public class OrderRequest {
         int quantity;
         int subtotal;
         String type;
+    }
+
+    public enum PaymentMethod {
+        CASH,
+        PAYOS
     }
 
     public enum OrderStatus{
