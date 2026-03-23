@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   // ─── Users Service (/api/users) ───────────────────────────────────────────
   AUTH: {
     LOGIN: "/api/users/auth/login",
+    REGISTER: "/api/users",
   },
   USERS: {
     LIST: "/api/users",
@@ -62,6 +63,7 @@ export const API_ENDPOINTS = {
   BLOGS: {
     LIST: "/api/products/blogs",
     CREATE: "/api/products/blogs",
+    DETAIL: (id: number) => `/api/products/blogs/${id}`,
     UPDATE: (id: number) => `/api/products/blogs/${id}`,
   },
   AUDIT_LOGS: {

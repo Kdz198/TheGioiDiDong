@@ -80,6 +80,38 @@ export const blogService = {
     await apiClient.post(API_ENDPOINTS.BLOGS.CREATE, payload);
   },
 
+  getBlogById: async (id: number): Promise<ReturnType<typeof mapBackendBlog>> => {
+    if (USE_MOCK_API) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const found = mockBlogs.find((item) => item.id === id);
+      if (!found) throw new Error("Không tìm thấy bài viết");
+      return mapBackendBlog(found);
+    }
+
+    // Prefer list pagination scan because detail endpoint may be unstable in some environments.
+    let page = 0;
+    const size = 100;
+
+    while (true) {
+      const response = await apiClient.get<PageBlogResponse>(API_ENDPOINTS.BLOGS.LIST, {
+        params: { page, size, sort: "createdAt,desc" },
+      });
+
+      const mapped = (response.data.content ?? []).map((item) =>
+        mapBackendBlog(item as BackendBlog)
+      );
+      const found = mapped.find((blog) => blog.id === id);
+      if (found) return found;
+
+      if (response.data.last || mapped.length === 0) {
+        break;
+      }
+      page += 1;
+    }
+
+    throw new Error("Không tìm thấy bài viết");
+  },
+
   updateBlog: async (id: number, payload: BlogPayload): Promise<void> => {
     if (USE_MOCK_API) {
       await new Promise((resolve) => setTimeout(resolve, 400));

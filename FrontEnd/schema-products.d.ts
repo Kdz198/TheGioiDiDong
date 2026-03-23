@@ -420,6 +420,8 @@ export interface components {
             orderDetails?: components["schemas"]["OrderDetailRequest"][];
             orderInfo?: components["schemas"]["OrderInfo"][];
             note?: string;
+            /** @enum {string} */
+            paymentMethod?: "CASH" | "PAYOS";
         };
         BrandRequest: {
             /** Format: int32 */
@@ -456,11 +458,11 @@ export interface components {
         };
         PageableObject: {
             unpaged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
             paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            /** Format: int32 */
-            pageNumber?: number;
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];

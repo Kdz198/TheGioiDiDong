@@ -131,6 +131,7 @@ export function ProductPickerDialog({
                 <thead className="sticky top-0 z-10 bg-gray-50 text-left text-gray-500">
                   <tr className="border-b border-gray-100">
                     <th className="w-10 px-3 py-2 text-center font-medium">Chọn</th>
+                    <th className="w-14 px-3 py-2 text-center font-medium">Ảnh</th>
                     <th className="px-3 py-2 font-medium">Sản phẩm</th>
                     <th className="w-36 px-3 py-2 text-right font-medium">Giá</th>
                     <th className="w-28 px-3 py-2 text-right font-medium">Tồn kho</th>
@@ -160,6 +161,19 @@ export function ProductPickerDialog({
                             onCheckedChange={() => toggleSelection(product)}
                             onClick={(event) => event.stopPropagation()}
                           />
+                        </td>
+                        <td className="px-3 py-2">
+                          {product.thumbnailUrl ? (
+                            <img
+                              src={product.thumbnailUrl}
+                              alt={product.name}
+                              className="mx-auto h-10 w-10 rounded-md border border-gray-100 object-cover"
+                            />
+                          ) : (
+                            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                              ?
+                            </div>
+                          )}
                         </td>
                         <td className="px-3 py-2">
                           <p className="line-clamp-1 font-medium text-zinc-900">{product.name}</p>

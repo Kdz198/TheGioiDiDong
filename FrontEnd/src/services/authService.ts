@@ -1,8 +1,9 @@
 import { API_ENDPOINTS } from "@/constants/api.config";
-import type { User } from "@/interfaces/user.types";
+import type { CreateAccountRequest, User } from "@/interfaces/user.types";
 import { mapRoleName } from "@/interfaces/user.types";
 import { apiClient } from "@/lib/api";
 import { extractAccountIdFromToken } from "@/utils/authToken";
+import axios from "axios";
 
 interface LoginRequest {
   email: string;
@@ -27,6 +28,22 @@ export interface AuthResponse {
   expiresIn: number;
 }
 
+function mapRegisterError(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return "Đăng ký thất bại. Vui lòng thử lại.";
+  }
+
+  const status = error.response?.status;
+  if (status === 409) {
+    return "Email đã tồn tại. Vui lòng dùng email khác.";
+  }
+  if (status === 400) {
+    return "Thông tin đăng ký không hợp lệ. Vui lòng kiểm tra lại.";
+  }
+
+  return "Không thể đăng ký tài khoản lúc này. Vui lòng thử lại sau.";
+}
+
 export const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const loginRes = await apiClient.post<BackendLoginResponse>(API_ENDPOINTS.AUTH.LOGIN, data);
@@ -47,13 +64,34 @@ export const authService = {
 
   logout: async (): Promise<void> => {},
 
-  register: async (_data: {
+  register: async (data: {
     fullName: string;
     email: string;
-    phone?: string;
     password: string;
   }): Promise<AuthResponse> => {
-    throw new Error("Đăng ký tài khoản hiện chưa được hỗ trợ. Vui lòng liên hệ Admin.");
+    const createPayload: CreateAccountRequest = {
+      fullName: data.fullName.trim(),
+      email: data.email.trim(),
+      password: data.password,
+      roleId: 3,
+    };
+
+    try {
+      await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, createPayload);
+    } catch (error) {
+      throw new Error(mapRegisterError(error));
+    }
+
+    try {
+      return await authService.login({
+        email: createPayload.email ?? data.email,
+        password: data.password,
+      });
+    } catch {
+      throw new Error(
+        "Đăng ký thành công nhưng tự động đăng nhập thất bại. Vui lòng đăng nhập lại."
+      );
+    }
   },
 
   forgotPassword: async (_email: string): Promise<void> => {
