@@ -138,6 +138,7 @@ export function CartPage() {
           },
         ],
         note: form.notes,
+        paymentMethod: "PAYOS",
       })
       .then((available) => {
         if (available) {
