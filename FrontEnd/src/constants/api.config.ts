@@ -98,6 +98,7 @@ export const API_ENDPOINTS = {
     UPDATE: "/api/orders/payments",
     BY_STATUS: (status: string) => `/api/orders/payments/status/${status}`,
     BY_ORDER: (orderId: number) => `/api/orders/payments/order/${orderId}`,
+    TRANSACTION_CODE: (orderCode: string) => `/api/orders/payments/transaction/${orderCode}`,
   },
   PROMOTIONS: {
     LIST: "/api/orders/promotions",
