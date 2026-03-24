@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Star, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -77,63 +77,48 @@ export function ServicesPage() {
   return (
     <div className="min-h-screen bg-[#f1f1f1] pb-12">
       {/* HEADER ĐƠN GIẢN MÀU XANH TEAL */}
-      {/* BANNER MỚI HIỆN ĐẠI HƠN */}
-      <section className="relative h-[480px] w-full overflow-hidden">
-        {/* Background Image with subtle zoom effect */}
+      {/* BANNER MỚI TINH TẾ PHONG CÁCH TMĐT */}
+      <section className="relative h-[320px] w-full overflow-hidden bg-white md:h-[400px]">
+        {/* Background Image */}
         <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
-          style={{ backgroundImage: "url('/service-banner.png')" }}
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-[1.02]"
+          style={{ backgroundImage: "url('/service-banner-v2.png')" }}
         />
         
-        {/* Dark Overlay for readability */}
-        <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-[1px]" />
+        {/* Soft Light Overlay for E-commerce feel */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent" />
         
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-teal-500/20 to-transparent" />
-        
-        <div className="container relative mx-auto flex h-full flex-col items-center justify-center px-4 text-center text-white">
-          <div className="max-w-4xl rounded-[2rem] border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl md:p-12">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-teal-500/20 px-4 py-1.5 text-sm font-bold tracking-wider text-teal-300 uppercase backdrop-blur-md border border-teal-500/30">
-              <Sparkles className="h-4 w-4" /> Dịch vụ đẳng cấp
+        <div className="container relative mx-auto flex h-full items-center px-4 md:px-8">
+          <div className="max-w-xl text-left animate-in fade-in slide-in-from-left-4 duration-700">
+            <div className="mb-4 inline-flex items-center gap-2">
+              <span className="h-[1px] w-8 bg-teal-600"></span>
+              <span className="text-[11px] font-bold tracking-[0.2em] text-teal-600 uppercase">
+                Dịch vụ Cá nhân hóa
+              </span>
             </div>
             
-            <h1 className="mb-6 text-4xl font-black tracking-tighter uppercase md:text-7xl">
-              <span className="bg-gradient-to-b from-white to-gray-300 bg-clip-text text-transparent">
-                Dịch Vụ
-              </span>
-              <span className="mx-2 text-teal-400">&</span>
-              <span className="bg-gradient-to-b from-teal-300 to-teal-500 bg-clip-text text-transparent">
-                Cá Nhân Hóa
-              </span>
+            <h1 className="mb-4 text-3xl font-light tracking-tight text-zinc-900 md:text-5xl lg:text-6xl">
+              Nâng Tầm <span className="font-semibold text-zinc-900">Phong Cách</span>
+              <br />
+              Thiết Bị Của Bạn
             </h1>
             
-            <p className="mx-auto mb-10 max-w-2xl text-lg font-medium leading-relaxed text-zinc-100 md:text-xl">
-              Nâng tầm đẳng cấp thiết bị của bạn với dịch vụ 
-              <span className="mx-1 font-bold text-white underline decoration-teal-500 underline-offset-4">in ấn ốp lưng</span> 
-              và 
-              <span className="mx-1 font-bold text-white underline decoration-teal-500 underline-offset-4">dán skin phụ kiện</span> 
-              sắc nét từng pixel, bền bỉ cùng thời gian.
+            <p className="mb-8 max-w-md text-sm font-medium leading-relaxed text-zinc-500 md:text-base">
+              Dịch vụ in ốp lưng và dán skin cao cấp với công nghệ hiện đại. 
+              Sắc nét, bền bỉ và đậm chất riêng cho mọi dòng máy.
             </p>
             
-            <div className="flex flex-wrap justify-center gap-4">
-              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
-                <Zap className="h-5 w-5 text-yellow-400" />
-                <span>IN UV CỰC NÉT</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
-                <ShieldCheck className="h-5 w-5 text-teal-400" />
-                <span>DÁN SKIN KHÍT MÁY</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
-                <Star className="h-5 w-5 text-orange-400" />
-                <span>BẢO HÀNH TRỌN ĐỜI</span>
-              </div>
-            </div>
+            <button 
+              onClick={() => document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' })}
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-zinc-900 px-8 py-3.5 text-xs font-bold text-white transition-all hover:bg-teal-600">
+              <span>KHÁM PHÁ NGAY</span>
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </button>
           </div>
         </div>
       </section>
 
-      <div className="container mx-auto mt-8 space-y-8 px-4">
+      <div id="services-grid" className="container mx-auto mt-8 space-y-8 px-4">
         {/* KHU VỰC DỊCH VỤ */}
         <section className="rounded-xl bg-white p-4 shadow-sm">
           <div className="mb-6 flex flex-col justify-between gap-4 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
