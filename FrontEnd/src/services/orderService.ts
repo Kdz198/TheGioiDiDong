@@ -104,7 +104,7 @@ export const orderService = {
     return mapBackendOrder(response.data);
   },
 
-  cancelOrder: async (orderId: number, _reason: string): Promise<any> => {
+  cancelOrder: async (orderId: number, _reason: string): Promise<Order> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));
       const order = mockOrders.find((o) => o.id === orderId);
@@ -112,7 +112,7 @@ export const orderService = {
       return { ...order, status: "canceled" };
     }
     const response = await apiClient.get<BackendOrder>(API_ENDPOINTS.ORDERS.CANCEL(orderId));
-    return response;
+    return mapBackendOrder(response.data);
   },
 
   getAllOrders: async (params: GetOrdersParams = {}): Promise<PaginatedResponse<Order>> => {
