@@ -144,10 +144,10 @@ export function HomePage() {
   });
 
   const nextBogo = () =>
-    setBogoIdx((prev) => (bogoProducts && prev + 2 < bogoProducts.length ? prev + 2 : 0));
+    setBogoIdx((prev) => (bogoProducts && prev + 4 < bogoProducts.length ? prev + 4 : 0));
   const prevBogo = () =>
     setBogoIdx((prev) =>
-      bogoProducts && prev - 2 >= 0 ? prev - 2 : Math.max(0, (bogoProducts?.length || 0) - 2)
+      bogoProducts && prev - 4 >= 0 ? prev - 4 : Math.max(0, (bogoProducts?.length || 0) - 4)
     );
 
   // --- Filtering & Sorting Logic ---
@@ -271,59 +271,58 @@ export function HomePage() {
       </section>
 
       <div className="container mx-auto mt-8 space-y-8 px-4">
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* CỘT TRÁI: MÃ TẶNG BẠN (Dạng Slider & Ticket) */}
-          <div className="group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-zinc-900">Mã tặng bạn</h2>
+        <section className="space-y-8">
+          {/* MÃ TẶNG BẠN (Dạng Ticket) */}
+          <div className="group relative rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ticket className="h-6 w-6 text-teal-600" />
+                <h2 className="text-xl font-bold text-zinc-900">Mã tặng bạn</h2>
+              </div>
               {discountPromos.length > 2 && (
                 <div className="flex gap-2">
                   <button
                     onClick={prevPromo}
-                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 transition-colors hover:bg-teal-50 hover:text-teal-600">
-                    <ChevronLeft className="h-4 w-4" />
+                    className="rounded-full border border-gray-100 p-2 text-gray-500 transition-all hover:bg-teal-50 hover:text-teal-600 hover:shadow-sm">
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={nextPromo}
-                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 transition-colors hover:bg-teal-50 hover:text-teal-600">
-                    <ChevronRight className="h-4 w-4" />
+                    className="rounded-full border border-gray-100 p-2 text-gray-500 transition-all hover:bg-teal-50 hover:text-teal-600 hover:shadow-sm">
+                    <ChevronRight className="h-5 w-5" />
                   </button>
                 </div>
               )}
             </div>
-            <div className="flex gap-3 overflow-hidden">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {promoLoading ? (
                 <p className="text-sm text-gray-400 italic">Đang tải mã...</p>
               ) : (
-                discountPromos.slice(promoIdx, promoIdx + 2).map((promo) => (
+                discountPromos.slice(promoIdx, promoIdx + 3).map((promo) => (
                   <div
                     key={promo.id}
-                    className="relative flex w-1/2 overflow-hidden rounded-xl border border-teal-100 bg-white shadow-sm transition-all hover:shadow-md">
-                    {/* Left Side (Icon Section) */}
-                    <div className="relative flex w-[35%] flex-col items-center justify-center bg-gradient-to-br from-teal-500 to-teal-600 p-2 text-white">
+                    className="group/item relative flex overflow-hidden rounded-xl border border-teal-100 bg-white shadow-sm transition-all hover:shadow-md">
+                    <div className="relative flex w-[30%] flex-col items-center justify-center bg-gradient-to-br from-teal-500 to-teal-600 p-2 text-white">
                       <Ticket className="mb-1 h-6 w-6" />
-                      <span className="text-[9px] font-black uppercase opacity-80">
+                      <span className="text-[10px] font-black uppercase opacity-90">
                         {promo.type}
                       </span>
-                      <div className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-white shadow-inner" />
-                      <div className="absolute -right-1.5 -bottom-1.5 h-3 w-3 rounded-full bg-white shadow-inner" />
                     </div>
-                    {/* Right Side (Info Section) */}
-                    <div className="flex w-[65%] flex-col justify-between border-l border-dashed border-teal-200 bg-teal-50/20 p-2.5">
+                    <div className="flex flex-1 flex-col justify-between border-l border-dashed border-teal-200 bg-teal-50/20 p-3">
                       <div>
-                        <h3 className="line-clamp-1 text-[13px] font-extrabold text-teal-800">
+                        <h3 className="text-base font-black text-teal-800">
                           GIẢM{" "}
                           {promo.type === "PERCENTAGE"
                             ? `${promo.discountValue}%`
                             : formatVND(promo.discountValue)}
                         </h3>
-                        <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-gray-500 italic">
+                        <p className="mt-1 line-clamp-1 text-[11px] font-medium text-gray-500">
                           {promo.description}
                         </p>
                       </div>
                       <button
                         onClick={() => handleCopyCode(promo.code)}
-                        className="mt-2 w-full rounded-lg border border-teal-500 bg-white py-1 text-[10px] font-bold text-teal-600 transition-all hover:bg-teal-600 hover:text-white">
+                        className="mt-3 w-full rounded-lg bg-teal-600 py-1.5 text-xs font-bold text-white transition-all hover:bg-teal-700 active:scale-95">
                         Lưu mã
                       </button>
                     </div>
@@ -333,50 +332,92 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* CỘT PHẢI: MUA 1 TẶNG 1 */}
-          <div className="group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-zinc-900">Mua 1 Tặng 1</h2>
-              {bogoProducts && bogoProducts.length > 2 && (
-                <div className="flex gap-2">
+          {/* KHU VỰC MUA 1 TẶNG 1 - TÔNG MÀU SÁNG NHẸ & TINH TẾ */}
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-[#f0f9fa] p-8 shadow-xl border border-teal-100 lg:p-12">
+            {/* Họa tiết trang trí nhẹ nhàng */}
+            <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-teal-400/10 blur-[100px]" />
+            <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-sky-400/10 blur-[100px]" />
+            
+            <div className="relative mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <div className="max-w-xl text-left">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-teal-600/10 px-4 py-1.5 text-[10px] font-black tracking-[0.2em] text-teal-700 uppercase border border-teal-200">
+                  🔥 Chớp Deal Ngay
+                </div>
+                <h2 className="text-4xl font-light tracking-tight text-zinc-900 md:text-5xl lg:text-7xl">
+                  Săn Deal <span className="font-bold text-teal-600">Mua 1 Tặng 1</span>
+                </h2>
+                <p className="mt-4 text-sm font-medium leading-relaxed text-zinc-500 md:text-base">
+                  Cơ hội duy nhất sở hữu những món phụ kiện cực chất với mức giá hời nhất năm. 
+                  Số lượng ưu đãi có hạn, đừng bỏ lỡ!
+                </p>
+              </div>
+              
+              {bogoProducts && bogoProducts.length > 4 && (
+                <div className="flex gap-4">
                   <button
                     onClick={prevBogo}
-                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50">
-                    <ChevronLeft className="h-4 w-4" />
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-teal-200 bg-white text-teal-600 shadow-sm transition-all hover:bg-teal-600 hover:text-white active:scale-95">
+                    <ChevronLeft className="h-6 w-6" />
                   </button>
                   <button
                     onClick={nextBogo}
-                    className="rounded-full border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50">
-                    <ChevronRight className="h-4 w-4" />
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-teal-200 bg-white text-teal-600 shadow-sm transition-all hover:bg-teal-600 hover:text-white active:scale-95">
+                    <ChevronRight className="h-6 w-6" />
                   </button>
                 </div>
               )}
             </div>
-            <div className="flex gap-3 overflow-hidden">
+
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
               {bogoLoading ? (
-                <p className="text-sm text-gray-400">Đang tải...</p>
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-72 animate-pulse rounded-2xl bg-white shadow-sm" />
+                ))
               ) : (
-                bogoProducts?.slice(bogoIdx, bogoIdx + 2).map((product) => (
+                bogoProducts?.slice(bogoIdx, bogoIdx + 4).map((product) => (
                   <Link
                     to={`/products/${product.id}`}
                     key={product.id}
-                    className="flex w-1/2 items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-2 transition-all hover:border-teal-300 hover:bg-white hover:shadow-sm">
-                    <img
-                      src={product.imgUrls?.[0]}
-                      alt={product.name}
-                      className="h-14 w-14 rounded-lg border bg-white object-cover"
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <h4 className="line-clamp-2 text-xs font-medium text-gray-800">
+                    className="group relative flex flex-col overflow-hidden rounded-2xl bg-white p-3 shadow-md border border-gray-100 transition-all hover:-translate-y-2 hover:shadow-xl hover:border-teal-200">
+                    <div className="relative z-10 aspect-square overflow-hidden rounded-xl bg-gray-50">
+                      <img
+                        src={product.imgUrls?.[0]}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        <div className="flex items-center gap-1 rounded-md bg-red-500 px-2 py-0.5 text-[9px] font-black text-white shadow-sm uppercase">
+                          Mua 1
+                        </div>
+                        <div className="flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-0.5 text-[9px] font-black text-zinc-900 shadow-sm uppercase">
+                          Tặng 1
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-5 flex flex-1 flex-col px-1">
+                      <h4 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-zinc-800 group-hover:text-teal-600">
                         {product.name}
                       </h4>
-                      <p className="mt-1 text-sm font-bold text-red-500">
-                        {formatVND(product.price)}
-                      </p>
+                      <div className="mt-auto flex items-center justify-between pt-4">
+                        <p className="text-lg font-black text-red-500">
+                          {formatVND(product.price)}
+                        </p>
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-teal-600 border border-teal-100 transition-all group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-lg">
+                          <ChevronRight className="h-5 w-5" />
+                        </div>
+                      </div>
                     </div>
                   </Link>
                 ))
               )}
+            </div>
+            {/* Thông điệp cuối nhẹ nhàng */}
+            <div className="mt-12 flex items-center justify-center gap-4 text-teal-600/40">
+               <div className="h-[1px] w-12 bg-teal-200"></div>
+               <p className="text-[10px] font-bold tracking-[0.4em] uppercase">
+                 Ưu đãi giới hạn • Kết thúc 31/03
+               </p>
+               <div className="h-[1px] w-12 bg-teal-200"></div>
             </div>
           </div>
         </section>
