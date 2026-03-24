@@ -84,32 +84,34 @@ export function ServicesPage() {
           className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-[1.02]"
           style={{ backgroundImage: "url('/service-banner-v2.png')" }}
         />
-        
+
         {/* Soft Light Overlay for E-commerce feel */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent" />
-        
-        <div className="container relative mx-auto flex h-full items-center px-4 md:px-8">
-          <div className="max-w-xl text-left animate-in fade-in slide-in-from-left-4 duration-700">
+
+        <div className="relative container mx-auto flex h-full items-center px-4 md:px-8">
+          <div className="animate-in fade-in slide-in-from-left-4 max-w-xl text-left duration-700">
             <div className="mb-4 inline-flex items-center gap-2">
               <span className="h-[1px] w-8 bg-teal-600"></span>
               <span className="text-[11px] font-bold tracking-[0.2em] text-teal-600 uppercase">
                 Dịch vụ Cá nhân hóa
               </span>
             </div>
-            
+
             <h1 className="mb-4 text-3xl font-light tracking-tight text-zinc-900 md:text-5xl lg:text-6xl">
               Nâng Tầm <span className="font-semibold text-zinc-900">Phong Cách</span>
               <br />
               Thiết Bị Của Bạn
             </h1>
-            
-            <p className="mb-8 max-w-md text-sm font-medium leading-relaxed text-zinc-500 md:text-base">
-              Dịch vụ in ốp lưng và dán skin cao cấp với công nghệ hiện đại. 
-              Sắc nét, bền bỉ và đậm chất riêng cho mọi dòng máy.
+
+            <p className="mb-8 max-w-md text-sm leading-relaxed font-medium text-zinc-500 md:text-base">
+              Dịch vụ in ốp lưng và dán skin cao cấp với công nghệ hiện đại. Sắc nét, bền bỉ và đậm
+              chất riêng cho mọi dòng máy.
             </p>
-            
-            <button 
-              onClick={() => document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' })}
+
+            <button
+              onClick={() =>
+                document.getElementById("services-grid")?.scrollIntoView({ behavior: "smooth" })
+              }
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-zinc-900 px-8 py-3.5 text-xs font-bold text-white transition-all hover:bg-teal-600">
               <span>KHÁM PHÁ NGAY</span>
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
