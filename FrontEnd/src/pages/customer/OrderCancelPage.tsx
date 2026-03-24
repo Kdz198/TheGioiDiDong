@@ -1,22 +1,71 @@
 import { Button } from "@/components/ui/button";
 import { CHECKOUT_PENDING_ORDER_CODE_KEY } from "@/constants/checkout.const";
 import { ROUTES } from "@/router/routes.const";
+import { paymentService } from "@/services/paymentService";
 import { AlertTriangle } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 export function OrderCancelPage() {
   const [searchParams] = useSearchParams();
-  const orderCode = searchParams.get("orderCode")?.trim() ?? "";
+  const transactionCode = searchParams.get("orderCode")?.trim() ?? "";
+  const [resolvedOrderCode, setResolvedOrderCode] = useState("");
+  const [isResolvingOrderCode, setIsResolvingOrderCode] = useState(Boolean(transactionCode));
+  const [resolveNote, setResolveNote] = useState<string | null>(null);
 
   useEffect(() => {
-    // User returned from payment provider with a cancel/fail signal.
-    // Clear pending orderCode to avoid stale fallback on result pages.
-    sessionStorage.removeItem(CHECKOUT_PENDING_ORDER_CODE_KEY);
-  }, []);
+    let active = true;
+    const orderCodeFromSession =
+      sessionStorage.getItem(CHECKOUT_PENDING_ORDER_CODE_KEY)?.trim() ?? "";
 
-  const retryCheckoutUrl = orderCode
-    ? `${ROUTES.CHECKOUT}?orderCode=${encodeURIComponent(orderCode)}`
+    const resolveOrderCode = async () => {
+      if (!transactionCode) {
+        if (active) {
+          setResolvedOrderCode(orderCodeFromSession);
+          setIsResolvingOrderCode(false);
+        }
+        sessionStorage.removeItem(CHECKOUT_PENDING_ORDER_CODE_KEY);
+        return;
+      }
+
+      try {
+        const orderCode = (
+          await paymentService.getOrderCodeByTransactionCode(transactionCode)
+        ).trim();
+        console.log("Resolved order code from transaction:", { transactionCode, orderCode });
+        if (active) {
+          setResolvedOrderCode(orderCode || orderCodeFromSession);
+          if (!orderCode && orderCodeFromSession) {
+            setResolveNote("Không thể đổi mã đơn qua giao dịch, đang dùng mã đơn trong phiên.");
+          }
+        }
+      } catch {
+        if (active) {
+          setResolvedOrderCode(orderCodeFromSession);
+          if (orderCodeFromSession) {
+            setResolveNote(
+              "Không thể lấy mã đơn từ giao dịch PayOS, đang dùng mã đơn trong phiên."
+            );
+          }
+        }
+      } finally {
+        if (active) {
+          setIsResolvingOrderCode(false);
+        }
+        // Clear pending orderCode to avoid stale fallback on result pages.
+        sessionStorage.removeItem(CHECKOUT_PENDING_ORDER_CODE_KEY);
+      }
+    };
+
+    void resolveOrderCode();
+
+    return () => {
+      active = false;
+    };
+  }, [transactionCode]);
+
+  const retryCheckoutUrl = resolvedOrderCode
+    ? `${ROUTES.CHECKOUT}?orderCode=${encodeURIComponent(resolvedOrderCode)}`
     : ROUTES.CART;
 
   return (
@@ -26,11 +75,15 @@ export function OrderCancelPage() {
       <p className="mt-3 max-w-md text-gray-500">
         Giao dịch đã bị hủy hoặc chưa hoàn thành. Đơn hàng của bạn chưa được ghi nhận thanh toán.
       </p>
-      {orderCode && (
+      {resolvedOrderCode && (
         <p className="mt-2 text-sm text-gray-400">
-          Mã đơn hàng: <span className="font-medium text-zinc-600">{orderCode}</span>
+          Mã đơn hàng: <span className="font-medium text-zinc-600">{resolvedOrderCode}</span>
         </p>
       )}
+      {isResolvingOrderCode && (
+        <p className="mt-2 text-sm text-gray-400">Đang đồng bộ mã đơn từ giao dịch PayOS...</p>
+      )}
+      {resolveNote && <p className="mt-2 text-sm text-amber-600">{resolveNote}</p>}
       <div className="mt-8 flex gap-4">
         <Button asChild className="bg-amber-500 hover:bg-amber-600">
           <Link to={retryCheckoutUrl}>Thử thanh toán lại</Link>
