@@ -56,15 +56,13 @@ export function Header() {
             className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Sản phẩm
           </Link>
-          
+
           <Link
             to={ROUTES.SERVICES}
             className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Dịch vụ
           </Link>
-          <Link
-            to={ROUTES.BLOGS}
-            className="text-sm font-medium text-zinc-700 hover:text-teal-500">
+          <Link to={ROUTES.BLOGS} className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Bài viết
           </Link>
         </nav>

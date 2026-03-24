@@ -342,25 +342,25 @@ export function HomePage() {
           </div>
 
           {/* KHU VỰC MUA 1 TẶNG 1 - TÔNG MÀU SÁNG NHẸ & TINH TẾ */}
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-[#f0f9fa] p-8 shadow-xl border border-teal-100 lg:p-12">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-teal-100 bg-[#f0f9fa] p-8 shadow-xl lg:p-12">
             {/* Họa tiết trang trí nhẹ nhàng */}
             <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-teal-400/10 blur-[100px]" />
             <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-sky-400/10 blur-[100px]" />
-            
+
             <div className="relative mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div className="max-w-xl text-left">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-teal-600/10 px-4 py-1.5 text-[10px] font-black tracking-[0.2em] text-teal-700 uppercase border border-teal-200">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-600/10 px-4 py-1.5 text-[10px] font-black tracking-[0.2em] text-teal-700 uppercase">
                   🔥 Chớp Deal Ngay
                 </div>
                 <h2 className="text-4xl font-light tracking-tight text-zinc-900 md:text-5xl lg:text-7xl">
                   Săn Deal <span className="font-bold text-teal-600">Mua 1 Tặng 1</span>
                 </h2>
-                <p className="mt-4 text-sm font-medium leading-relaxed text-zinc-500 md:text-base">
-                  Cơ hội duy nhất sở hữu những món phụ kiện cực chất với mức giá hời nhất năm. 
-                  Số lượng ưu đãi có hạn, đừng bỏ lỡ!
+                <p className="mt-4 text-sm leading-relaxed font-medium text-zinc-500 md:text-base">
+                  Cơ hội duy nhất sở hữu những món phụ kiện cực chất với mức giá hời nhất năm. Số
+                  lượng ưu đãi có hạn, đừng bỏ lỡ!
                 </p>
               </div>
-              
+
               {bogoProducts && bogoProducts.length > 4 && (
                 <div className="flex gap-4">
                   <button
@@ -378,55 +378,53 @@ export function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
-              {bogoLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-72 animate-pulse rounded-2xl bg-white shadow-sm" />
-                ))
-              ) : (
-                bogoProducts?.slice(bogoIdx, bogoIdx + 4).map((product) => (
-                  <Link
-                    to={`/products/${product.id}`}
-                    key={product.id}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl bg-white p-3 shadow-md border border-gray-100 transition-all hover:-translate-y-2 hover:shadow-xl hover:border-teal-200">
-                    <div className="relative z-10 aspect-square overflow-hidden rounded-xl bg-gray-50">
-                      <img
-                        src={product.imgUrls?.[0]}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                      <div className="absolute top-2 left-2 flex flex-col gap-1">
-                        <div className="flex items-center gap-1 rounded-md bg-red-500 px-2 py-0.5 text-[9px] font-black text-white shadow-sm uppercase">
-                          Mua 1
-                        </div>
-                        <div className="flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-0.5 text-[9px] font-black text-zinc-900 shadow-sm uppercase">
-                          Tặng 1
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-5 flex flex-1 flex-col px-1">
-                      <h4 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-zinc-800 group-hover:text-teal-600">
-                        {product.name}
-                      </h4>
-                      <div className="mt-auto flex items-center justify-between pt-4">
-                        <p className="text-lg font-black text-red-500">
-                          {formatVND(product.price)}
-                        </p>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-teal-600 border border-teal-100 transition-all group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-lg">
-                          <ChevronRight className="h-5 w-5" />
+              {bogoLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-72 animate-pulse rounded-2xl bg-white shadow-sm" />
+                  ))
+                : bogoProducts?.slice(bogoIdx, bogoIdx + 4).map((product) => (
+                    <Link
+                      to={`/products/${product.id}`}
+                      key={product.id}
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-md transition-all hover:-translate-y-2 hover:border-teal-200 hover:shadow-xl">
+                      <div className="relative z-10 aspect-square overflow-hidden rounded-xl bg-gray-50">
+                        <img
+                          src={product.imgUrls?.[0]}
+                          alt={product.name}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                          <div className="flex items-center gap-1 rounded-md bg-red-500 px-2 py-0.5 text-[9px] font-black text-white uppercase shadow-sm">
+                            Mua 1
+                          </div>
+                          <div className="flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-0.5 text-[9px] font-black text-zinc-900 uppercase shadow-sm">
+                            Tặng 1
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                ))
-              )}
+                      <div className="mt-5 flex flex-1 flex-col px-1">
+                        <h4 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-zinc-800 group-hover:text-teal-600">
+                          {product.name}
+                        </h4>
+                        <div className="mt-auto flex items-center justify-between pt-4">
+                          <p className="text-lg font-black text-red-500">
+                            {formatVND(product.price)}
+                          </p>
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-teal-100 bg-gray-50 text-teal-600 transition-all group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-lg">
+                            <ChevronRight className="h-5 w-5" />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
             </div>
             {/* Thông điệp cuối nhẹ nhàng */}
             <div className="mt-12 flex items-center justify-center gap-4 text-teal-600/40">
-               <div className="h-[1px] w-12 bg-teal-200"></div>
-               <p className="text-[10px] font-bold tracking-[0.4em] uppercase">
-                 Ưu đãi giới hạn • Kết thúc 31/03
-               </p>
-               <div className="h-[1px] w-12 bg-teal-200"></div>
+              <div className="h-[1px] w-12 bg-teal-200"></div>
+              <p className="text-[10px] font-bold tracking-[0.4em] uppercase">
+                Ưu đãi giới hạn • Kết thúc 31/03
+              </p>
+              <div className="h-[1px] w-12 bg-teal-200"></div>
             </div>
           </div>
         </section>
