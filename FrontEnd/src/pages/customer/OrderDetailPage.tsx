@@ -276,7 +276,7 @@ export function OrderDetailPage() {
     try {
       const response = await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
       // Nếu API trả về status code 2xx, coi như yêu cầu hủy đã được gửi thành công
-      if (response.status.toString().startsWith("2")) {
+      if (response.status === 200 || response.status === 204) {
         toast.success("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ xác nhận từ hệ thống.");
         queryClient.invalidateQueries({ queryKey: ["order", orderId] });
         queryClient.invalidateQueries({ queryKey: ["orders"] });
