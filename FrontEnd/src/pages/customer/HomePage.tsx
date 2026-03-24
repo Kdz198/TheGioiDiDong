@@ -23,6 +23,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { categoryService } from "@/services/categoryService";
 import { productService } from "@/services/productService";
@@ -319,6 +320,14 @@ export function HomePage() {
                         <p className="mt-1 line-clamp-1 text-[11px] font-medium text-gray-500">
                           {promo.description}
                         </p>
+                        <div className="mt-1 flex flex-col gap-0.5">
+                          <p className="text-[10px] font-bold text-teal-600 uppercase">
+                            Đơn tối thiểu: {formatVND(promo.minOrderAmount)}
+                          </p>
+                          <p className="text-[10px] font-bold text-red-500 uppercase">
+                            HSD: {format(new Date(promo.endDate), "dd/MM/yyyy")}
+                          </p>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleCopyCode(promo.code)}
