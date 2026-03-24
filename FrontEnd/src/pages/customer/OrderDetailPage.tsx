@@ -275,7 +275,8 @@ export function OrderDetailPage() {
   const handleCancel = async () => {
     try {
       const response = await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
-      if (response.status === 200) {
+      // Nếu API trả về status code 2xx, coi như yêu cầu hủy đã được gửi thành công
+      if (response.status.toString().startsWith("2")) {
         toast.success("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ xác nhận từ hệ thống.");
         queryClient.invalidateQueries({ queryKey: ["order", orderId] });
         queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -419,7 +420,7 @@ export function OrderDetailPage() {
                   (Đã bao gồm VAT nếu có)
                 </p>
               </CardContent>
-              {order.status?.toUpperCase() === "PENDING" && (
+              {order.status?.toUpperCase() === "PAID" && (
                 <div className="p-4 pt-0">
                   <Button
                     variant="outline"

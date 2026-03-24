@@ -2,11 +2,14 @@ import { Button } from "@/components/ui/button";
 import { CHECKOUT_PENDING_ORDER_CODE_KEY } from "@/constants/checkout.const";
 import { ROUTES } from "@/router/routes.const";
 import { paymentService } from "@/services/paymentService";
+import { useCartStore } from "@/stores/cartStore";
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 export function OrderCancelPage() {
+  const clearCart = useCartStore((s) => s.clearCart);
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const transactionCode = searchParams.get("orderCode")?.trim() ?? "";
   const [resolvedOrderCode, setResolvedOrderCode] = useState("");
@@ -67,6 +70,10 @@ export function OrderCancelPage() {
   const retryCheckoutUrl = resolvedOrderCode
     ? `${ROUTES.CHECKOUT}?orderCode=${encodeURIComponent(resolvedOrderCode)}`
     : ROUTES.CART;
+  const handleOrderOtherItems = () => {
+    clearCart();
+    navigate(ROUTES.HOME);
+  };
 
   return (
     <div className="container mx-auto flex flex-col items-center justify-center px-4 py-20 text-center">
@@ -90,6 +97,9 @@ export function OrderCancelPage() {
         </Button>
         <Button variant="outline" asChild>
           <Link to={ROUTES.CART}>Quay lại giỏ hàng</Link>
+        </Button>
+        <Button type="button" variant="outline" onClick={handleOrderOtherItems}>
+          Đặt mặt hàng khác
         </Button>
       </div>
     </div>
