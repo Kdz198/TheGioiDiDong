@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, Star, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -77,14 +77,59 @@ export function ServicesPage() {
   return (
     <div className="min-h-screen bg-[#f1f1f1] pb-12">
       {/* HEADER ĐƠN GIẢN MÀU XANH TEAL */}
-      <section className="bg-gradient-to-r from-teal-500 to-teal-600 pt-16 pb-24">
-        <div className="container mx-auto px-4 text-center text-white">
-          <h1 className="text-3xl font-extrabold tracking-tight uppercase md:text-5xl">
-            Dịch Vụ & Cá Nhân Hóa
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl font-medium text-teal-100">
-            Thiết kế riêng theo phong cách của bạn. In ốp lưng, dán màn hình và hơn thế nữa.
-          </p>
+      {/* BANNER MỚI HIỆN ĐẠI HƠN */}
+      <section className="relative h-[480px] w-full overflow-hidden">
+        {/* Background Image with subtle zoom effect */}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+          style={{ backgroundImage: "url('/service-banner.png')" }}
+        />
+        
+        {/* Dark Overlay for readability */}
+        <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-[1px]" />
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-teal-500/20 to-transparent" />
+        
+        <div className="container relative mx-auto flex h-full flex-col items-center justify-center px-4 text-center text-white">
+          <div className="max-w-4xl rounded-[2rem] border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl md:p-12">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-teal-500/20 px-4 py-1.5 text-sm font-bold tracking-wider text-teal-300 uppercase backdrop-blur-md border border-teal-500/30">
+              <Sparkles className="h-4 w-4" /> Dịch vụ đẳng cấp
+            </div>
+            
+            <h1 className="mb-6 text-4xl font-black tracking-tighter uppercase md:text-7xl">
+              <span className="bg-gradient-to-b from-white to-gray-300 bg-clip-text text-transparent">
+                Dịch Vụ
+              </span>
+              <span className="mx-2 text-teal-400">&</span>
+              <span className="bg-gradient-to-b from-teal-300 to-teal-500 bg-clip-text text-transparent">
+                Cá Nhân Hóa
+              </span>
+            </h1>
+            
+            <p className="mx-auto mb-10 max-w-2xl text-lg font-medium leading-relaxed text-zinc-100 md:text-xl">
+              Nâng tầm đẳng cấp thiết bị của bạn với dịch vụ 
+              <span className="mx-1 font-bold text-white underline decoration-teal-500 underline-offset-4">in ấn ốp lưng</span> 
+              và 
+              <span className="mx-1 font-bold text-white underline decoration-teal-500 underline-offset-4">dán skin phụ kiện</span> 
+              sắc nét từng pixel, bền bỉ cùng thời gian.
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-4">
+              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
+                <Zap className="h-5 w-5 text-yellow-400" />
+                <span>IN UV CỰC NÉT</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
+                <ShieldCheck className="h-5 w-5 text-teal-400" />
+                <span>DÁN SKIN KHÍT MÁY</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-black/30 px-5 py-3 text-sm font-bold backdrop-blur-md border border-white/10 transition-colors hover:bg-black/50">
+                <Star className="h-5 w-5 text-orange-400" />
+                <span>BẢO HÀNH TRỌN ĐỜI</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
