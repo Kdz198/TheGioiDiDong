@@ -56,10 +56,16 @@ export function Header() {
             className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Sản phẩm
           </Link>
+          
           <Link
             to={ROUTES.SERVICES}
             className="text-sm font-medium text-zinc-700 hover:text-teal-500">
             Dịch vụ
+          </Link>
+          <Link
+            to={ROUTES.BLOGS}
+            className="text-sm font-medium text-zinc-700 hover:text-teal-500">
+            Bài viết
           </Link>
         </nav>
 
@@ -176,6 +182,12 @@ export function Header() {
               className="block rounded-md px-3 py-2 text-sm hover:bg-gray-100"
               onClick={() => setMobileMenuOpen(false)}>
               Sản phẩm
+            </Link>
+            <Link
+              to={ROUTES.BLOGS}
+              className="block rounded-md px-3 py-2 text-sm hover:bg-gray-100"
+              onClick={() => setMobileMenuOpen(false)}>
+              Bài viết
             </Link>
             {!isLoggedIn && (
               <>
