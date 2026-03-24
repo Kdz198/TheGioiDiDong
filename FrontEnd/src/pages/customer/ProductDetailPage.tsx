@@ -20,6 +20,7 @@ export function ProductDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setCurrentImgIndex(0);
   }, [slug]);
 
   const addItem = useCartStore((s) => s.addItem);
@@ -66,9 +67,10 @@ export function ProductDetailPage() {
       </div>
     );
 
-  const images = product.imgUrls?.length
-    ? product.imgUrls
-    : ["https://placehold.co/400x400?text=No+Image"];
+  const validImages = (product.imgUrls ?? []).filter(
+    (img): img is string => typeof img === "string" && img.trim().length > 0
+  );
+  const images = validImages.length ? validImages : ["https://placehold.co/400x400?text=No+Image"];
   const handleAddToCart = () => {
     addItem({
       id: Date.now(),

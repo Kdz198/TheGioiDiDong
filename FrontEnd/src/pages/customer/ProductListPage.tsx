@@ -182,13 +182,21 @@ export function ProductListPage() {
 
   return (
     <div className="min-h-screen bg-[#f1f1f1] pt-8 pb-12">
-      <div className="container mx-auto space-y-6 px-4">
-        {/* TIÊU ĐỀ TRANG */}
-        <div className="flex flex-col items-center justify-center space-y-2 py-6">
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 uppercase">{pageTitle}</h1>
-          <p className="text-gray-500">{filteredProducts.length} sản phẩm</p>
+      <section className="overflow-hidden rounded-b-4xl bg-linear-to-r from-teal-500 via-teal-500 to-cyan-500 py-10 text-center text-white shadow-[0_10px_35px_rgba(20,184,166,0.25)]">
+        <div className="container mx-auto px-4">
+          <p className="text-xs font-semibold tracking-[0.2em] text-teal-100 uppercase">
+            Danh mục sản phẩm
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight uppercase md:text-4xl">
+            {pageTitle}
+          </h1>
+          <p className="mt-2 text-sm text-teal-100 md:text-base">
+            Hiện có {filteredProducts.length} sản phẩm sẵn sàng để bạn khám phá.
+          </p>
         </div>
+      </section>
 
+      <div className="container mx-auto space-y-6 px-4">
         {/* THANH DANH MỤC */}
         <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="scrollbar-hide flex gap-4 overflow-x-auto">
