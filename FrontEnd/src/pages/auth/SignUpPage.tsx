@@ -41,7 +41,6 @@ export function SignUpPage() {
       const result = await authService.register({
         fullName: data.fullName,
         email: data.email,
-        phone: data.phone,
         password: data.password,
       });
       login(
@@ -82,12 +81,6 @@ export function SignUpPage() {
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
           {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="phone">Số điện thoại</Label>
-          <Input id="phone" placeholder="0901234567" {...register("phone")} />
-          {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
         </div>
 
         <div className="space-y-2">

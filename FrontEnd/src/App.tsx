@@ -48,11 +48,6 @@ const OrderSuccessPage = lazy(() =>
     default: m.OrderSuccessPage,
   }))
 );
-const OrderCancelPage = lazy(() =>
-  import("@/pages/customer/OrderCancelPage").then((m) => ({
-    default: m.OrderCancelPage,
-  }))
-);
 const OrderHistoryPage = lazy(() =>
   import("@/pages/customer/OrderHistoryPage").then((m) => ({
     default: m.OrderHistoryPage,
@@ -165,6 +160,16 @@ const StaffBlogManagerPage = lazy(() =>
     default: m.BlogManagerPage,
   }))
 );
+const StaffBlogFormPage = lazy(() =>
+  import("@/pages/staff/BlogFormPage").then((m) => ({
+    default: m.BlogFormPage,
+  }))
+);
+const StaffBlogPreviewPage = lazy(() =>
+  import("@/pages/staff/BlogPreviewPage").then((m) => ({
+    default: m.BlogPreviewPage,
+  }))
+);
 
 // Admin CRUD pages
 const AdminProductManagerPage = lazy(() =>
@@ -220,6 +225,16 @@ const AdminAuditLogPage = lazy(() =>
 const AdminBlogManagerPage = lazy(() =>
   import("@/pages/admin/BlogManagerPage").then((m) => ({
     default: m.BlogManagerPage,
+  }))
+);
+const AdminBlogFormPage = lazy(() =>
+  import("@/pages/admin/BlogFormPage").then((m) => ({
+    default: m.BlogFormPage,
+  }))
+);
+const AdminBlogPreviewPage = lazy(() =>
+  import("@/pages/admin/BlogPreviewPage").then((m) => ({
+    default: m.BlogPreviewPage,
   }))
 );
 
@@ -278,14 +293,6 @@ function App() {
                   element={
                     <ProtectedRoute role="customer">
                       <OrderSuccessPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path={ROUTES.ORDER_CANCEL}
-                  element={
-                    <ProtectedRoute role="customer">
-                      <OrderCancelPage />
                     </ProtectedRoute>
                   }
                 />
@@ -356,6 +363,9 @@ function App() {
                 <Route path={ROUTES.ADMIN_ORDER_DETAIL} element={<AdminOrderDetailPage />} />
                 <Route path={ROUTES.ADMIN_PROMOTIONS} element={<AdminPromotionManagerPage />} />
                 <Route path={ROUTES.ADMIN_BLOGS} element={<AdminBlogManagerPage />} />
+                <Route path={ROUTES.ADMIN_BLOG_CREATE} element={<AdminBlogFormPage />} />
+                <Route path={ROUTES.ADMIN_BLOG_EDIT} element={<AdminBlogFormPage />} />
+                <Route path={ROUTES.ADMIN_BLOG_PREVIEW} element={<AdminBlogPreviewPage />} />
                 <Route path={ROUTES.ADMIN_FEEDBACK} element={<AdminFeedbackManagerPage />} />
                 <Route
                   path={ROUTES.ADMIN_PRODUCT_VERSIONS}
@@ -385,6 +395,9 @@ function App() {
                 <Route path={ROUTES.STAFF_ORDER_DETAIL} element={<StaffOrderDetailPage />} />
                 <Route path={ROUTES.STAFF_PROMOTIONS} element={<StaffPromotionManagerPage />} />
                 <Route path={ROUTES.STAFF_BLOGS} element={<StaffBlogManagerPage />} />
+                <Route path={ROUTES.STAFF_BLOG_CREATE} element={<StaffBlogFormPage />} />
+                <Route path={ROUTES.STAFF_BLOG_EDIT} element={<StaffBlogFormPage />} />
+                <Route path={ROUTES.STAFF_BLOG_PREVIEW} element={<StaffBlogPreviewPage />} />
                 <Route path={ROUTES.STAFF_USERS} element={<StaffUserManagerPage />} />
                 <Route path={ROUTES.STAFF_FEEDBACK} element={<StaffFeedbackManagerPage />} />
                 <Route

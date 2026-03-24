@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/router/routes.const";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
-import { LogOut, Menu, Package, Search, ShoppingCart, User, X } from "lucide-react";
+import { LogOut, Menu, Package, Search, ShoppingCart, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -78,7 +78,6 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-
           <Link to={ROUTES.CART} className="relative p-2 text-zinc-600 hover:text-teal-500">
             <ShoppingCart className="h-5 w-5" />
             {cartCount > 0 && (
@@ -100,12 +99,6 @@ export function Header() {
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5 text-sm font-medium">{user?.fullName}</div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={ROUTES.PROFILE}>
-                    <User className="mr-2 h-4 w-4" />
-                    Hồ sơ
-                  </Link>
-                </DropdownMenuItem>
                 {user?.role === "admin" ? (
                   <DropdownMenuItem asChild>
                     <Link to={ROUTES.ADMIN_DASHBOARD}>

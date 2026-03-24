@@ -1,53 +1,28 @@
-import { CustomerPickerDialog } from "@/components/common/CustomerPickerDialog";
 import { ProductPickerDialog } from "@/components/common/ProductPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { User } from "@/interfaces/user.types";
 import { ROUTES } from "@/router/routes.const";
 import { checkoutService, type CheckAvailableRequest } from "@/services/checkoutService";
 import { productService } from "@/services/productService";
-import {
-  calculatePromotionDiscount,
-  promotionService,
-  validatePromotionForCheckout,
-} from "@/services/promotionService";
-import { userService } from "@/services/userService";
 import { useAuthStore } from "@/stores";
 import { extractAccountIdFromToken } from "@/utils/authToken";
 import { formatVND } from "@/utils/formatPrice";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Copy, ExternalLink, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-type OrderTargetMode = "customer" | "self";
-const RECENT_CUSTOMER_KEY = "staff-order-create-recent-customers";
-const RECENT_CUSTOMER_LIMIT = 6;
-
 interface DraftOrderItem {
   productId: number;
   productName: string;
+  thumbnailUrl: string;
   unitPrice: number;
   quantity: number;
   subtotal: number;
   maxStock: number;
-}
-
-interface PaymentResultState {
-  open: boolean;
-  paymentUrl: string;
-  orderCode: string;
 }
 
 function toPositiveInt(value: string): number {
@@ -65,78 +40,28 @@ export function StaffOrderCreatePage() {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
 
-  const [orderTargetMode, setOrderTargetMode] = useState<OrderTargetMode>("customer");
-  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [recentCustomerIds, setRecentCustomerIds] = useState<number[]>(() => {
-    const rawValue = localStorage.getItem(RECENT_CUSTOMER_KEY);
-    if (!rawValue) return [];
-
-    try {
-      const parsed = JSON.parse(rawValue);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value) && value > 0);
-    } catch {
-      return [];
-    }
-  });
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [items, setItems] = useState<DraftOrderItem[]>([]);
 
-  const [recipientName, setRecipientName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [recipientName, setRecipientName] = useState(user?.fullName ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone ?? "");
   const [address, setAddress] = useState("");
   const [orderNote, setOrderNote] = useState("");
 
-  const [promoInput, setPromoInput] = useState("");
-  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
-  const [promoDiscountAmount, setPromoDiscountAmount] = useState(0);
-
-  const [paymentResult, setPaymentResult] = useState<PaymentResultState>({
-    open: false,
-    paymentUrl: "",
-    orderCode: "",
-  });
-
-  const selfAccountId = useMemo(() => extractAccountIdFromToken(token), [token]);
-
-  const { data: customerPaged, isLoading: isCustomersLoading } = useQuery({
-    queryKey: ["staff", "order-create", "customers"],
-    queryFn: () => userService.getUsers(0, 500, ["USER"]),
-  });
+  const resolvedStaffUserId = useMemo(() => {
+    if (typeof user?.id === "number" && user.id > 0) {
+      return user.id;
+    }
+    return extractAccountIdFromToken(token);
+  }, [token, user?.id]);
 
   const { data: productList, isLoading: isProductsLoading } = useQuery({
     queryKey: ["staff", "order-create", "products"],
     queryFn: () => productService.getProducts({ page: 1, pageSize: 500, activeFilter: "active" }),
   });
 
-  const customers = useMemo(() => customerPaged?.content ?? [], [customerPaged?.content]);
   const products = useMemo(() => productList?.items ?? [], [productList?.items]);
-
-  const selectedCustomer = useMemo(
-    () => customers.find((customer) => customer.id === selectedCustomerId) ?? null,
-    [customers, selectedCustomerId]
-  );
-
-  const recentCustomers = useMemo(() => {
-    if (!recentCustomerIds.length) return [];
-
-    const customerMap = new Map(customers.map((customer) => [customer.id, customer]));
-    return recentCustomerIds
-      .map((customerId) => customerMap.get(customerId))
-      .filter((customer): customer is User => Boolean(customer));
-  }, [customers, recentCustomerIds]);
-
-  const effectiveTargetUserId = orderTargetMode === "self" ? selfAccountId : selectedCustomerId;
-
   const basePrice = useMemo(() => items.reduce((sum, item) => sum + item.subtotal, 0), [items]);
-
-  const totalPrice = useMemo(
-    () => Math.max(basePrice - promoDiscountAmount, 0),
-    [basePrice, promoDiscountAmount]
-  );
 
   const handleConfirmProductSelections = (
     selections: Array<{ productId: number; quantity: number }>
@@ -168,6 +93,7 @@ export function StaffOrderCreatePage() {
           next.push({
             productId: product.id,
             productName: product.name,
+            thumbnailUrl: product.thumbnailUrl || "",
             unitPrice: product.defaultPrice,
             quantity: safeQuantity,
             subtotal: safeQuantity * product.defaultPrice,
@@ -199,41 +125,10 @@ export function StaffOrderCreatePage() {
     setItems((prev) => prev.filter((item) => item.productId !== productId));
   };
 
-  const applyPromoMutation = useMutation({
+  const prepareOrderMutation = useMutation({
     mutationFn: async () => {
-      const code = promoInput.trim();
-      if (!code) throw new Error("Vui lòng nhập mã khuyến mãi");
-      if (basePrice <= 0) throw new Error("Vui lòng thêm sản phẩm trước khi áp mã");
-
-      const promotion = await promotionService.getPromotionByCode(code);
-      const validationMessage = validatePromotionForCheckout(promotion, basePrice);
-      if (validationMessage) {
-        throw new Error(validationMessage);
-      }
-
-      const discount = calculatePromotionDiscount(promotion, basePrice);
-      return { code: promotion.code, discount };
-    },
-    onSuccess: ({ code, discount }) => {
-      setAppliedPromoCode(code);
-      setPromoDiscountAmount(discount);
-      toast.success("Áp dụng mã khuyến mãi thành công");
-    },
-    onError: (error) => {
-      toast.error(getReadableError(error, "Không thể áp dụng mã khuyến mãi"));
-      setAppliedPromoCode(null);
-      setPromoDiscountAmount(0);
-    },
-  });
-
-  const createOrderMutation = useMutation({
-    mutationFn: async () => {
-      if (!effectiveTargetUserId) {
-        throw new Error(
-          orderTargetMode === "self"
-            ? "Không xác định được tài khoản staff hiện tại"
-            : "Vui lòng chọn khách hàng"
-        );
+      if (!resolvedStaffUserId) {
+        throw new Error("Không xác định được tài khoản staff hiện tại");
       }
 
       if (!recipientName.trim() || !phoneNumber.trim() || !address.trim()) {
@@ -245,10 +140,12 @@ export function StaffOrderCreatePage() {
       }
 
       const payload: CheckAvailableRequest = {
-        userId: effectiveTargetUserId,
+        userId: resolvedStaffUserId,
         status: "PENDING",
         basePrice,
-        totalPrice,
+        totalPrice: basePrice,
+        orderCode: "",
+        paymentMethod: "CASH",
         orderDetails: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -263,87 +160,23 @@ export function StaffOrderCreatePage() {
           },
         ],
         note: orderNote.trim() || undefined,
-        paymentMethod: "PAYOS",
       };
 
-      const checkAvailable = await checkoutService.checkAvailable(payload);
-      if (!checkAvailable.orderCode) {
-        throw new Error("Không nhận được mã đơn để khởi tạo thanh toán");
+      const available = await checkoutService.checkAvailable(payload);
+      if (!available.orderCode) {
+        throw new Error("Không nhận được mã đơn hợp lệ sau khi kiểm tra tồn kho");
       }
 
-      const paymentUrl = await checkoutService.makePaymentWithRetry(
-        checkAvailable.orderCode,
-        appliedPromoCode ?? undefined
-      );
-      if (!paymentUrl) {
-        throw new Error("Đơn đã tạo nhưng không nhận được link thanh toán");
-      }
-
-      return {
-        orderCode: checkAvailable.orderCode,
-        paymentUrl,
-      };
+      return available;
     },
-    onSuccess: ({ orderCode, paymentUrl }) => {
-      window.open(paymentUrl, "_blank", "noopener,noreferrer");
-      setPaymentResult({
-        open: true,
-        paymentUrl,
-        orderCode,
-      });
-      toast.success("Tạo đơn thành công, đã mở trang thanh toán");
+    onSuccess: () => {
+      toast.success("Đặt hàng thành công. Đã quay về danh sách đơn hàng.");
+      navigate(ROUTES.STAFF_ORDERS);
     },
     onError: (error) => {
-      toast.error(getReadableError(error, "Tạo đơn thất bại"));
+      toast.error(getReadableError(error, "Không thể chuẩn bị đơn hàng"));
     },
   });
-
-  const handleSelfOrderToggle = (nextValue: string) => {
-    const mode = nextValue as OrderTargetMode;
-    setOrderTargetMode(mode);
-    if (mode === "self") {
-      setSelectedCustomerId(null);
-      setRecipientName(user?.fullName ?? "");
-      setPhoneNumber(user?.phone ?? "");
-      setAddress("");
-    }
-  };
-
-  const updateRecentCustomers = (customerId: number) => {
-    setRecentCustomerIds((previous) => {
-      const next = [customerId, ...previous.filter((id) => id !== customerId)].slice(
-        0,
-        RECENT_CUSTOMER_LIMIT
-      );
-      localStorage.setItem(RECENT_CUSTOMER_KEY, JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const applyCustomerSelection = (customerId: number) => {
-    const customer = customers.find((item) => item.id === customerId);
-    if (!customer) return;
-
-    setSelectedCustomerId(customerId);
-    setRecipientName(customer.fullName ?? "");
-    setPhoneNumber(customer.phone ?? "");
-    updateRecentCustomers(customerId);
-  };
-
-  const clearPromo = () => {
-    setAppliedPromoCode(null);
-    setPromoDiscountAmount(0);
-    setPromoInput("");
-  };
-
-  const copyPaymentLink = async () => {
-    try {
-      await navigator.clipboard.writeText(paymentResult.paymentUrl);
-      toast.success("Đã sao chép link thanh toán");
-    } catch {
-      toast.error("Không thể sao chép link");
-    }
-  };
 
   const existingQuantities = useMemo(
     () =>
@@ -364,9 +197,7 @@ export function StaffOrderCreatePage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Tạo đơn hàng</h1>
-          <p className="text-sm text-gray-500">
-            Hỗ trợ tạo đơn cho khách hàng hoặc đặt cho chính bạn
-          </p>
+          <p className="text-sm text-gray-500">Bước cuối: Chuẩn bị đơn và kiểm tra tồn kho</p>
         </div>
       </div>
 
@@ -374,85 +205,15 @@ export function StaffOrderCreatePage() {
         <div className="space-y-6 xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Đối tượng đặt hàng</CardTitle>
+              <CardTitle className="text-base">Thông tin tài khoản đặt đơn</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={orderTargetMode} onValueChange={handleSelfOrderToggle}>
-                <SelectTrigger className="max-w-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="customer">Tạo đơn cho khách hàng</SelectItem>
-                  <SelectItem value="self">Đặt cho tôi</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {orderTargetMode === "customer" ? (
-                <div className="space-y-3 rounded-lg border border-gray-100 p-3">
-                  <Label>Khách hàng</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCustomerPickerOpen(true)}>
-                      <Search className="mr-2 h-4 w-4 text-gray-500" />
-                      {selectedCustomer ? "Đổi khách hàng" : "Chọn khách hàng"}
-                    </Button>
-                    {selectedCustomerId ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-gray-500"
-                        onClick={() => {
-                          setSelectedCustomerId(null);
-                          setRecipientName("");
-                          setPhoneNumber("");
-                        }}>
-                        Bỏ chọn
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  {selectedCustomer && (
-                    <div className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-xs text-teal-800">
-                      <p>
-                        Đang chọn:{" "}
-                        <span className="font-semibold">{selectedCustomer.fullName}</span>
-                      </p>
-                      <p className="text-teal-700">{selectedCustomer.email}</p>
-                    </div>
-                  )}
-
-                  {!selectedCustomer ? (
-                    <p className="text-xs text-amber-600">
-                      Vui lòng chọn khách hàng trước khi tạo đơn.
-                    </p>
-                  ) : null}
-
-                  {recentCustomers.length > 0 ? (
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-500">Khách gần đây</p>
-                      <div className="flex flex-wrap gap-2">
-                        {recentCustomers.map((customer) => (
-                          <Button
-                            key={`recent-customer-${customer.id}`}
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="max-w-full"
-                            onClick={() => applyCustomerSelection(customer.id)}>
-                            <span className="truncate">{customer.fullName}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-700">
-                  Đơn hàng sẽ được tạo cho chính bạn ({user?.fullName ?? "Staff"}).
-                </div>
-              )}
+              <div className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-700">
+                <p>
+                  Đơn hàng sẽ được tạo cho chính bạn:{" "}
+                  <span className="font-semibold">{user?.fullName ?? "Staff"}</span>
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -481,6 +242,7 @@ export function StaffOrderCreatePage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-gray-50 text-left text-gray-500">
+                      <th className="px-3 py-2 font-medium">Ảnh</th>
                       <th className="px-3 py-2 font-medium">Sản phẩm</th>
                       <th className="px-3 py-2 text-right font-medium">Đơn giá</th>
                       <th className="px-3 py-2 text-right font-medium">SL</th>
@@ -491,6 +253,19 @@ export function StaffOrderCreatePage() {
                   <tbody>
                     {items.map((item) => (
                       <tr key={item.productId} className="border-b last:border-0">
+                        <td className="px-3 py-2">
+                          {item.thumbnailUrl ? (
+                            <img
+                              src={item.thumbnailUrl}
+                              alt={item.productName}
+                              className="h-10 w-10 rounded-md border border-gray-100 object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                              ?
+                            </div>
+                          )}
+                        </td>
                         <td className="px-3 py-2 font-medium text-zinc-900">{item.productName}</td>
                         <td className="px-3 py-2 text-right text-zinc-900">
                           {formatVND(item.unitPrice)}
@@ -523,7 +298,7 @@ export function StaffOrderCreatePage() {
                     ))}
                     {!items.length && (
                       <tr>
-                        <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
+                        <td colSpan={6} className="px-3 py-8 text-center text-gray-400">
                           Chưa có sản phẩm nào trong đơn
                         </td>
                       </tr>
@@ -579,64 +354,33 @@ export function StaffOrderCreatePage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Khuyến mãi</CardTitle>
+              <CardTitle className="text-base">Lộ trình tạo đơn</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                value={promoInput}
-                onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
-                placeholder="Nhập mã khuyến mãi"
-              />
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => applyPromoMutation.mutate()}
-                  disabled={applyPromoMutation.isPending}>
-                  Áp mã
-                </Button>
-                <Button type="button" variant="ghost" className="flex-1" onClick={clearPromo}>
-                  Bỏ mã
-                </Button>
-              </div>
-              {appliedPromoCode && (
-                <p className="text-xs text-green-600">
-                  Đã áp dụng: <span className="font-semibold">{appliedPromoCode}</span>
-                </p>
-              )}
+            <CardContent className="space-y-2 text-sm text-gray-600">
+              <p className="font-medium text-teal-700">1. Tạo đơn và kiểm tra tồn kho</p>
+              <p>Hoàn tất và quay về danh sách đơn hàng</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Tóm tắt đơn hàng</CardTitle>
+              <CardTitle className="text-base">Tóm tắt bước 1</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Giá gốc</span>
                 <span className="font-medium text-zinc-900">{formatVND(basePrice)}</span>
               </div>
-              <div className="flex items-center justify-between text-green-600">
-                <span>Giảm giá</span>
-                <span>- {formatVND(promoDiscountAmount)}</span>
-              </div>
-              <div className="border-t pt-2">
-                <div className="flex items-center justify-between text-base font-bold">
-                  <span>Tổng thanh toán</span>
-                  <span className="text-teal-600">{formatVND(totalPrice)}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Tổng gửi check-available</span>
+                <span className="font-semibold text-zinc-900">{formatVND(basePrice)}</span>
               </div>
 
               <Button
                 className="mt-4 w-full bg-teal-500 hover:bg-teal-600"
-                onClick={() => createOrderMutation.mutate()}
-                disabled={
-                  createOrderMutation.isPending ||
-                  !items.length ||
-                  (orderTargetMode === "customer" && !selectedCustomerId)
-                }>
-                {createOrderMutation.isPending ? "Đang xử lý..." : "Tạo đơn và thanh toán"}
+                onClick={() => prepareOrderMutation.mutate()}
+                disabled={prepareOrderMutation.isPending || !items.length}>
+                {prepareOrderMutation.isPending ? "Đang kiểm tra..." : "Tiến hành đặt hàng"}
               </Button>
 
               <Button variant="outline" className="w-full" asChild>
@@ -646,53 +390,6 @@ export function StaffOrderCreatePage() {
           </Card>
         </div>
       </div>
-
-      <Dialog
-        open={paymentResult.open}
-        onOpenChange={(open) => setPaymentResult((prev) => ({ ...prev, open }))}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Đã tạo đơn thành công</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <p>
-              Mã đơn: <span className="font-semibold text-zinc-900">{paymentResult.orderCode}</span>
-            </p>
-            <div className="rounded-lg border bg-gray-50 p-3">
-              <p className="mb-1 text-xs text-gray-500">Link thanh toán</p>
-              <p className="text-xs break-all text-zinc-900">{paymentResult.paymentUrl}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={copyPaymentLink}>
-                <Copy className="mr-2 h-4 w-4" />
-                Sao chép link
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 bg-teal-500 hover:bg-teal-600"
-                onClick={() =>
-                  window.open(paymentResult.paymentUrl, "_blank", "noopener,noreferrer")
-                }>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Mở lại thanh toán
-              </Button>
-            </div>
-            <Button type="button" className="w-full" onClick={() => navigate(ROUTES.STAFF_ORDERS)}>
-              Về quản lý đơn hàng
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <CustomerPickerDialog
-        open={customerPickerOpen}
-        onOpenChange={setCustomerPickerOpen}
-        customers={customers}
-        isLoading={isCustomersLoading}
-        selectedCustomerId={selectedCustomerId}
-        recentCustomerIds={recentCustomerIds}
-        onSelectCustomer={applyCustomerSelection}
-      />
 
       <ProductPickerDialog
         open={productPickerOpen}
