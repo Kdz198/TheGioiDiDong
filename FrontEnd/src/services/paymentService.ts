@@ -56,6 +56,15 @@ export const paymentService = {
     return { transactionId: String(response.data), paymentUrl: String(response.data) };
   },
 
+  getOrderCodeByTransactionCode: async (transactionCode: string): Promise<string> => {
+    if (USE_MOCK_API) {
+      await new Promise((r) => setTimeout(r, 500));
+      return transactionCode;
+    }
+    const response = await apiClient.get(API_ENDPOINTS.PAYMENTS.TRANSACTION_CODE(transactionCode));
+    return String(response.data ?? "");
+  },
+
   getAllPayments: async (): Promise<ApiPayment[]> => {
     if (USE_MOCK_API) {
       await new Promise((r) => setTimeout(r, 500));

@@ -48,6 +48,11 @@ const OrderSuccessPage = lazy(() =>
     default: m.OrderSuccessPage,
   }))
 );
+const OrderCancelPage = lazy(() =>
+  import("@/pages/customer/OrderCancelPage").then((m) => ({
+    default: m.OrderCancelPage,
+  }))
+);
 const OrderHistoryPage = lazy(() =>
   import("@/pages/customer/OrderHistoryPage").then((m) => ({
     default: m.OrderHistoryPage,
@@ -293,6 +298,14 @@ function App() {
                   element={
                     <ProtectedRoute role="customer">
                       <OrderSuccessPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path={ROUTES.ORDER_CANCEL}
+                  element={
+                    <ProtectedRoute role="customer">
+                      <OrderCancelPage />
                     </ProtectedRoute>
                   }
                 />
