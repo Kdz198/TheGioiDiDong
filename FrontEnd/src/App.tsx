@@ -28,6 +28,9 @@ const ServicesPage = lazy(() =>
 const BlogPage = lazy(() =>
   import("@/pages/customer/BlogPage").then((m) => ({ default: m.BlogPage }))
 );
+const BlogDetailPage = lazy(() =>
+  import("@/pages/customer/BlogDetailPage").then((m) => ({ default: m.BlogDetailPage }))
+);
 const ProductListPage = lazy(() =>
   import("@/pages/customer/ProductListPage").then((m) => ({
     default: m.ProductListPage,
@@ -268,6 +271,7 @@ function App() {
                 <Route path={ROUTES.PRODUCT_DETAIL} element={<ProductDetailPage />} />
                 <Route path={ROUTES.SERVICES} element={<ServicesPage />} />
                 <Route path={ROUTES.BLOGS} element={<BlogPage />} />
+                <Route path={ROUTES.BLOG_DETAIL} element={<BlogDetailPage />} />
                 <Route path={ROUTES.CATEGORY} element={<ProductListPage />} />
                 <Route path={ROUTES.SEARCH} element={<ProductListPage />} />
               </Route>

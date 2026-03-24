@@ -6,6 +6,7 @@ export const ROUTES = {
   CATEGORY: "/category/:slug",
   SEARCH: "/search",
   BLOGS: "/blogs",
+  BLOG_DETAIL: "/blogs/:blogId",
 
   LOGIN: "/login",
   SIGNUP: "/signup",
