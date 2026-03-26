@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import type { AppProduct } from "@/interfaces/product.types";
+import type { ProductFeedbackItem } from "@/services/feedbackService";
 import { feedbackService } from "@/services/feedbackService";
 import { formatVND } from "@/utils/formatPrice";
 import { useQuery } from "@tanstack/react-query";
@@ -40,14 +41,14 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   // Tính toán số sao trung bình
   const { avgRating, totalReviews, hasFeedback } = useMemo(() => {
     // Nếu API lỗi (isError) hoặc không phải mảng, coi như không có feedback
-    const validReviews = Array.isArray(reviews) ? reviews : [];
+    const validReviews: ProductFeedbackItem[] = Array.isArray(reviews) ? reviews : [];
     const count = validReviews.length;
 
     if (count === 0 || isError) {
       return { avgRating: null, totalReviews: 0, hasFeedback: false };
     }
 
-    const sum = validReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+    const sum = validReviews.reduce((acc: number, r) => acc + (r.rating ?? 0), 0);
     return {
       avgRating: (sum / count).toFixed(1),
       totalReviews: count,

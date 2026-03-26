@@ -140,6 +140,7 @@ export function ProductListPage() {
 
   // Reset trang về 1 khi đổi bộ lọc
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [selectedCategory, searchQuery, selectedBrand, selectedVersion, sortBy]);
 
@@ -154,7 +155,7 @@ export function ProductListPage() {
   const handleAddToCart = (product: AppProduct) => {
     const firstImage = product.imgUrls?.[0] || "";
     addItem({
-      id: Date.now(),
+      id: product.id,
       productId: product.id,
       variantId: product.id,
       product: { id: product.id, slug: product.name, name: product.name, thumbnailUrl: firstImage },
@@ -182,17 +183,25 @@ export function ProductListPage() {
 
   return (
     <div className="min-h-screen bg-[#f1f1f1] pt-8 pb-12">
-      <section className="overflow-hidden rounded-b-4xl bg-linear-to-r from-teal-500 via-teal-500 to-cyan-500 py-10 text-center text-white shadow-[0_10px_35px_rgba(20,184,166,0.25)]">
-        <div className="container mx-auto px-4">
-          <p className="text-xs font-semibold tracking-[0.2em] text-teal-100 uppercase">
-            Danh mục sản phẩm
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight uppercase md:text-4xl">
-            {pageTitle}
-          </h1>
-          <p className="mt-2 text-sm text-teal-100 md:text-base">
-            Hiện có {filteredProducts.length} sản phẩm sẵn sàng để bạn khám phá.
-          </p>
+      <section className="relative h-62.5 w-full overflow-hidden rounded-b-4xl md:h-50">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/category-banner.svg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-zinc-950/65 via-zinc-900/40 to-zinc-900/20" />
+
+        <div className="relative container mx-auto flex h-full items-center px-4">
+          <div className="max-w-2xl text-left text-white">
+            <p className="text-xs font-semibold tracking-[0.2em] text-teal-100 uppercase">
+              Danh mục sản phẩm
+            </p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight uppercase md:text-4xl">
+              {pageTitle}
+            </h1>
+            <p className="mt-2 text-sm text-teal-50 md:text-base">
+              Hiện có {filteredProducts.length} sản phẩm sẵn sàng để bạn khám phá.
+            </p>
+          </div>
         </div>
       </section>
 

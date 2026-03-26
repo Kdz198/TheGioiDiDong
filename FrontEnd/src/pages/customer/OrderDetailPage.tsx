@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import type { OrderDetailDTO } from "@/interfaces/order.types";
 import { feedbackService } from "@/services/feedbackService";
 import { orderService } from "@/services/orderService";
 import { productService } from "@/services/productService";
@@ -22,6 +23,18 @@ interface OrderItem {
   subtotal: number;
   imgUrl?: string;
   variantLabel?: string;
+}
+
+interface FeedbackView {
+  rating: number;
+  comment?: string;
+  date?: string;
+}
+
+function isFeedbackView(value: unknown): value is FeedbackView {
+  if (!value || typeof value !== "object") return false;
+  const maybeFeedback = value as { rating?: unknown };
+  return typeof maybeFeedback.rating === "number";
 }
 
 // --- Helpers ---
@@ -70,10 +83,7 @@ function OrderItemImage({
   });
 
   const finalImgUrl =
-    fallbackImg ||
-    product?.imgUrls?.[0] ||
-    (product as any)?.imgUrl ||
-    "https://placehold.co/100x100?text=No+Image";
+    fallbackImg || product?.imgUrls?.[0] || "https://placehold.co/100x100?text=No+Image";
 
   if (isLoading && !fallbackImg) {
     return <div className="h-full w-full animate-pulse rounded-md bg-gray-100" />;
@@ -94,7 +104,7 @@ function FeedbackAction({
   const [isOpen, setIsOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [localFeedback, setLocalFeedback] = useState<any>(null);
+  const [localFeedback, setLocalFeedback] = useState<FeedbackView | null>(null);
 
   // Lấy orderDetailId từ item (Dữ liệu từ API GET /api/orders/{id})
   const orderDetailId = item.orderDetailId;
@@ -111,9 +121,13 @@ function FeedbackAction({
   // Bóc tách dữ liệu feedback an toàn
   const parsedFeedback = (() => {
     if (!serverFeedback) return null;
-    if (typeof serverFeedback.rating === "number") return serverFeedback;
-    if (serverFeedback.data && typeof serverFeedback.data.rating === "number")
-      return serverFeedback.data;
+    if (isFeedbackView(serverFeedback)) return serverFeedback;
+
+    if (typeof serverFeedback === "object" && serverFeedback !== null && "data" in serverFeedback) {
+      const feedbackPayload = (serverFeedback as { data?: unknown }).data;
+      if (isFeedbackView(feedbackPayload)) return feedbackPayload;
+    }
+
     return null;
   })();
 
@@ -274,22 +288,25 @@ export function OrderDetailPage() {
 
   const handleCancel = async () => {
     try {
-      const response = await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
-      // Nếu API trả về status code 2xx, coi như yêu cầu hủy đã được gửi thành công
-      if (response.status === 200 || response.status === 204) {
-        toast.success("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ xác nhận từ hệ thống.");
-        queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-        queryClient.invalidateQueries({ queryKey: ["orders"] });
-      } else {
-        toast.error("Không thể hủy đơn hàng lúc này.");
-      }
+      await orderService.cancelOrder(order.id, "Khách hàng hủy đơn");
+      toast.success("Đã gửi yêu cầu hủy đơn hàng. Vui lòng chờ xác nhận từ hệ thống.");
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     } catch {
       toast.error("Không thể hủy đơn hàng lúc này.");
     }
   };
 
   // Mapped dữ liệu từ orderDetails trong JSON của bạn
-  const orderItemsList: OrderItem[] = (order as any).orderDetails || [];
+  const orderItemsList: OrderItem[] = (order.orderDetails ?? []).map((detail: OrderDetailDTO) => ({
+    orderDetailId: detail.orderDetailId,
+    productId: detail.productId,
+    productName: detail.productName,
+    quantity: detail.quantity,
+    subtotal: detail.subtotal,
+    imgUrl: detail.imgUrl,
+    variantLabel: detail.type,
+  }));
   const basePrice = order.basePrice || 0;
   const totalPrice = order.totalPrice || 0;
   const orderDate = order.orderDate || new Date();
