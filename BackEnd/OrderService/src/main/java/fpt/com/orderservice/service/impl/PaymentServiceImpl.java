@@ -212,8 +212,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Scheduled(fixedDelay = 300000)
     public void cancelPayment(){
+        System.out.println("Running scheduled task to cancel pending payments...");
         LocalDateTime times = LocalDateTime.now().minusMinutes(5);
-        List<Payment> payments = paymentRepo.findByStatusAndDate(PaymentStatus.PENDING, times);
+        List<Payment> payments = paymentRepo.findByStatusAndDateBefore(PaymentStatus.PENDING, times);
 
         for(Payment payment : payments) {
             try {
