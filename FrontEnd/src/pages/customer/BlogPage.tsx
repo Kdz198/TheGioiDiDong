@@ -6,6 +6,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import type { Blog } from "@/interfaces/product.types";
 import { ROUTES } from "@/router/routes.const";
 import { blogService } from "@/services/blogService";
 import { useQuery } from "@tanstack/react-query";
@@ -174,7 +175,7 @@ export function BlogPage() {
   );
 }
 
-function BlogCard({ blog, onClick }: { blog: any; onClick: () => void }) {
+function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
   const readTime = Math.ceil((blog.content?.length || 0) / 1000) || 5;
 
   return (
