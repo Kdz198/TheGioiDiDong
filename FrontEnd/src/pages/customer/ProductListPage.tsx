@@ -207,7 +207,7 @@ export function ProductListPage() {
 
       <div className="container mx-auto space-y-6 px-4">
         {/* THANH DANH MỤC */}
-        <section className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <section className="rounded-b-xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="scrollbar-hide flex gap-4 overflow-x-auto">
             <button
               onClick={() => handleCategoryClick(null)}
