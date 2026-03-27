@@ -14,12 +14,25 @@ export function OrderSuccessPage() {
   const token = useAuthStore((s) => s.token);
   const [searchParams] = useSearchParams();
   const orderCodeFromUrl = searchParams.get("orderCode")?.trim() ?? "";
+  const paymentStatusFromUrl = searchParams.get("status")?.trim().toLowerCase() ?? "";
   const [verificationNote, setVerificationNote] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const verifyAndClearCart = async () => {
+      const isPaymentSuccessFromGateway =
+        paymentStatusFromUrl === "paid" || paymentStatusFromUrl === "success";
+
+      if (isPaymentSuccessFromGateway) {
+        clearCart();
+        sessionStorage.removeItem(CHECKOUT_PENDING_ORDER_CODE_KEY);
+        if (active) {
+          setVerificationNote(null);
+        }
+        return;
+      }
+
       const orderCodeFromSession = sessionStorage.getItem(CHECKOUT_PENDING_ORDER_CODE_KEY)?.trim();
       const orderCode = orderCodeFromUrl || orderCodeFromSession;
 
@@ -44,14 +57,12 @@ export function OrderSuccessPage() {
 
         if (!matchedOrder) {
           if (active) {
-            setVerificationNote(
-              "Đơn hàng chưa đồng bộ xong, giỏ hàng được giữ nguyên để tránh mất dữ liệu."
-            );
+            setVerificationNote("");
           }
           return;
         }
 
-        if (matchedOrder.status !== "paid") {
+        if (matchedOrder.status.toLowerCase() !== "paid") {
           if (active) {
             setVerificationNote(
               "Trạng thái thanh toán chưa xác nhận paid, giỏ hàng được giữ nguyên để tránh xóa sai."
@@ -78,7 +89,7 @@ export function OrderSuccessPage() {
     return () => {
       active = false;
     };
-  }, [clearCart, orderCodeFromUrl, token]);
+  }, [clearCart, orderCodeFromUrl, paymentStatusFromUrl, token]);
 
   return (
     <div className="container mx-auto flex flex-col items-center justify-center px-4 py-20 text-center">
